@@ -103,4 +103,5 @@ export type MessageToExtension =
 	| { command: 'refresh' }
 	| { command: 'cancelScan' }
 	| { command: 'calculateLOC' }
-	| { command: 'deepScan' };
+	| { command: 'deepScan' }
+	| { command: 'reset' };

@@ -231,6 +231,15 @@ export class ScanPanel {
 
 		deepScan: async () => {
 			await this.handleDeepScan();
+		},
+
+		reset: async () => {
+			// Cancel any ongoing scan
+			this.scanner.cancelCurrentScan();
+			// Clear cached directory sizes
+			this.currentDirectorySizes = null;
+			// Send noRoot to reset UI to initial state
+			this.sendMessage({ type: 'noRoot' });
 		}
 	};
 

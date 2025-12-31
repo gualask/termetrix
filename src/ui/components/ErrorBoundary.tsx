@@ -1,5 +1,6 @@
 import { Component, type ComponentChildren } from 'preact';
 import { AlertTriangle, RefreshCw } from 'lucide-preact';
+import { postToExtension } from '../vscode';
 
 interface Props {
 	children: ComponentChildren;
@@ -26,6 +27,14 @@ export class ErrorBoundary extends Component<Props, State> {
 	}
 
 	handleReset = () => {
+		// Notify extension to reset its state before resetting UI
+		try {
+			postToExtension({ command: 'reset' });
+		} catch (e) {
+			console.warn('Failed to notify extension of reset:', e);
+		}
+
+		// Reset error boundary state
 		this.setState({ hasError: false, error: null });
 	};
 
