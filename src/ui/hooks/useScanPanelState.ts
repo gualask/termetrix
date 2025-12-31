@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'preact/hooks';
-import type { DirectoryInfo, LOCResult, MessageFromExtension, ViewData } from '../types';
+import type { DirectoryInfo, LOCResult, MessageFromExtension, ViewData, ProgressData } from '../types';
 import { postToExtension } from '../vscode';
 
 interface Actions {
@@ -13,6 +13,7 @@ interface SizeSlice {
 	viewData: ViewData;
 	deepDirectories: DirectoryInfo[] | null;
 	isDeepScanning: boolean;
+	progressData: ProgressData | null;
 	actions: Pick<Actions, 'refreshOrCancelScan' | 'revealInExplorer'>;
 }
 
@@ -39,6 +40,7 @@ export function useScanPanelState(): State {
 	const [isReady, setIsReady] = useState(false);
 	const [deepDirectories, setDeepDirectories] = useState<DirectoryInfo[] | null>(null);
 	const [isDeepScanning, setIsDeepScanning] = useState(false);
+	const [progressData, setProgressData] = useState<ProgressData | null>(null);
 
 	useEffect(() => {
 		function handleMessage(event: MessageEvent<MessageFromExtension>) {
@@ -49,12 +51,15 @@ export function useScanPanelState(): State {
 					setViewData(prev => ({ ...prev, isScanning: true }));
 					setDeepDirectories(null);
 					setIsDeepScanning(false);
+					setProgressData(null);
 					break;
 				case 'progress':
+					setProgressData(message.data);
 					break;
 				case 'update':
 					setIsReady(true);
 					setViewData(message.data);
+					setProgressData(null);
 					setDeepDirectories(null);
 					setIsDeepScanning(true);
 					postToExtension({ command: 'deepScan' });
@@ -67,6 +72,7 @@ export function useScanPanelState(): State {
 					});
 					setDeepDirectories(null);
 					setIsDeepScanning(false);
+					setProgressData(null);
 					break;
 				case 'locCalculating':
 					setIsCalculatingLOC(true);
@@ -110,6 +116,7 @@ export function useScanPanelState(): State {
 			viewData,
 			deepDirectories,
 			isDeepScanning,
+			progressData,
 			actions: {
 				refreshOrCancelScan,
 				revealInExplorer

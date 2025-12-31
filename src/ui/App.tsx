@@ -34,6 +34,7 @@ export function App() {
 					viewData={size.viewData}
 					deepDirectories={size.deepDirectories}
 					isDeepScanning={size.isDeepScanning}
+					progressData={size.progressData}
 					onRefreshOrCancelScan={size.actions.refreshOrCancelScan}
 					onRevealInExplorer={size.actions.revealInExplorer}
 				/>

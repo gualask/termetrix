@@ -1,5 +1,5 @@
 import { Folder, HardDrive, RefreshCw, Square, Timer } from 'lucide-preact';
-import type { DirectoryInfo, ViewData } from '../../types';
+import type { DirectoryInfo, ViewData, ProgressData } from '../../types';
 import { formatBytes } from '../../utils';
 import { SizeChart } from './SizeChart';
 import { IconButton } from '../../components/IconButton';
@@ -12,6 +12,7 @@ interface Props {
 	viewData: ViewData;
 	deepDirectories: DirectoryInfo[] | null;
 	isDeepScanning: boolean;
+	progressData: ProgressData | null;
 	onRefreshOrCancelScan: () => void;
 	onRevealInExplorer: (path: string) => void;
 }
@@ -20,6 +21,7 @@ export function SizeView({
 	viewData,
 	deepDirectories,
 	isDeepScanning,
+	progressData,
 	onRefreshOrCancelScan,
 	onRevealInExplorer,
 }: Props) {
@@ -64,6 +66,18 @@ export function SizeView({
 
 	const isLoading = viewData.isScanning || isDeepScanning;
 
+	// Build detailed loading label
+	let loadingLabel = 'Preparing…';
+	if (viewData.isScanning) {
+		if (progressData) {
+			loadingLabel = `Scanning… ${formatBytes(progressData.currentBytes)} (${progressData.directoriesScanned.toLocaleString()} directories)`;
+		} else {
+			loadingLabel = 'Scanning…';
+		}
+	} else if (isDeepScanning) {
+		loadingLabel = 'Analyzing directory structure…';
+	}
+
 	return (
 		<ViewLayout
 			viewClass="size-view"
@@ -92,7 +106,7 @@ export function SizeView({
 					)
 				)}
 
-				{isLoading && <PanelOverlay label={viewData.isScanning ? 'Scanning…' : 'Preparing…'} />}
+				{isLoading && <PanelOverlay label={loadingLabel} />}
 		</ViewLayout>
 	);
 }
