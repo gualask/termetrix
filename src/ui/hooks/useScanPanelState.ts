@@ -9,14 +9,23 @@ interface Actions {
 	openFile: (path: string) => void;
 }
 
-interface State {
-	isReady: boolean;
+interface SizeSlice {
 	viewData: ViewData;
 	deepDirectories: DirectoryInfo[] | null;
 	isDeepScanning: boolean;
-	locResult: LOCResult | null;
-	isCalculatingLOC: boolean;
-	actions: Actions;
+	actions: Pick<Actions, 'refreshOrCancelScan' | 'revealInExplorer'>;
+}
+
+interface LocSlice {
+	result: LOCResult | null;
+	isCalculating: boolean;
+	actions: Pick<Actions, 'calculateLOC' | 'openFile'>;
+}
+
+interface State {
+	isReady: boolean;
+	size: SizeSlice;
+	loc: LocSlice;
 }
 
 export function useScanPanelState(): State {
@@ -97,16 +106,22 @@ export function useScanPanelState(): State {
 
 	return {
 		isReady,
-		viewData,
-		deepDirectories,
-		isDeepScanning,
-		locResult,
-		isCalculatingLOC,
-		actions: {
-			refreshOrCancelScan,
-			revealInExplorer,
-			calculateLOC,
-			openFile
+		size: {
+			viewData,
+			deepDirectories,
+			isDeepScanning,
+			actions: {
+				refreshOrCancelScan,
+				revealInExplorer
+			}
+		},
+		loc: {
+			result: locResult,
+			isCalculating: isCalculatingLOC,
+			actions: {
+				calculateLOC,
+				openFile
+			}
 		}
 	};
 }

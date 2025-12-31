@@ -7,8 +7,7 @@ import { EmptyState } from './components/EmptyState';
 import { useScanPanelState } from './hooks/useScanPanelState';
 
 export function App() {
-	const { isReady, viewData, deepDirectories, isDeepScanning, locResult, isCalculatingLOC, actions } =
-		useScanPanelState();
+	const { isReady, size, loc } = useScanPanelState();
 
 	const [activeTab, setActiveTab] = useState<Tab>('size');
 
@@ -32,18 +31,18 @@ export function App() {
 
 			{activeTab === 'size' ? (
 				<SizeView
-					viewData={viewData}
-					deepDirectories={deepDirectories}
-					isDeepScanning={isDeepScanning}
-					onRefreshOrCancelScan={actions.refreshOrCancelScan}
-					onRevealInExplorer={actions.revealInExplorer}
+					viewData={size.viewData}
+					deepDirectories={size.deepDirectories}
+					isDeepScanning={size.isDeepScanning}
+					onRefreshOrCancelScan={size.actions.refreshOrCancelScan}
+					onRevealInExplorer={size.actions.revealInExplorer}
 				/>
 				) : (
 					<LocView
-						locResult={locResult}
-						isCalculating={isCalculatingLOC}
-						onCalculate={actions.calculateLOC}
-						onOpenFile={actions.openFile}
+						locResult={loc.result}
+						isCalculating={loc.isCalculating}
+						onCalculate={loc.actions.calculateLOC}
+						onOpenFile={loc.actions.openFile}
 					/>
 				)}
 			</div>
