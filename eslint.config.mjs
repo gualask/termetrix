@@ -29,7 +29,7 @@ export default [
 					caughtErrorsIgnorePattern: '^_'
 				}
 			],
-			'curly': 'warn',
+			'curly': 'off',
 			'eqeqeq': 'warn',
 			'no-throw-literal': 'warn'
 		}
@@ -61,7 +61,7 @@ export default [
 					caughtErrorsIgnorePattern: '^_'
 				}
 			],
-			'curly': 'warn',
+			'curly': 'off',
 			'eqeqeq': 'warn',
 			'no-throw-literal': 'warn'
 		}
