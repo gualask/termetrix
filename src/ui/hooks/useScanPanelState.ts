@@ -52,7 +52,12 @@ export function useScanPanelState(): State {
 
 			switch (message.type) {
 				case 'scanStart':
-					setViewData(prev => ({ ...prev, isScanning: true }));
+					setViewData(prev => ({
+						...prev,
+						isScanning: true,
+						// Clear incomplete flag when starting a new scan
+						scanResult: prev.scanResult ? { ...prev.scanResult, incomplete: false } : undefined
+					}));
 					setDeepDirectories(null);
 					setIsDeepScanning(false);
 					setProgressData(null);
