@@ -6,6 +6,7 @@ import { IconButton } from './IconButton';
 import { PanelOverlay } from './PanelOverlay';
 import { EmptyState } from './EmptyState';
 import { ViewLayout } from './ViewLayout';
+import { MetricsHeader } from './MetricsHeader';
 
 interface Props {
 	viewData: ViewData;
@@ -23,56 +24,42 @@ export function SizeView({
 	onRevealInExplorer,
 }: Props) {
 	const header = (
-		<header class="tmx-header-card" aria-label="Workspace size">
-			<div class="tmx-hero">
-				<div class="tmx-hero-row">
-					<div class="tmx-metrics-line" aria-label="Scan summary">
-						<span class="tmx-metric-primary" title="Total size">
-							<HardDrive size={22} class="tmx-metric-primaryIcon" aria-hidden="true" />
-							<span class="tmx-metric-primaryValue">
-								{viewData.scanResult ? formatBytes(viewData.scanResult.totalBytes) : '—'}
-							</span>
-						</span>
-						<span class="tmx-metric-sep" aria-hidden="true">
-							-
-						</span>
-						<span class="tmx-metric-secondary" title="Directories scanned">
-							<Folder size={14} aria-hidden="true" />
-							<span>
-								{viewData.scanResult
-									? viewData.scanResult.metadata.directoriesScanned.toLocaleString()
-									: '—'}
-							</span>
-						</span>
-						<span class="tmx-metric-sep" aria-hidden="true">
-							-
-						</span>
-						<span class="tmx-metric-secondary" title="Scan duration">
-							<Timer size={14} aria-hidden="true" />
-							<span>
-								{viewData.scanResult
-									? `${(viewData.scanResult.metadata.duration / 1000).toFixed(1)}s`
-									: '—'}
-							</span>
-						</span>
-					</div>
-
-					<div class="tmx-metric-actions">
-						<IconButton
-							onClick={onRefreshOrCancelScan}
-							title={viewData.isScanning ? 'Cancel scan' : 'Refresh scan'}
-							ariaLabel={viewData.isScanning ? 'Cancel scan' : 'Refresh scan'}
-						>
-							{viewData.isScanning ? <Square size={16} /> : <RefreshCw size={16} />}
-						</IconButton>
-					</div>
-				</div>
-
-				<div class="tmx-caption" aria-live="polite">
-					Click a row to reveal in Explorer{viewData.isScanning ? ' (scanning…)' : ''}.
-				</div>
-			</div>
-		</header>
+		<MetricsHeader
+			ariaLabel="Workspace size"
+			metricsAriaLabel="Scan summary"
+			primary={{
+				title: 'Total size',
+				icon: <HardDrive size={22} class="tmx-metric-primaryIcon" aria-hidden="true" />,
+				value: viewData.scanResult ? formatBytes(viewData.scanResult.totalBytes) : '—'
+			}}
+			secondary={[
+				{
+					title: 'Directories scanned',
+					icon: <Folder size={14} aria-hidden="true" />,
+					content: viewData.scanResult
+						? viewData.scanResult.metadata.directoriesScanned.toLocaleString()
+						: '—'
+				},
+				{
+					title: 'Scan duration',
+					icon: <Timer size={14} aria-hidden="true" />,
+					content: viewData.scanResult
+						? `${(viewData.scanResult.metadata.duration / 1000).toFixed(1)}s`
+						: '—'
+				}
+			]}
+			actions={
+				<IconButton
+					onClick={onRefreshOrCancelScan}
+					title={viewData.isScanning ? 'Cancel scan' : 'Refresh scan'}
+					ariaLabel={viewData.isScanning ? 'Cancel scan' : 'Refresh scan'}
+				>
+					{viewData.isScanning ? <Square size={16} /> : <RefreshCw size={16} />}
+				</IconButton>
+			}
+			caption={`Click a row to reveal in Explorer${viewData.isScanning ? ' (scanning…)' : ''}.`}
+			captionAriaLive="polite"
+		/>
 	);
 
 	const isLoading = viewData.isScanning || isDeepScanning;

@@ -5,6 +5,7 @@ import { PanelOverlay } from './PanelOverlay';
 import { EmptyState } from './EmptyState';
 import { ViewLayout } from './ViewLayout';
 import { RowButton } from './RowButton';
+import { MetricsHeader } from './MetricsHeader';
 
 interface Props {
 	locResult: LOCResult | null;
@@ -71,50 +72,45 @@ export function LocView({ locResult, isCalculating, onCalculate, onOpenFile }: P
 		.sort((a, b) => b[1] - a[1]);
 
 	const header = (
-		<header class="tmx-header-card" aria-label="Lines of code">
-			<div class="tmx-hero">
-				<div class="tmx-hero-row">
-					<div class="tmx-metrics-line" aria-label="LOC summary">
-						<span class="tmx-metric-primary" title="Total lines of code">
-							<FileText size={22} class="tmx-metric-primaryIcon" aria-hidden="true" />
-							<span class="tmx-metric-primaryValue">{totalLines}</span>
-							<span class="loc-primary-suffix">lines</span>
-						</span>
-						<span class="tmx-metric-sep" aria-hidden="true">-</span>
-						<span class="tmx-metric-secondary" title="Scanned files">
-							<Files size={14} aria-hidden="true" />
-							<span>{scannedFiles} files</span>
-						</span>
-						<span class="tmx-metric-sep" aria-hidden="true">-</span>
-						<span class="tmx-metric-secondary" title="Skipped files">
-							<FileX size={14} aria-hidden="true" />
-							<span>{skippedFiles} skipped</span>
-						</span>
-					</div>
-
-					<div class="tmx-metric-actions">
-						<IconButton
-							onClick={onCalculate}
-							disabled={isCalculating}
-							title={hasData ? 'Recalculate LOC' : 'Calculate LOC'}
-							ariaLabel={hasData ? 'Recalculate LOC' : 'Calculate LOC'}
-						>
-							{isCalculating ? (
-								<Loader2 size={16} class="spinner" />
-							) : hasData ? (
-								<RefreshCw size={16} />
-							) : (
-								<Play size={16} />
-							)}
-						</IconButton>
-					</div>
-				</div>
-
-				<div class="tmx-caption">
-					Scans source files only (respects .gitignore and skips common build/deps folders)
-				</div>
-			</div>
-		</header>
+		<MetricsHeader
+			ariaLabel="Lines of code"
+			metricsAriaLabel="LOC summary"
+			primary={{
+				title: 'Total lines of code',
+				icon: <FileText size={22} class="tmx-metric-primaryIcon" aria-hidden="true" />,
+				value: totalLines,
+				trailing: <span class="loc-primary-suffix">lines</span>
+			}}
+			secondary={[
+				{
+					title: 'Scanned files',
+					icon: <Files size={14} aria-hidden="true" />,
+					content: `${scannedFiles} files`
+				},
+				{
+					title: 'Skipped files',
+					icon: <FileX size={14} aria-hidden="true" />,
+					content: `${skippedFiles} skipped`
+				}
+			]}
+			actions={
+				<IconButton
+					onClick={onCalculate}
+					disabled={isCalculating}
+					title={hasData ? 'Recalculate LOC' : 'Calculate LOC'}
+					ariaLabel={hasData ? 'Recalculate LOC' : 'Calculate LOC'}
+				>
+					{isCalculating ? (
+						<Loader2 size={16} class="spinner" />
+					) : hasData ? (
+						<RefreshCw size={16} />
+					) : (
+						<Play size={16} />
+					)}
+				</IconButton>
+			}
+			caption="Scans source files only (respects .gitignore and skips common build/deps folders)"
+		/>
 	);
 
 	return (
