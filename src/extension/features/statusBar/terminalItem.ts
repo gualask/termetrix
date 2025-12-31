@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 export class TerminalStatusBarItem implements vscode.Disposable {
 	private statusBarItem: vscode.StatusBarItem;
 
-	constructor() {
+	constructor(private getProjectRoot?: () => string | undefined) {
 		// Create status bar item (left-aligned)
 		this.statusBarItem = vscode.window.createStatusBarItem(
 			vscode.StatusBarAlignment.Left,
@@ -26,13 +26,23 @@ export class TerminalStatusBarItem implements vscode.Disposable {
 	 * Open integrated terminal
 	 */
 	openTerminal(): void {
-		// Get active project folder
-		const projectFolder = vscode.workspace.workspaceFolders?.[0];
+		// Prefer the current project root (same context used by the scanner).
+		const projectRoot = this.getProjectRoot?.();
 
-		if (projectFolder) {
-			// Create terminal in project folder
+		if (projectRoot) {
 			const terminal = vscode.window.createTerminal({
-				cwd: projectFolder.uri.fsPath,
+				cwd: projectRoot,
+				name: 'Termetrix'
+			});
+			terminal.show();
+			return;
+		}
+
+		// Fallback: use first workspace folder if available.
+		const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+		if (workspaceFolder) {
+			const terminal = vscode.window.createTerminal({
+				cwd: workspaceFolder.uri.fsPath,
 				name: 'Termetrix'
 			});
 			terminal.show();

@@ -24,7 +24,7 @@ export function activate(context: vscode.ExtensionContext) {
 	metricsPanel = new MetricsPanel(scanner, cache, context.extensionUri);
 
 	// Initialize status bar items
-	terminalItem = new TerminalStatusBarItem();
+	terminalItem = new TerminalStatusBarItem(() => scanner.getCurrentRoot());
 	metricsItem = new MetricsStatusBarItem(scanner, cache);
 
 	// Register commands
