@@ -4,12 +4,60 @@ import { IconButton } from './IconButton';
 import { PanelOverlay } from './PanelOverlay';
 import { EmptyState } from './EmptyState';
 import { ViewLayout } from './ViewLayout';
+import { RowButton } from './RowButton';
 
 interface Props {
 	locResult: LOCResult | null;
 	isCalculating: boolean;
 	onCalculate: () => void;
 	onOpenFile: (path: string) => void;
+}
+
+interface LocByLanguageSectionProps {
+	sortedLanguages: Array<[string, number]>;
+	totalLines: number;
+}
+
+function LocByLanguageSection({ sortedLanguages, totalLines }: LocByLanguageSectionProps) {
+	return (
+		<section class="section">
+			<h4>By Language</h4>
+			{sortedLanguages.map(([lang, lines]) => (
+				<div key={lang} class="language-row">
+					<div class="bar-container">
+						<div class="bar" style={{ width: `${(lines / totalLines) * 100}%` }} />
+					</div>
+					<span class="lang-name">{lang}</span>
+					<span class="lang-count">{lines.toLocaleString()}</span>
+					<span class="lang-percent">{((lines / totalLines) * 100).toFixed(1)}%</span>
+				</div>
+			))}
+		</section>
+	);
+}
+
+interface LocTopFilesSectionProps {
+	topFiles: LOCResult['topFiles'];
+	onOpenFile: (path: string) => void;
+}
+
+function LocTopFilesSection({ topFiles, onOpenFile }: LocTopFilesSectionProps) {
+	return (
+		<section class="section">
+			<h4>Top Files</h4>
+			{topFiles.map(file => (
+				<RowButton
+					key={file.path}
+					class="file-row"
+					onClick={() => onOpenFile(file.path)}
+					title={`Open ${file.path}`}
+				>
+					<span class="file-path">{file.path}</span>
+					<span class="file-lines">{file.lines} lines</span>
+				</RowButton>
+			))}
+		</section>
+	);
 }
 
 export function LocView({ locResult, isCalculating, onCalculate, onOpenFile }: Props) {
@@ -71,47 +119,18 @@ export function LocView({ locResult, isCalculating, onCalculate, onOpenFile }: P
 
 	return (
 		<ViewLayout viewClass="loc-view" header={header} panelVariant="scroll" panelAriaLabel="LOC details">
-				{hasData ? (
-					<>
-						<section class="section">
-							<h4>By Language</h4>
-							{sortedLanguages.map(([lang, lines]) => (
-								<div key={lang} class="language-row">
-									<div class="bar-container">
-										<div
-											class="bar"
-											style={{ width: `${(lines / locResult!.totalLines) * 100}%` }}
-										/>
-									</div>
-									<span class="lang-name">{lang}</span>
-									<span class="lang-count">{lines.toLocaleString()}</span>
-									<span class="lang-percent">
-										{((lines / locResult!.totalLines) * 100).toFixed(1)}%
-									</span>
-								</div>
-							))}
-						</section>
+			{hasData ? (
+				<>
+					<LocByLanguageSection
+						sortedLanguages={sortedLanguages}
+						totalLines={locResult!.totalLines}
+					/>
 
-						<section class="section">
-							<h4>Top Files</h4>
-							{locResult!.topFiles.map(file => (
-								<button
-									key={file.path}
-									type="button"
-									class="tmx-row file-row"
-									onClick={() => onOpenFile(file.path)}
-									title={`Open ${file.path}`}
-								>
-									<span class="file-path">
-										{file.path}
-									</span>
-									<span class="file-lines">{file.lines} lines</span>
-								</button>
-							))}
-						</section>
-					</>
-				) : (
-					<EmptyState
+					<LocTopFilesSection topFiles={locResult!.topFiles} onOpenFile={onOpenFile} />
+				</>
+			) : (
+				<EmptyState
+					variant="panel"
 						message="No data yet."
 						hint="Use the ▶ button in the header to calculate LOC."
 					/>

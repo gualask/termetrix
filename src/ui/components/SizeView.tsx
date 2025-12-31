@@ -98,6 +98,7 @@ export function SizeView({
 				) : (
 					!isLoading && (
 						<EmptyState
+							variant="panel"
 							message="No data yet."
 							hint="Use the refresh button in the header to scan your workspace."
 						/>

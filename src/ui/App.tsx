@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-preact';
 import { TabBar, type Tab } from './components/TabBar';
 import { LocView } from './components/LocView';
 import { SizeView } from './components/SizeView';
+import { EmptyState } from './components/EmptyState';
 import { useScanPanelState } from './hooks/useScanPanelState';
 
 export function App() {
@@ -13,9 +14,14 @@ export function App() {
 
 	if (!isReady) {
 		return (
-			<div class="app loading">
-				<Loader2 size={32} class="spinner" />
-				<p>Loading...</p>
+			<div class="app">
+				<div class="content">
+					<EmptyState
+						variant="page"
+						message="Loading…"
+						leading={<Loader2 size={32} class="spinner" />}
+					/>
+				</div>
 			</div>
 		);
 	}

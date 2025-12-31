@@ -1,6 +1,7 @@
 import type { DirectoryInfo } from '../types';
 import { formatBytes } from '../utils';
 import { EmptyState } from './EmptyState';
+import { RowButton } from './RowButton';
 
 interface Props {
 	directories: DirectoryInfo[] | null;
@@ -125,7 +126,7 @@ export function SizeChart({ directories, totalBytes, onReveal, isLoading }: Prop
 		if (items.length === 0) {
 			return (
 				<div class="size-chart empty">
-					{!isLoading && <EmptyState message="No data available." />}
+					{!isLoading && <EmptyState variant="inline" message="No data available." />}
 				</div>
 			);
 		}
@@ -136,9 +137,8 @@ export function SizeChart({ directories, totalBytes, onReveal, isLoading }: Prop
 			<div class="size-chart">
 				{items.map((item) => (
 					<div key={item.dir.absolutePath} class="size-chart-group">
-						<button
-							type="button"
-							class="tmx-row size-chart-row parent"
+						<RowButton
+							class="size-chart-row parent"
 							onClick={() => onReveal(item.dir.absolutePath)}
 						>
 							<div
@@ -150,19 +150,18 @@ export function SizeChart({ directories, totalBytes, onReveal, isLoading }: Prop
 								{formatBytes(item.bytes)}
 								<span class="size-chart-percent">{formatPercent(item.percent)}</span>
 							</div>
-						</button>
+						</RowButton>
 						{item.children?.map((child) => (
-							<button
+							<RowButton
 								key={child.dir.absolutePath}
-								type="button"
-								class="tmx-row size-chart-row child"
+								class="size-chart-row child"
 								onClick={() => onReveal(child.dir.absolutePath)}
 							>
 								<span class="size-chart-name">{child.name}</span>
 								<div class="size-chart-value">
 									{formatBytes(child.bytes)}
 								</div>
-							</button>
+							</RowButton>
 						))}
 					</div>
 				))}
@@ -173,7 +172,7 @@ export function SizeChart({ directories, totalBytes, onReveal, isLoading }: Prop
 	// No data available
 	return (
 		<div class="size-chart empty">
-			{!isLoading && <EmptyState message="No data available." />}
+			{!isLoading && <EmptyState variant="inline" message="No data available." />}
 		</div>
 	);
 }

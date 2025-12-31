@@ -100,16 +100,6 @@ body {
   outline-offset: 2px;
 }
 
-/* Loading State */
-.app.loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  opacity: 0.7;
-}
-
 /* Card primitives */
 .tmx-header-card {
   display: flex;
@@ -421,14 +411,23 @@ button:disabled {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px;
   text-align: center;
-  min-height: 400px;
 }
 
-.tmx-panel-card .empty-state {
+.empty-state.variant-page {
+  padding: 48px 24px;
+  min-height: 400px;
+  flex: 1;
+}
+
+.empty-state.variant-panel {
   min-height: 240px;
   padding: 36px 24px;
+}
+
+.empty-state.variant-inline {
+  padding: 18px 16px;
+  opacity: 0.8;
 }
 
 .empty-state h2 {
