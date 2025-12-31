@@ -2,43 +2,29 @@
 
 **Minimal VS Code productivity extension for workspace awareness**
 
-Termetrix unifies common developer utilities into a minimal, low-noise status bar experience. Stay aware of workspace disk usage, code selection metrics, and workflow access without clutter or performance degradation.
+Termetrix keeps a low-noise pulse on your workspace: disk usage, a quick directory breakdown, and a simple selection LOC counter — without heavy background watchers.
 
 ## Features
 
-### 📊 Workspace Size Monitoring
-- Real-time workspace size calculation displayed in status bar
-- Recursive directory scanning with performance-first design
-- Soft limits (10s, 50000 directories) prevent performance degradation
-- Top 10 heaviest directories tracked at any depth
-- Includes `node_modules`, `target`, and other typically hidden directories
+### Workspace Size (Status Bar)
+- Shows workspace size in the status bar (`$(database)`)
+- Shows a spinner while scanning and a warning icon if a scan was incomplete
+- Tooltip includes total size, top folders, scan duration, and warnings
 
-### 📈 7-Day Growth Tracking
-- Daily snapshots automatically saved
-- Visual trend with Unicode sparkline (▁▂▃▄▅▆▇█)
-- Growth calculation over last 7 days
-- All data stored per workspace root
+### Directory Navigator Panel (Webview)
+- Two tabs: **Size** and **LOC**
+- **Size**: click a row to reveal the folder in Explorer/Finder
+- **LOC**: language breakdown + top files; click a file to open it in the editor (not inside the webview tab group)
 
 ### 🔢 Selection Line Counter
 - Displays selected lines count when text is selected
 - Updates in real-time as selection changes
 - Minimal overhead, only shown when relevant
 
-### 📂 Directory Navigator Panel
-- Webview panel with two tabs: **Size** and **LOC**
-- Top 10 heaviest directories (any depth) + current level subdirectories
-- Breadcrumb navigation with Back/Home buttons
-- Right-click context menu:
-  - Reveal in Explorer
-  - Open Terminal
-  - Copy full path
-
-### 📝 Lines of Code Analysis
-- Identify oversized files that need refactoring
-- Breakdown by programming language with visual bars
-- Top 10 files by line count
-- Supports 20+ languages (TypeScript, Python, Rust, Go, Java, etc.)
-- Excludes build artifacts (node_modules, dist, .git)
+### Lines of Code (LOC)
+- Counts non-empty lines in common source files
+- Respects root `.gitignore` and skips common build/deps folders (like `node_modules`, `dist`, `.git`, `out`)
+- Top 10 files by line count + per-language bars
 
 ### 🖥️ One-Click Terminal Access
 - Dedicated terminal button in status bar
@@ -48,10 +34,10 @@ Termetrix unifies common developer utilities into a minimal, low-noise status ba
 ### ⚙️ Advanced Features
 - **Multi-root workspace support**: Automatically switches context based on active file
 - **Controlled concurrency**: 64 parallel filesystem operations (configurable)
-- **Smart caching**: In-memory + persistent (globalState) cache
+- **Caching**: Keeps the latest scan result in memory for fast UI/tooltip updates
 - **Auto-refresh** (optional): Configurable interval scanning
 - **Error resilience**: Permission errors don't fail entire scan
-- **Cancellation support**: Stop scans with Ctrl+C or by switching roots
+- **Cancellation support**: Cancel the VS Code progress notification or stop scans from the panel; switching roots cancels in-flight scans
 
 ## Status Bar Display
 
@@ -69,24 +55,20 @@ Termetrix unifies common developer utilities into a minimal, low-noise status ba
 
 Hover over the workspace size to see:
 - Total workspace size
-- 7-day growth (`+3.1 GB`)
-- Visual trend sparkline
 - Top 3 heaviest directories
-- Last scan time and duration
+- Last scan duration
 - Warnings (incomplete scan, permission errors)
 
 **Example:**
 ```
 Workspace size: 18.2 GB
-Growth (7d): +3.1 GB
-Trend: ▁▂▃▄▆▇█
 
 Top folders:
 - node_modules/.pnpm → 7.2 GB
 - target/debug → 5.9 GB
 - .cache → 1.8 GB
 
-Last scan: 1m ago (1.4s)
+Last scan: 1.4s
 ```
 
 ## Configuration
@@ -111,13 +93,6 @@ All settings are optional and have sensible defaults.
 }
 ```
 
-### UI
-```json
-{
-  "termetrix.ui.showTrend": true
-}
-```
-
 ## Commands
 
 All commands are accessible via Command Palette (Ctrl+Shift+P / Cmd+Shift+P):
@@ -132,11 +107,10 @@ All commands are accessible via Command Palette (Ctrl+Shift+P / Cmd+Shift+P):
 
 Termetrix is designed with performance as a first-class citizen:
 
-- **Streaming**: Uses `fs.promises.opendir()` to avoid loading entire directories into memory
 - **Controlled concurrency**: Semaphore limits parallel operations (default: 64)
 - **Soft limits**: Stops after 10 seconds or 50000 directories
-- **Min-heap**: Efficiently tracks Top N directories
-- **Smart caching**: Avoids redundant scans
+- **Progress throttling**: Updates at most ~5x/sec during scans
+- **In-memory cache**: Webview/tooltip reuse the latest scan result (no extra scan needed)
 - **Debouncing**: 200ms delay when switching between workspace roots
 
 ### Why No File System Watcher?
@@ -150,25 +124,15 @@ File system watchers are intentionally **not** used as primary scan triggers bec
 
 - **TypeScript**: Fully implemented in TypeScript (strict mode)
 - **Preact**: Lightweight UI (~3KB runtime)
-- **esbuild**: Fast bundling with JSX support
+- **Lucide**: Icons via `lucide-preact`
+- **esbuild**: Fast bundling for extension + webview
 - **Node.js**: Native `fs/promises` API
 - **Zero native dependencies**: Pure JavaScript/TypeScript
 
-## Roadmap
+## Notes
 
-### ✅ v0.2 (Current)
-- Persistent snapshots
-- 7-day growth tracking
-- Sparkline visualization
-- Full settings support
-- Auto-refresh (optional)
-- LOC analysis tab
-- Preact webview UI (~25KB bundle)
-
-### 🚀 v1.0 (Planned)
-- Unit test coverage
-- Stability and performance polish
-- Marketplace-ready documentation
+- Disk usage scans are “real disk usage” and do not use `.gitignore`.
+- LOC analysis respects the root `.gitignore` (nested `.gitignore` files are not currently parsed).
 
 ## Development
 
@@ -180,6 +144,12 @@ pnpm install
 ### Build
 ```bash
 pnpm run build
+```
+
+### Typecheck / Lint
+```bash
+pnpm run typecheck
+pnpm run lint
 ```
 
 ### Test
@@ -195,4 +165,4 @@ Contributions are welcome! Please open an issue or pull request.
 
 ---
 
-**Made with ❤️ for developers who care about disk space and code quality**
+**Made for developers who care about disk space and code quality**
