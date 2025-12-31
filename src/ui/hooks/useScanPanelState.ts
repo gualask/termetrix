@@ -13,6 +13,7 @@ interface State {
 	isReady: boolean;
 	viewData: ViewData;
 	deepDirectories: DirectoryInfo[] | null;
+	isDeepScanning: boolean;
 	locResult: LOCResult | null;
 	isCalculatingLOC: boolean;
 	actions: Actions;
@@ -28,6 +29,7 @@ export function useScanPanelState(): State {
 	const [isCalculatingLOC, setIsCalculatingLOC] = useState(false);
 	const [isReady, setIsReady] = useState(false);
 	const [deepDirectories, setDeepDirectories] = useState<DirectoryInfo[] | null>(null);
+	const [isDeepScanning, setIsDeepScanning] = useState(false);
 
 	useEffect(() => {
 		function handleMessage(event: MessageEvent<MessageFromExtension>) {
@@ -37,12 +39,15 @@ export function useScanPanelState(): State {
 				case 'scanStart':
 					setViewData(prev => ({ ...prev, isScanning: true }));
 					setDeepDirectories(null);
+					setIsDeepScanning(false);
 					break;
 				case 'progress':
 					break;
 				case 'update':
 					setIsReady(true);
 					setViewData(message.data);
+					setDeepDirectories(null);
+					setIsDeepScanning(true);
 					postToExtension({ command: 'deepScan' });
 					break;
 				case 'noRoot':
@@ -51,6 +56,8 @@ export function useScanPanelState(): State {
 						isScanning: false,
 						scanResult: undefined
 					});
+					setDeepDirectories(null);
+					setIsDeepScanning(false);
 					break;
 				case 'locCalculating':
 					setIsCalculatingLOC(true);
@@ -61,6 +68,7 @@ export function useScanPanelState(): State {
 					break;
 				case 'deepScanResult':
 					setDeepDirectories(message.data);
+					setIsDeepScanning(false);
 					break;
 			}
 		}
@@ -91,6 +99,7 @@ export function useScanPanelState(): State {
 		isReady,
 		viewData,
 		deepDirectories,
+		isDeepScanning,
 		locResult,
 		isCalculatingLOC,
 		actions: {
@@ -101,4 +110,3 @@ export function useScanPanelState(): State {
 		}
 	};
 }
-

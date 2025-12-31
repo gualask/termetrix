@@ -1,5 +1,6 @@
 import type { DirectoryInfo } from '../types';
 import { formatBytes } from '../utils';
+import { EmptyState } from './EmptyState';
 
 interface Props {
 	directories: DirectoryInfo[] | null;
@@ -124,7 +125,7 @@ export function SizeChart({ directories, totalBytes, onReveal, isLoading }: Prop
 		if (items.length === 0) {
 			return (
 				<div class="size-chart empty">
-					{!isLoading && <p>No data available</p>}
+					{!isLoading && <EmptyState message="No data available." />}
 				</div>
 			);
 		}
@@ -136,7 +137,8 @@ export function SizeChart({ directories, totalBytes, onReveal, isLoading }: Prop
 				{items.map((item) => (
 					<div key={item.dir.absolutePath} class="size-chart-group">
 						<button
-							class="size-chart-row parent"
+							type="button"
+							class="tmx-row size-chart-row parent"
 							onClick={() => onReveal(item.dir.absolutePath)}
 						>
 							<div
@@ -152,7 +154,8 @@ export function SizeChart({ directories, totalBytes, onReveal, isLoading }: Prop
 						{item.children?.map((child) => (
 							<button
 								key={child.dir.absolutePath}
-								class="size-chart-row child"
+								type="button"
+								class="tmx-row size-chart-row child"
 								onClick={() => onReveal(child.dir.absolutePath)}
 							>
 								<span class="size-chart-name">{child.name}</span>
@@ -170,7 +173,7 @@ export function SizeChart({ directories, totalBytes, onReveal, isLoading }: Prop
 	// No data available
 	return (
 		<div class="size-chart empty">
-			{!isLoading && <p>No data available</p>}
+			{!isLoading && <EmptyState message="No data available." />}
 		</div>
 	);
 }

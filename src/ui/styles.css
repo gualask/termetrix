@@ -260,6 +260,27 @@ body {
   cursor: not-allowed;
 }
 
+/* Interactive rows */
+.tmx-row {
+  background: transparent;
+  border: 1px solid transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tmx-row:hover {
+  background: var(--tmx-row-hover, var(--vscode-list-hoverBackground));
+  border-color: var(--tmx-row-hover-border, var(--tmx-border));
+}
+
+.tmx-row:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+  border-color: transparent;
+}
+
 @media (max-width: 520px) {
   .tmx-hero-row {
     align-items: flex-start;
@@ -322,7 +343,6 @@ button:disabled {
 .size-chart.empty {
   align-items: center;
   justify-content: center;
-  opacity: 0.6;
 }
 
 .size-chart-row {
@@ -331,25 +351,8 @@ button:disabled {
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
-  background: transparent;
-  border: 1px solid transparent;
   border-radius: 4px;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
   overflow: hidden;
-}
-
-.size-chart-row:hover {
-  background: var(--tmx-row-hover, var(--vscode-list-hoverBackground));
-  border-color: var(--tmx-row-hover-border, var(--tmx-border));
-}
-
-.size-chart-row:focus-visible {
-  outline: 2px solid var(--vscode-focusBorder);
-  outline-offset: 2px;
-  border-color: transparent;
 }
 
 .size-chart-row.parent {
@@ -502,23 +505,7 @@ button:disabled {
   gap: 12px;
   padding: 8px 8px;
   border-radius: 8px;
-  border: 1px solid transparent;
   width: 100%;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-}
-
-.file-row:hover {
-  background: var(--tmx-row-hover, var(--vscode-list-hoverBackground));
-  border-color: var(--tmx-row-hover-border, var(--tmx-border));
-}
-
-.file-row:focus-visible {
-  outline: 2px solid var(--vscode-focusBorder);
-  outline-offset: 2px;
-  border-color: transparent;
 }
 
 .file-path {
