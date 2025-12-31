@@ -88,7 +88,7 @@ export function SizeView({
 			panelVariant="fixed"
 			panelAriaLabel="Directory breakdown"
 		>
-				{viewData.scanResult?.incomplete && (
+				{viewData.scanResult?.incomplete && !viewData.isScanning && (
 					<div class="warning-banner">⚠ Scan incomplete ({viewData.scanResult.incompleteReason})</div>
 				)}
 

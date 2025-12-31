@@ -1,4 +1,5 @@
 import { Fragment, type ComponentChildren } from 'preact';
+import { Dot } from 'lucide-preact';
 
 export interface PrimaryMetric {
 	title: string;
@@ -45,7 +46,7 @@ export function MetricsHeader({
 						{secondary.map((metric, index) => (
 							<Fragment key={`${metric.title}-${index}`}>
 								<span class="tmx-metric-sep" aria-hidden="true">
-									-
+									<Dot size={16} />
 								</span>
 								<span class="tmx-metric-secondary" title={metric.title}>
 									{metric.icon}
