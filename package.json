@@ -1,7 +1,7 @@
 {
   "name": "termetrix",
   "displayName": "Termetrix",
-  "description": "Minimal VS Code productivity extension for workspace awareness",
+  "description": "Minimal VS Code productivity extension for project awareness",
   "version": "0.2.0",
   "type": "commonjs",
   "publisher": "blazar",
@@ -10,7 +10,7 @@
   },
   "license": "MIT",
   "keywords": [
-    "workspace",
+    "project",
     "disk usage",
     "directory size",
     "productivity",
@@ -38,7 +38,7 @@
       },
       {
         "command": "termetrix.refreshScan",
-        "title": "Termetrix: Refresh Workspace Scan"
+        "title": "Termetrix: Refresh Project Scan"
       },
       {
         "command": "termetrix.openTerminal",
@@ -51,7 +51,7 @@
         "termetrix.autoRefresh.enabled": {
           "type": "boolean",
           "default": false,
-          "description": "Enable automatic workspace scan refresh"
+          "description": "Enable automatic project scan refresh"
         },
         "termetrix.autoRefresh.minutes": {
           "type": "number",
@@ -76,7 +76,7 @@
         "termetrix.scan.rootSwitchDebounceMs": {
           "type": "number",
           "default": 200,
-          "description": "Debounce delay for multi-root workspace switching in milliseconds"
+          "description": "Debounce delay for multi-root project switching in milliseconds"
         }
       }
     }

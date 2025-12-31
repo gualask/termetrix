@@ -1,13 +1,13 @@
 # Termetrix
 
-**Minimal VS Code productivity extension for workspace awareness**
+**Minimal VS Code productivity extension for project awareness**
 
-Termetrix keeps a low-noise pulse on your workspace: disk usage, a quick directory breakdown, and a simple selection LOC counter — without heavy background watchers.
+Termetrix keeps a low-noise pulse on your project: disk usage, a quick directory breakdown, and a simple selection LOC counter — without heavy background watchers.
 
 ## Features
 
-### Workspace Size (Status Bar)
-- Shows workspace size in the status bar (`$(database)`)
+### Project Size (Status Bar)
+- Shows project size in the status bar (`$(database)`)
 - Shows a spinner while scanning and a warning icon if a scan was incomplete
 - Tooltip includes total size, top folders, scan duration, and warnings
 
@@ -28,11 +28,11 @@ Termetrix keeps a low-noise pulse on your workspace: disk usage, a quick directo
 
 ### 🖥️ One-Click Terminal Access
 - Dedicated terminal button in status bar
-- Opens integrated terminal in active workspace
+- Opens integrated terminal in active project
 - Zero latency, zero logic
 
 ### ⚙️ Advanced Features
-- **Multi-root workspace support**: Automatically switches context based on active file
+- **Multi-root support**: Automatically switches project context based on active file
 - **Controlled concurrency**: 64 parallel filesystem operations (configurable)
 - **Caching**: Keeps the latest scan result in memory for fast UI/tooltip updates
 - **Auto-refresh** (optional): Configurable interval scanning
@@ -46,22 +46,22 @@ Termetrix keeps a low-noise pulse on your workspace: disk usage, a quick directo
 ```
 
 - **Terminal icon** - Click to open integrated terminal
-- **Database icon + size** - Workspace size (click to open Directory Navigator)
+- **Database icon + size** - Project size (click to open Directory Navigator)
 - **List icon + number** - Selected lines (shown only when text is selected)
 - **Spinner icon** - Shown during scanning
 - **Warning icon** - Incomplete scan indicator
 
 ## Tooltip Information
 
-Hover over the workspace size to see:
-- Total workspace size
+Hover over the project size to see:
+- Total project size
 - Top 3 heaviest directories
 - Last scan duration
 - Warnings (incomplete scan, permission errors)
 
 **Example:**
 ```
-Workspace size: 18.2 GB
+Project size: 18.2 GB
 
 Top folders:
 - node_modules/.pnpm → 7.2 GB
@@ -98,7 +98,7 @@ All settings are optional and have sensible defaults.
 All commands are accessible via Command Palette (Ctrl+Shift+P / Cmd+Shift+P):
 
 - `Termetrix: Open Directory Navigator` - Open Directory Navigator panel
-- `Termetrix: Refresh Workspace Scan` - Manually trigger workspace scan
+- `Termetrix: Refresh Project Scan` - Manually trigger project scan
 - `Termetrix: Open Terminal` - Open integrated terminal
 
 **Note:** No default keybindings are set to avoid conflicts. You can configure custom keybindings in VS Code settings.
@@ -111,7 +111,7 @@ Termetrix is designed with performance as a first-class citizen:
 - **Soft limits**: Stops after 10 seconds or 50000 directories
 - **Progress throttling**: Updates at most ~5x/sec during scans
 - **In-memory cache**: Webview/tooltip reuse the latest scan result (no extra scan needed)
-- **Debouncing**: 200ms delay when switching between workspace roots
+- **Debouncing**: 200ms delay when switching between project roots
 
 ### Why No File System Watcher?
 

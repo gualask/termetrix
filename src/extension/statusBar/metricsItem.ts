@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { WorkspaceScanner } from '../scanner/workspaceScanner';
+import { ProjectScanner } from '../scanner/projectScanner';
 import { ScanCache } from '../cache/scanCache';
 import { ScanProgress } from '../types';
 import { formatBytes } from '../utils/formatters';
@@ -7,7 +7,7 @@ import { buildMetricsTooltip, getTooltipOptionsFromConfig } from '../utils/toolt
 import { ScannerEventSubscription } from '../utils/scannerEvents';
 
 /**
- * Metrics status bar item - shows workspace size and selected LOC count
+ * Metrics status bar item - shows project size and selected LOC count
  */
 export class MetricsStatusBarItem implements vscode.Disposable {
 	private statusBarItem: vscode.StatusBarItem;
@@ -16,7 +16,7 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 	private eventSubscription: ScannerEventSubscription;
 
 	constructor(
-		private scanner: WorkspaceScanner,
+		private scanner: ProjectScanner,
 		private cache: ScanCache
 	) {
 		this.statusBarItem = vscode.window.createStatusBarItem(
@@ -70,18 +70,18 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 
 		this.statusBarItem.text = text;
 		// Simple static tooltip during scanning (no flickering)
-		this.statusBarItem.tooltip = 'Scanning workspace...';
+		this.statusBarItem.tooltip = 'Scanning project...';
 	}
 
 	/**
-	 * Update workspace size display
+	 * Update project size display
 	 */
 	update(): void {
 		const rootPath = this.scanner.getCurrentRoot();
 
 		if (!rootPath) {
 			this.statusBarItem.text = '$(database) —';
-			this.statusBarItem.tooltip = 'No workspace root detected';
+			this.statusBarItem.tooltip = 'No project root detected';
 			return;
 		}
 
@@ -89,7 +89,7 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 
 		if (!scanResult) {
 			this.statusBarItem.text = '$(database) ...';
-			this.statusBarItem.tooltip = 'Scanning workspace...';
+			this.statusBarItem.tooltip = 'Scanning project...';
 			return;
 		}
 

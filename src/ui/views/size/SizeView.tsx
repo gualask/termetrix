@@ -28,7 +28,7 @@ export function SizeView({
 }: Props) {
 	const header = (
 		<MetricsHeader
-			ariaLabel="Workspace size"
+			ariaLabel="Project size"
 			metricsAriaLabel="Scan summary"
 			primary={{
 				title: 'Total size',
@@ -104,7 +104,7 @@ export function SizeView({
 						<EmptyState
 							variant="panel"
 							message="No data yet."
-							hint="Use the refresh button in the header to scan your workspace."
+							hint="Use the refresh button in the header to scan your project."
 						/>
 					)
 				)}

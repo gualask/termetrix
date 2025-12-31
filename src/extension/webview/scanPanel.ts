@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { WorkspaceScanner } from '../scanner/workspaceScanner';
+import { ProjectScanner } from '../scanner/projectScanner';
 import { ScanCache } from '../cache/scanCache';
 import { ScanProgress } from '../types';
 import { LOCScanner } from '../scanner/locScanner';
 import { ScannerEventSubscription } from '../utils/scannerEvents';
 
 /**
- * Webview panel orchestrator for workspace scanning visualization
+ * Webview panel orchestrator for project scanning visualization
  */
 export class ScanPanel {
 	private panel: vscode.WebviewPanel | undefined;
@@ -20,7 +20,7 @@ export class ScanPanel {
 	private preferredEditorColumn: vscode.ViewColumn | undefined;
 
 	constructor(
-		private scanner: WorkspaceScanner,
+		private scanner: ProjectScanner,
 		private cache: ScanCache,
 		private extensionUri: vscode.Uri
 	) {

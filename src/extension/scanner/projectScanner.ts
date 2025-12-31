@@ -8,9 +8,9 @@ import { Semaphore } from './semaphore';
 import { configManager } from '../utils/configManager';
 
 /**
- * Workspace scanner with soft limits and controlled concurrency
+ * Project scanner with soft limits and controlled concurrency
  */
-export class WorkspaceScanner extends EventEmitter {
+export class ProjectScanner extends EventEmitter {
 	private currentRoot: string | undefined;
 	private currentScanCancellation: vscode.CancellationTokenSource | undefined;
 	private debounceTimer: NodeJS.Timeout | undefined;
@@ -129,7 +129,7 @@ export class WorkspaceScanner extends EventEmitter {
 	}
 
 	/**
-	 * Get current workspace root
+	 * Get current project root
 	 */
 	getCurrentRoot(): string | undefined {
 		return this.currentRoot;
@@ -143,7 +143,7 @@ export class WorkspaceScanner extends EventEmitter {
 	}
 
 	/**
-	 * Handle editor change (multi-root workspace)
+	 * Handle editor change (multi-root projects)
 	 */
 	handleEditorChange(editor: vscode.TextEditor): void {
 		const newRoot = this.getRootForEditor(editor);
@@ -158,7 +158,7 @@ export class WorkspaceScanner extends EventEmitter {
 	}
 
 	/**
-	 * Perform workspace scan
+	 * Perform project scan
 	 */
 	async scan(rootOverride?: string): Promise<ExtendedScanResult | undefined> {
 		const rootPath = rootOverride || this.currentRoot;
@@ -184,7 +184,7 @@ export class WorkspaceScanner extends EventEmitter {
 			const result = await vscode.window.withProgress(
 				{
 					location: vscode.ProgressLocation.Window,
-					title: 'Scanning workspace...',
+					title: 'Scanning project...',
 					cancellable: true
 				},
 				async (_progress, token) => {
@@ -383,8 +383,8 @@ export class WorkspaceScanner extends EventEmitter {
 	 * Get root folder for an editor
 	 */
 	private getRootForEditor(editor: vscode.TextEditor): string | undefined {
-		const workspaceFolder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
-		return workspaceFolder?.uri.fsPath;
+		const projectFolder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
+		return projectFolder?.uri.fsPath;
 	}
 
 	/**

@@ -6,7 +6,7 @@ interface TooltipOptions {
 }
 
 /**
- * Builds tooltip content for workspace metrics
+ * Builds tooltip content for project metrics
  * Single responsibility: formatting scan results into readable tooltip
  */
 export function buildMetricsTooltip(
@@ -20,7 +20,7 @@ export function buildMetricsTooltip(
 	const lines: string[] = [];
 
 	// Size summary
-	lines.push(`Workspace size: ${formatBytes(scanResult.totalBytes)}`);
+	lines.push(`Project size: ${formatBytes(scanResult.totalBytes)}`);
 	lines.push('');
 
 	// Top directories

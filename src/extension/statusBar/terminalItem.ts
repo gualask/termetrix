@@ -26,18 +26,18 @@ export class TerminalStatusBarItem implements vscode.Disposable {
 	 * Open integrated terminal
 	 */
 	openTerminal(): void {
-		// Get active workspace folder
-		const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+		// Get active project folder
+		const projectFolder = vscode.workspace.workspaceFolders?.[0];
 
-		if (workspaceFolder) {
-			// Create terminal in workspace folder
+		if (projectFolder) {
+			// Create terminal in project folder
 			const terminal = vscode.window.createTerminal({
-				cwd: workspaceFolder.uri.fsPath,
+				cwd: projectFolder.uri.fsPath,
 				name: 'Termetrix'
 			});
 			terminal.show();
 		} else {
-			// No workspace folder, just create a terminal
+			// No project folder, just create a terminal
 			const terminal = vscode.window.createTerminal('Termetrix');
 			terminal.show();
 		}

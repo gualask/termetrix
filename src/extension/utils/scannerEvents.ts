@@ -1,4 +1,4 @@
-import type { WorkspaceScanner } from '../scanner/workspaceScanner';
+import type { ProjectScanner } from '../scanner/projectScanner';
 import type { ScanProgress } from '../types';
 
 export interface ScanEventHandlers {
@@ -21,7 +21,7 @@ export class ScannerEventSubscription {
 	private boundHandlers: BoundHandlers;
 
 	constructor(
-		private scanner: WorkspaceScanner,
+		private scanner: ProjectScanner,
 		handlers: ScanEventHandlers
 	) {
 		// Bind handlers with no-op fallbacks
@@ -51,7 +51,7 @@ export class ScannerEventSubscription {
  * Helper to create a subscription with automatic cleanup
  */
 export function subscribeTo(
-	scanner: WorkspaceScanner,
+	scanner: ProjectScanner,
 	handlers: ScanEventHandlers
 ): ScannerEventSubscription {
 	return new ScannerEventSubscription(scanner, handlers);

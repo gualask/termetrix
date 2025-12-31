@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
 import { TerminalStatusBarItem } from './statusBar/terminalItem';
 import { MetricsStatusBarItem } from './statusBar/metricsItem';
-import { WorkspaceScanner } from './scanner/workspaceScanner';
+import { ProjectScanner } from './scanner/projectScanner';
 import { ScanCache } from './cache/scanCache';
 import { ScanPanel } from './webview/scanPanel';
 
 let terminalItem: TerminalStatusBarItem;
 let metricsItem: MetricsStatusBarItem;
-let scanner: WorkspaceScanner;
+let scanner: ProjectScanner;
 let cache: ScanCache;
 let scanPanel: ScanPanel;
 
@@ -18,7 +18,7 @@ export function activate(context: vscode.ExtensionContext) {
 	cache = new ScanCache();
 
 	// Initialize scanner
-	scanner = new WorkspaceScanner(cache);
+	scanner = new ProjectScanner(cache);
 
 	// Initialize scan panel
 	scanPanel = new ScanPanel(scanner, cache, context.extensionUri);
@@ -57,7 +57,7 @@ export function activate(context: vscode.ExtensionContext) {
 		metricsItem.update();
 	});
 
-	// Watch for active editor changes (multi-root workspace handling)
+	// Watch for active editor changes (multi-root project handling)
 	vscode.window.onDidChangeActiveTextEditor((editor) => {
 		if (editor) {
 			scanner.handleEditorChange(editor);
