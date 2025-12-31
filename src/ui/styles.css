@@ -138,16 +138,10 @@ body {
   gap: 10px;
   color: var(--vscode-foreground);
   background: rgba(0, 0, 0, 0.14);
-  pointer-events: auto;
   opacity: 0.9;
 }
 
-.tmx-hero,
-.error-boundary-content {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+.tmx-hero { display: flex; flex-direction: column; gap: 10px; }
 
 .tmx-hero-row {
   display: flex;
@@ -259,7 +253,6 @@ body {
 }
 
 .warning-banner {
-  padding: 10px 14px;
   background: var(--vscode-inputValidation-warningBackground);
   border-color: var(--vscode-inputValidation-warningBorder);
   color: var(--vscode-inputValidation-warningForeground);
@@ -300,23 +293,6 @@ body {
 }
 
 .error-banner-dismiss:hover { opacity: 1; background: rgba(255, 255, 255, 0.1); }
-
-/* Buttons */
-button {
-  padding: 6px 12px;
-  background: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border: none;
-  border-radius: 2px;
-  cursor: pointer;
-  font-size: 13px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-button:hover { background: var(--vscode-button-hoverBackground); }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Size Chart */
 .size-chart {
@@ -464,6 +440,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 .error-boundary-content {
+  display: flex;
+  flex-direction: column;
   max-width: 500px;
   text-align: center;
   align-items: center;
