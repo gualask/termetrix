@@ -110,8 +110,8 @@ body {
   opacity: 0.7;
 }
 
-/* Size Header */
-.size-header {
+/* Card primitives */
+.tmx-header-card {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -121,17 +121,27 @@ body {
   border-radius: 12px;
 }
 
-.size-panel {
+.tmx-panel-card {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 10px;
-  overflow: hidden;
   position: relative;
   background: var(--tmx-surface-1);
   border: 1px solid var(--tmx-border);
   border-radius: 12px;
+  min-height: 0;
+}
+
+.tmx-panel-fixed {
+  gap: 10px;
+  padding: 10px;
+  overflow: hidden;
+}
+
+.tmx-panel-scroll {
+  gap: 12px;
+  padding: 12px;
+  overflow-y: auto;
 }
 
 .tmx-panel-overlay {
@@ -398,29 +408,6 @@ button:disabled {
 }
 
 /* LOC View */
-.loc-header {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px 14px 12px;
-  background: var(--tmx-surface-2);
-  border: 1px solid var(--tmx-border);
-  border-radius: 12px;
-}
-
-.loc-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  overflow-y: auto;
-  position: relative;
-  background: var(--tmx-surface-1);
-  border: 1px solid var(--tmx-border);
-  border-radius: 12px;
-}
-
 .loc-primary-suffix {
   opacity: 0.75;
   font-size: 12px;
@@ -436,7 +423,7 @@ button:disabled {
   min-height: 400px;
 }
 
-.loc-panel .empty-state {
+.tmx-panel-card .empty-state {
   min-height: 240px;
   padding: 36px 24px;
 }

@@ -1,5 +1,7 @@
 import { FileText, FileX, Files, Loader2, Play, RefreshCw } from 'lucide-preact';
 import type { LOCResult } from '../types';
+import { IconButton } from './IconButton';
+import { PanelOverlay } from './PanelOverlay';
 
 interface Props {
 	locResult: LOCResult | null;
@@ -20,7 +22,7 @@ export function LocView({ locResult, isCalculating, onCalculate, onOpenFile }: P
 
 	return (
 		<>
-			<header class="loc-header" aria-label="Lines of code">
+			<header class="tmx-header-card" aria-label="Lines of code">
 				<div class="tmx-hero">
 					<div class="tmx-hero-row">
 						<div class="tmx-metrics-line" aria-label="LOC summary">
@@ -42,12 +44,11 @@ export function LocView({ locResult, isCalculating, onCalculate, onOpenFile }: P
 						</div>
 
 						<div class="tmx-metric-actions">
-							<button
-								class="tmx-icon-button"
+							<IconButton
 								onClick={onCalculate}
 								disabled={isCalculating}
 								title={hasData ? 'Recalculate LOC' : 'Calculate LOC'}
-								aria-label={hasData ? 'Recalculate LOC' : 'Calculate LOC'}
+								ariaLabel={hasData ? 'Recalculate LOC' : 'Calculate LOC'}
 							>
 								{isCalculating ? (
 									<Loader2 size={16} class="spinner" />
@@ -56,7 +57,7 @@ export function LocView({ locResult, isCalculating, onCalculate, onOpenFile }: P
 								) : (
 									<Play size={16} />
 								)}
-							</button>
+							</IconButton>
 						</div>
 					</div>
 
@@ -66,7 +67,7 @@ export function LocView({ locResult, isCalculating, onCalculate, onOpenFile }: P
 				</div>
 			</header>
 
-			<section class="loc-panel" aria-label="LOC details">
+			<section class="tmx-panel-card tmx-panel-scroll" aria-label="LOC details">
 				{hasData ? (
 					<>
 						<section class="section">
@@ -114,10 +115,7 @@ export function LocView({ locResult, isCalculating, onCalculate, onOpenFile }: P
 				)}
 
 				{isCalculating && (
-					<div class="tmx-panel-overlay" aria-live="polite">
-						<Loader2 size={28} class="spinner" />
-						<span>Calculating…</span>
-					</div>
+					<PanelOverlay label="Calculating…" />
 				)}
 			</section>
 		</>
