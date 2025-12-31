@@ -1,7 +1,7 @@
-import type { DirectoryInfo } from '../types';
-import { formatBytes } from '../utils';
-import { EmptyState } from './EmptyState';
-import { RowButton } from './RowButton';
+import type { DirectoryInfo } from '../../types';
+import { formatBytes } from '../../utils';
+import { EmptyState } from '../../components/EmptyState';
+import { RowButton } from '../../components/RowButton';
 
 interface Props {
 	directories: DirectoryInfo[] | null;

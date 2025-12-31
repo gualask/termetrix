@@ -25,4 +25,3 @@ export function RowButton({ class: className, onClick, disabled, title, ariaLabe
 		</button>
 	);
 }
-

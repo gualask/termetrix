@@ -22,4 +22,3 @@ export function IconButton({ onClick, disabled, title, ariaLabel, children }: Pr
 		</button>
 	);
 }
-

@@ -24,4 +24,3 @@ export function ViewLayout({ viewClass, header, panelVariant, panelAriaLabel, ch
 		</div>
 	);
 }
-

@@ -1,8 +1,8 @@
 import { useState } from 'preact/hooks';
 import { Loader2 } from 'lucide-preact';
 import { TabBar, type Tab } from './components/TabBar';
-import { LocView } from './components/LocView';
-import { SizeView } from './components/SizeView';
+import { LocView } from './views/loc/LocView';
+import { SizeView } from './views/size/SizeView';
 import { EmptyState } from './components/EmptyState';
 import { useScanPanelState } from './hooks/useScanPanelState';
 

@@ -12,4 +12,3 @@ export function PanelOverlay({ label }: Props) {
 		</div>
 	);
 }
-

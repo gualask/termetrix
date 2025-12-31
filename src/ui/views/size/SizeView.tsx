@@ -1,12 +1,12 @@
 import { Folder, HardDrive, RefreshCw, Square, Timer } from 'lucide-preact';
-import type { DirectoryInfo, ViewData } from '../types';
-import { formatBytes } from '../utils';
+import type { DirectoryInfo, ViewData } from '../../types';
+import { formatBytes } from '../../utils';
 import { SizeChart } from './SizeChart';
-import { IconButton } from './IconButton';
-import { PanelOverlay } from './PanelOverlay';
-import { EmptyState } from './EmptyState';
-import { ViewLayout } from './ViewLayout';
-import { MetricsHeader } from './MetricsHeader';
+import { IconButton } from '../../components/IconButton';
+import { PanelOverlay } from '../../components/PanelOverlay';
+import { EmptyState } from '../../components/EmptyState';
+import { ViewLayout } from '../../components/ViewLayout';
+import { MetricsHeader } from '../../components/MetricsHeader';
 
 interface Props {
 	viewData: ViewData;

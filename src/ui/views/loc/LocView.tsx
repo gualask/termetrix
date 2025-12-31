@@ -1,11 +1,11 @@
 import { FileText, FileX, Files, Loader2, Play, RefreshCw } from 'lucide-preact';
-import type { LOCResult } from '../types';
-import { IconButton } from './IconButton';
-import { PanelOverlay } from './PanelOverlay';
-import { EmptyState } from './EmptyState';
-import { ViewLayout } from './ViewLayout';
-import { RowButton } from './RowButton';
-import { MetricsHeader } from './MetricsHeader';
+import type { LOCResult } from '../../types';
+import { IconButton } from '../../components/IconButton';
+import { PanelOverlay } from '../../components/PanelOverlay';
+import { EmptyState } from '../../components/EmptyState';
+import { ViewLayout } from '../../components/ViewLayout';
+import { RowButton } from '../../components/RowButton';
+import { MetricsHeader } from '../../components/MetricsHeader';
 
 interface Props {
 	locResult: LOCResult | null;
