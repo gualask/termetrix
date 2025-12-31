@@ -1,0 +1,562 @@
+/**
+ * Termetrix Webview Styles
+ */
+
+/* Reset & Base */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-foreground);
+  background-color: var(--tmx-canvas, var(--vscode-editor-background));
+}
+
+/* Theme-derived surfaces (2-level UI: canvas + cards) */
+:root {
+  --tmx-canvas: var(--vscode-editor-background);
+  --tmx-surface-1: var(--vscode-editorWidget-background, var(--vscode-sideBar-background));
+  --tmx-surface-2: var(--vscode-editorWidget-background, var(--vscode-sideBar-background));
+  --tmx-border: var(--vscode-panel-border);
+}
+
+@supports (color: color-mix(in srgb, white 50%, black)) {
+  :root {
+    --tmx-surface-1: color-mix(in srgb, var(--tmx-canvas) 94%, var(--vscode-foreground) 6%);
+    --tmx-surface-2: color-mix(in srgb, var(--tmx-canvas) 90%, var(--vscode-foreground) 10%);
+    --tmx-border: color-mix(in srgb, var(--vscode-panel-border) 70%, var(--vscode-foreground) 30%);
+    --tmx-row-hover: color-mix(in srgb, var(--tmx-surface-1) 82%, var(--vscode-focusBorder) 18%);
+    --tmx-row-hover-border: color-mix(in srgb, var(--tmx-border) 60%, var(--vscode-focusBorder) 40%);
+  }
+}
+
+/* App Layout */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  overflow: hidden;
+  gap: 12px;
+}
+
+.content.size-view,
+.content.loc-view {
+  gap: 16px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--tmx-border);
+  background: var(--tmx-canvas);
+}
+
+.tabs button {
+  flex: 1;
+  background: var(--tmx-surface-1);
+  border: 1px solid var(--tmx-border);
+  padding: 10px 12px;
+  cursor: pointer;
+  color: var(--vscode-foreground);
+  opacity: 0.85;
+  transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 10px;
+  position: relative;
+}
+
+.tabs button:hover {
+  opacity: 1;
+  background: var(--tmx-surface-2);
+}
+
+.tabs button.active {
+  opacity: 1;
+  background: var(--tmx-surface-2);
+  border-color: var(--vscode-focusBorder);
+  font-weight: 600;
+}
+
+.tabs button:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+/* Loading State */
+.app.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  opacity: 0.7;
+}
+
+/* Size Header */
+.size-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 14px 12px;
+  background: var(--tmx-surface-2);
+  border: 1px solid var(--tmx-border);
+  border-radius: 12px;
+}
+
+.size-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  overflow: hidden;
+  position: relative;
+  background: var(--tmx-surface-1);
+  border: 1px solid var(--tmx-border);
+  border-radius: 12px;
+}
+
+.tmx-panel-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--vscode-foreground);
+  background: rgba(0, 0, 0, 0.14);
+  pointer-events: auto;
+  opacity: 0.9;
+}
+
+.tmx-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tmx-hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tmx-metrics-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+
+.tmx-metric-primary {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tmx-metric-primaryIcon {
+  transform: translateY(2px);
+}
+
+.tmx-metric-primaryValue {
+  font-size: 22px;
+  line-height: 1.1;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tmx-metric-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.8;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tmx-metric-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tmx-caption {
+  display: block;
+  opacity: 0.75;
+  font-size: 12px;
+}
+
+.tmx-metric-sep {
+  opacity: 0.5;
+}
+
+.tmx-icon-button {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: 1px solid var(--tmx-border);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, transform 0.06s ease;
+}
+
+.tmx-icon-button:hover:not(:disabled) {
+  background: var(--vscode-button-hoverBackground);
+}
+
+.tmx-icon-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.tmx-icon-button:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.tmx-icon-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 520px) {
+  .tmx-hero-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .tmx-metric-actions {
+    align-self: flex-end;
+  }
+
+  .tmx-metric-primaryValue {
+    font-size: 20px;
+  }
+}
+
+/* Warning Banner */
+.warning-banner {
+  margin: 0;
+  padding: 10px 14px;
+  background: var(--vscode-inputValidation-warningBackground);
+  border-left: 3px solid var(--vscode-inputValidation-warningBorder);
+  color: var(--vscode-inputValidation-warningForeground);
+  font-size: 13px;
+  border-radius: 8px;
+}
+
+/* Buttons */
+button {
+  padding: 6px 12px;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+button:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Size Chart */
+.size-chart {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.size-chart.empty {
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+}
+
+.size-chart-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.size-chart-row:hover {
+  background: var(--tmx-row-hover, var(--vscode-list-hoverBackground));
+  border-color: var(--tmx-row-hover-border, var(--tmx-border));
+}
+
+.size-chart-row:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+  border-color: transparent;
+}
+
+.size-chart-row.parent {
+  font-weight: 500;
+}
+
+.size-chart-row.child {
+  padding-left: 24px;
+  opacity: 0.85;
+  font-size: 0.95em;
+}
+
+.size-chart-row.child .size-chart-name::before {
+  content: "└ ";
+  opacity: 0.5;
+}
+
+.size-chart-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: var(--vscode-progressBar-background);
+  opacity: 0.25;
+  border-radius: 4px;
+  transition: width 0.2s ease;
+}
+
+.size-chart-row:hover .size-chart-bar {
+  opacity: 0.32;
+}
+
+.size-chart-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--vscode-editor-font-family);
+  position: relative;
+  z-index: 1;
+}
+
+.size-chart-value {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.size-chart-percent {
+  opacity: 0.6;
+  margin-left: 4px;
+}
+
+/* LOC View */
+.loc-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 14px 12px;
+  background: var(--tmx-surface-2);
+  border: 1px solid var(--tmx-border);
+  border-radius: 12px;
+}
+
+.loc-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  overflow-y: auto;
+  position: relative;
+  background: var(--tmx-surface-1);
+  border: 1px solid var(--tmx-border);
+  border-radius: 12px;
+}
+
+.loc-primary-suffix {
+  opacity: 0.75;
+  font-size: 12px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  min-height: 400px;
+}
+
+.loc-panel .empty-state {
+  min-height: 240px;
+  padding: 36px 24px;
+}
+
+.empty-state h2 {
+  margin: 16px 0 8px;
+  font-size: 1.4em;
+}
+
+.empty-state p {
+  margin: 8px 0;
+  opacity: 0.8;
+}
+
+.empty-state .hint {
+  margin-top: 16px;
+  font-size: 0.9em;
+  opacity: 0.7;
+}
+
+.section {
+  margin-bottom: 32px;
+}
+
+.section h4 {
+  margin: 0 0 12px 0;
+  font-size: 1.1em;
+  opacity: 0.9;
+}
+
+.language-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.bar-container {
+  height: 20px;
+  background: var(--vscode-input-background);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  background: var(--vscode-charts-blue);
+  transition: width 0.3s ease;
+}
+
+.lang-name {
+  min-width: 100px;
+  font-weight: 500;
+}
+
+.lang-count {
+  min-width: 80px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.lang-percent {
+  min-width: 50px;
+  text-align: right;
+  opacity: 0.7;
+  font-size: 0.9em;
+  font-variant-numeric: tabular-nums;
+}
+
+.file-row {
+  appearance: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  width: 100%;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.file-row:hover {
+  background: var(--tmx-row-hover, var(--vscode-list-hoverBackground));
+  border-color: var(--tmx-row-hover-border, var(--tmx-border));
+}
+
+.file-row:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+  border-color: transparent;
+}
+
+.file-path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--vscode-editor-font-family);
+  font-size: 0.95em;
+}
+
+.file-lines {
+  margin-left: 16px;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

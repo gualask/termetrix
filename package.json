@@ -1,0 +1,107 @@
+{
+  "name": "termetrix",
+  "displayName": "Termetrix",
+  "description": "Minimal VS Code productivity extension for workspace awareness",
+  "version": "0.2.0",
+  "type": "commonjs",
+  "publisher": "blazar",
+  "author": {
+    "name": "Blazar"
+  },
+  "license": "MIT",
+  "keywords": [
+    "workspace",
+    "disk usage",
+    "directory size",
+    "productivity",
+    "terminal",
+    "status bar",
+    "file explorer",
+    "developer tools"
+  ],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Visualization"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "termetrix.openScanPanel",
+        "title": "Termetrix: Open Directory Navigator"
+      },
+      {
+        "command": "termetrix.refreshScan",
+        "title": "Termetrix: Refresh Workspace Scan"
+      },
+      {
+        "command": "termetrix.openTerminal",
+        "title": "Termetrix: Open Terminal"
+      }
+    ],
+    "configuration": {
+      "title": "Termetrix",
+      "properties": {
+        "termetrix.autoRefresh.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable automatic workspace scan refresh"
+        },
+        "termetrix.autoRefresh.minutes": {
+          "type": "number",
+          "default": 10,
+          "description": "Refresh interval in minutes"
+        },
+        "termetrix.scan.maxDurationSeconds": {
+          "type": "number",
+          "default": 10,
+          "description": "Maximum scan duration in seconds"
+        },
+        "termetrix.scan.maxDirectories": {
+          "type": "number",
+          "default": 50000,
+          "description": "Maximum number of directories to scan"
+        },
+        "termetrix.scan.concurrentOperations": {
+          "type": "number",
+          "default": 64,
+          "description": "Number of parallel filesystem operations"
+        },
+        "termetrix.scan.rootSwitchDebounceMs": {
+          "type": "number",
+          "default": 200,
+          "description": "Debounce delay for multi-root workspace switching in milliseconds"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run build:prod && pnpm run typecheck && pnpm run lint",
+    "build": "node -e \"require('fs').rmSync('out', { recursive: true, force: true })\" && node esbuild.mjs",
+    "build:prod": "node -e \"require('fs').rmSync('out', { recursive: true, force: true })\" && node esbuild.mjs --production",
+    "typecheck": "tsc -p tsconfig.extension.json --noEmit && tsc -p src/ui/tsconfig.json --noEmit",
+    "pretest": "pnpm run build && pnpm run lint && pnpm run typecheck",
+    "lint": "eslint src --ext .ts,.tsx",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^25.0.3",
+    "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^2.3.8",
+    "esbuild": "^0.27.2",
+    "eslint": "^9.39.2",
+    "preact": "^10.28.1",
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^8.50.1"
+  },
+  "dependencies": {
+    "lucide-preact": "^0.562.0"
+  }
+}
