@@ -9,7 +9,7 @@ Termetrix keeps a low-noise pulse on your project: disk usage, a quick directory
 ### Project Size (Status Bar)
 - Shows project size in the status bar (`$(database)`)
 - Shows a spinner while scanning and a warning icon if a scan was incomplete
-- Tooltip includes total size, top folders, scan duration, and warnings
+- Click to open the Directory Navigator panel for more metrics
 
 ### Directory Navigator Panel (Webview)
 - Two tabs: **Size** and **LOC**
@@ -34,7 +34,7 @@ Termetrix keeps a low-noise pulse on your project: disk usage, a quick directory
 ### ⚙️ Advanced Features
 - **Multi-root support**: Automatically switches project context based on active file
 - **Controlled concurrency**: 64 parallel filesystem operations (configurable)
-- **Caching**: Keeps the latest scan result in memory for fast UI/tooltip updates
+- **Caching**: Keeps the latest scan result in memory for fast UI updates
 - **Auto-refresh** (optional): Configurable interval scanning
 - **Error resilience**: Permission errors don't fail entire scan
 - **Cancellation support**: Cancel the VS Code progress notification or stop scans from the panel; switching roots cancels in-flight scans
@@ -50,26 +50,6 @@ Termetrix keeps a low-noise pulse on your project: disk usage, a quick directory
 - **List icon + number** - Selected lines (shown only when text is selected)
 - **Spinner icon** - Shown during scanning
 - **Warning icon** - Incomplete scan indicator
-
-## Tooltip Information
-
-Hover over the project size to see:
-- Total project size
-- Top 3 heaviest directories
-- Last scan duration
-- Warnings (incomplete scan, permission errors)
-
-**Example:**
-```
-Project size: 18.2 GB
-
-Top folders:
-- node_modules/.pnpm → 7.2 GB
-- target/debug → 5.9 GB
-- .cache → 1.8 GB
-
-Last scan: 1.4s
-```
 
 ## Configuration
 
@@ -107,10 +87,10 @@ All commands are accessible via Command Palette (Ctrl+Shift+P / Cmd+Shift+P):
 
 Termetrix is designed with performance as a first-class citizen:
 
-- **Controlled concurrency**: Semaphore limits parallel operations (default: 64)
+- **Controlled concurrency**: Limits parallel filesystem operations (default: 64)
 - **Soft limits**: Stops after 10 seconds or 50000 directories
 - **Progress throttling**: Updates at most ~5x/sec during scans
-- **In-memory cache**: Webview/tooltip reuse the latest scan result (no extra scan needed)
+- **In-memory cache**: Webview reuses the latest scan result (no extra scan needed)
 - **Debouncing**: 200ms delay when switching between project roots
 
 ### Why No File System Watcher?

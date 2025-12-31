@@ -22,6 +22,7 @@ export class MetricsPanel implements vscode.Disposable {
 	private readonly commandHandlers: ReturnType<typeof createMetricsPanelCommandHandlers>;
 	/** Temporary storage for directorySizes during webview session (for deep scan) */
 	private currentDirectorySizes: Record<string, number> | null = null;
+	private currentDirectorySizesRootPath: string | null = null;
 	/** Last known editor column used by the user (non-webview), for opening files outside the webview column */
 	private preferredEditorColumn: vscode.ViewColumn | undefined;
 
@@ -40,6 +41,7 @@ export class MetricsPanel implements vscode.Disposable {
 			getDirectorySizes: () => this.currentDirectorySizes,
 			setDirectorySizes: (value) => {
 				this.currentDirectorySizes = value;
+				this.currentDirectorySizesRootPath = value ? (this.scanner.getCurrentRoot() ?? null) : null;
 			},
 			sendMessage: (message) => this.sendMessage(message),
 		});
@@ -47,6 +49,7 @@ export class MetricsPanel implements vscode.Disposable {
 
 	private disposePanelResources(): void {
 		this.currentDirectorySizes = null; // Free memory
+		this.currentDirectorySizesRootPath = null;
 
 		if (this.eventSubscription) {
 			this.eventSubscription.dispose();
@@ -139,7 +142,12 @@ export class MetricsPanel implements vscode.Disposable {
 	/**
 	 * Handle scan start event
 	 */
-	private handleScanStart(_progress: ScanProgress): void {
+	private handleScanStart(progress: ScanProgress): void {
+		// If the scan root changes, invalidate directorySizes from the previous root.
+		if (progress.rootPath !== this.currentDirectorySizesRootPath) {
+			this.currentDirectorySizes = null;
+			this.currentDirectorySizesRootPath = null;
+		}
 		this.sendMessage({ type: 'scanStart' });
 	}
 

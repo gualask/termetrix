@@ -3,7 +3,6 @@ import { ProjectSizeScanner } from '../sizeScan/projectSizeScanner';
 import { ScanCache } from '../sizeScan/scanCache';
 import { ScanProgress } from '../../types';
 import { formatBytes } from '../../common/formatters';
-import { buildMetricsTooltip, getTooltipOptionsFromConfig } from '../sizeScan/tooltipBuilder';
 import { ScannerEventSubscription } from '../../common/scannerEvents';
 import { getSelectedLineCount, getSelectedLineCountFromSelections } from './selectionLineCounter';
 
@@ -130,12 +129,8 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 		}
 
 		this.statusBarItem.text = text;
-		this.statusBarItem.tooltip = buildMetricsTooltip(
-			rootPath,
-			scanResult,
-			this.cache,
-			getTooltipOptionsFromConfig()
-		);
+		// Keep tooltip minimal to avoid extra work and keep UX focused on the panel.
+		this.statusBarItem.tooltip = 'Click to open metrics panel';
 	}
 
 	/**

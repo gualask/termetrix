@@ -45,3 +45,23 @@ export function createCancellableWindowProgressSession<T>({
 		},
 	};
 }
+
+/**
+ * Creates a cancellable session without showing any VS Code UI.
+ *
+ * Useful for background refreshes where we still want cancellation support,
+ * but want to avoid the overhead and noise of window progress notifications.
+ */
+export function createCancellableSilentSession<T>({
+	task,
+}: Pick<CancellableProgressSessionOptions<T>, 'task'>): CancellableProgressSession<T> {
+	const cancellationSource = new vscode.CancellationTokenSource();
+
+	return {
+		cancellationSource,
+		run: () => task(cancellationSource.token),
+		dispose: () => {
+			cancellationSource.dispose();
+		},
+	};
+}

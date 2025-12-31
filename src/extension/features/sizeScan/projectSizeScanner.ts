@@ -7,7 +7,7 @@ import { computeDeepScan } from './deepScan';
 import { scanProjectSize } from './scanEngine';
 import { AutoRefreshController } from './autoRefreshController';
 import { ProjectRootController } from './projectRootController';
-import { createCancellableWindowProgressSession } from './scanSession';
+import { createCancellableSilentSession, createCancellableWindowProgressSession } from './scanSession';
 
 /**
  * Project size scanner with soft limits and controlled concurrency
@@ -24,14 +24,14 @@ export class ProjectSizeScanner extends EventEmitter {
 		super();
 		this.rootController = new ProjectRootController({
 			onRootChangeScheduled: () => this.cancelCurrentScan(),
-			onRootChanged: (rootPath) => void this.scan(rootPath),
+			onRootChanged: (rootPath) => void this.scanSummary(rootPath),
 		});
 		this.rootController.initializeFromActiveEditor();
 
 		this.autoRefreshController = new AutoRefreshController({
 			isScanning: () => this.isScanning,
 			getCurrentRoot: () => this.getCurrentRoot(),
-			refresh: () => void this.scan(),
+			refresh: () => void this.scanSummary(),
 		});
 		this.autoRefreshController.start();
 	}
@@ -116,6 +116,29 @@ export class ProjectSizeScanner extends EventEmitter {
 	 * Perform project scan
 	 */
 	async scan(rootOverride?: string): Promise<ExtendedScanResult | undefined> {
+		return await this.runScan(rootOverride, {
+			collectDirectorySizes: true,
+			collectTopDirectories: true,
+			showWindowProgress: true,
+		});
+	}
+
+	/**
+	 * Perform a fast scan intended for the status bar (total size only).
+	 */
+	async scanSummary(rootOverride?: string): Promise<ExtendedScanResult | undefined> {
+		return await this.runScan(rootOverride, {
+			collectDirectorySizes: false,
+			collectTopDirectories: false,
+			showWindowProgress: false,
+		});
+	}
+
+	private async runScan(
+		rootOverride: string | undefined,
+		options: { collectDirectorySizes: boolean; collectTopDirectories: boolean; showWindowProgress: boolean }
+	): Promise<ExtendedScanResult | undefined> {
+		const { showWindowProgress, ...scanOptions } = options;
 		const rootPath = rootOverride || this.getCurrentRoot();
 
 		if (!rootPath) {
@@ -131,17 +154,27 @@ export class ProjectSizeScanner extends EventEmitter {
 		// Emit scan start
 		this.emitScanStart(rootPath);
 
-		const session = createCancellableWindowProgressSession({
-			title: 'Scanning project...',
-			task: (cancellationToken) => this.performScan(rootPath, cancellationToken),
-		});
+		const session = showWindowProgress
+			? createCancellableWindowProgressSession({
+					title: 'Scanning project...',
+					task: (cancellationToken) => this.performScan(rootPath, cancellationToken, scanOptions),
+				})
+			: createCancellableSilentSession({
+					task: (cancellationToken) => this.performScan(rootPath, cancellationToken, scanOptions),
+				});
 		this.currentScanCancellation = session.cancellationSource;
 
 		try {
 			const result = await session.run();
 
 			if (result) {
-				this.cache.set(rootPath, result);
+				const shouldPreserveTopDirectories = !scanOptions.collectTopDirectories;
+				const previous = shouldPreserveTopDirectories ? this.cache.get(rootPath) : undefined;
+				const merged: ExtendedScanResult =
+					previous && previous.topDirectories.length > 0
+						? { ...result, topDirectories: previous.topDirectories }
+						: result;
+				this.cache.set(rootPath, merged);
 			}
 
 			return result;
@@ -164,13 +197,15 @@ export class ProjectSizeScanner extends EventEmitter {
 	 */
 	private async performScan(
 		rootPath: string,
-		cancellationToken: vscode.CancellationToken
+		cancellationToken: vscode.CancellationToken,
+		options: { collectDirectorySizes: boolean; collectTopDirectories: boolean }
 	): Promise<ExtendedScanResult> {
 		const config = configManager.getScanConfig();
 		return await scanProjectSize({
 			rootPath,
 			config,
 			cancellationToken,
+			options,
 			onProgress: ({ totalBytes, directoriesScanned }) => {
 				this.emitProgress(rootPath, totalBytes, directoriesScanned);
 			},

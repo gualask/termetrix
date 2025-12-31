@@ -54,7 +54,7 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 
 	// Initial scan
-	scanner.scan().then(() => {
+	scanner.scanSummary().then(() => {
 		metricsItem.update();
 	});
 
