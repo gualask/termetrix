@@ -83,7 +83,11 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 		}
 
 		// Build status bar text with spinning indicator
-		let text = `$(database) ${formatBytes(this.currentProgress.currentBytes)} $(loading~spin)`;
+		const bytesText =
+			this.currentProgress.currentBytes > 0
+				? formatBytes(this.currentProgress.currentBytes)
+				: '...';
+		let text = `$(database) ${bytesText} $(loading~spin)`;
 
 		// Add selected lines if any
 		if (this.selectedLines > 0) {

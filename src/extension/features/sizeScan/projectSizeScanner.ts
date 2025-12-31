@@ -120,6 +120,7 @@ export class ProjectSizeScanner extends EventEmitter {
 			collectDirectorySizes: true,
 			collectTopDirectories: true,
 			showWindowProgress: true,
+			emitProgressEvents: true,
 		});
 	}
 
@@ -131,12 +132,18 @@ export class ProjectSizeScanner extends EventEmitter {
 			collectDirectorySizes: false,
 			collectTopDirectories: false,
 			showWindowProgress: false,
+			emitProgressEvents: false,
 		});
 	}
 
 	private async runScan(
 		rootOverride: string | undefined,
-		options: { collectDirectorySizes: boolean; collectTopDirectories: boolean; showWindowProgress: boolean }
+		options: {
+			collectDirectorySizes: boolean;
+			collectTopDirectories: boolean;
+			showWindowProgress: boolean;
+			emitProgressEvents: boolean;
+		}
 	): Promise<ExtendedScanResult | undefined> {
 		const { showWindowProgress, ...scanOptions } = options;
 		const rootPath = rootOverride || this.getCurrentRoot();
@@ -198,17 +205,23 @@ export class ProjectSizeScanner extends EventEmitter {
 	private async performScan(
 		rootPath: string,
 		cancellationToken: vscode.CancellationToken,
-		options: { collectDirectorySizes: boolean; collectTopDirectories: boolean }
+		options: { collectDirectorySizes: boolean; collectTopDirectories: boolean; emitProgressEvents: boolean }
 	): Promise<ExtendedScanResult> {
 		const config = configManager.getScanConfig();
+		const { emitProgressEvents, ...scanOptions } = options;
+
+		const onProgress = emitProgressEvents
+			? ({ totalBytes, directoriesScanned }: { totalBytes: number; directoriesScanned: number }) => {
+					this.emitProgress(rootPath, totalBytes, directoriesScanned);
+				}
+			: undefined;
+
 		return await scanProjectSize({
 			rootPath,
 			config,
 			cancellationToken,
-			options,
-			onProgress: ({ totalBytes, directoriesScanned }) => {
-				this.emitProgress(rootPath, totalBytes, directoriesScanned);
-			},
+			options: scanOptions,
+			onProgress,
 		});
 	}
 

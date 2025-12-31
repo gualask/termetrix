@@ -2,6 +2,40 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { ExtendedScanResult } from '../../types';
 
+function createConcurrencyLimiter(maxConcurrency: number) {
+	let active = 0;
+	const queue: Array<() => void> = [];
+
+	const acquire = async (): Promise<void> => {
+		if (active < maxConcurrency) {
+			active++;
+			return;
+		}
+
+		await new Promise<void>((resolve) => {
+			queue.push(() => {
+				active++;
+				resolve();
+			});
+		});
+	};
+
+	const release = (): void => {
+		active--;
+		const next = queue.shift();
+		if (next) next();
+	};
+
+	return async function runLimited<T>(fn: () => Promise<T>): Promise<T> {
+		await acquire();
+		try {
+			return await fn();
+		} finally {
+			release();
+		}
+	};
+}
+
 export interface SizeScanConfig {
 	maxDurationSeconds: number;
 	maxDirectories: number;
@@ -45,6 +79,7 @@ export async function scanProjectSize({
 	const collectDirectorySizes = options?.collectDirectorySizes ?? true;
 	const collectTopDirectories = options?.collectTopDirectories ?? true;
 	const topDirectoriesLimit = options?.topDirectoriesLimit ?? 5;
+	const isSummaryOnly = !collectDirectorySizes && !collectTopDirectories;
 
 	const dirSizes = collectDirectorySizes ? new Map<string, number>() : undefined;
 	const topDirectories: Array<{ path: string; absolutePath: string; bytes: number }> = [];
@@ -57,6 +92,11 @@ export async function scanProjectSize({
 	const queue: string[] = [rootPath];
 	const maxDurationMs = config.maxDurationSeconds * 1000;
 	let stopScheduling = false;
+
+	const maxFsConcurrency = Math.max(1, Math.floor(config.concurrentOperations));
+	const runLimited = createConcurrencyLimiter(maxFsConcurrency);
+	const statBatchSize = Math.max(32, Math.min(1024, maxFsConcurrency * 8));
+	const maxDirectoryConcurrency = Math.max(1, Math.min(16, Math.ceil(maxFsConcurrency / 4)));
 
 	const markIncomplete = (reason: 'cancelled' | 'time_limit' | 'dir_limit'): void => {
 		if (incomplete) return;
@@ -82,12 +122,38 @@ export async function scanProjectSize({
 		return false;
 	};
 
+	const statFileSize = async (fullPath: string): Promise<number> => {
+		try {
+			const stats = await runLimited(() => fs.stat(fullPath));
+			return stats.size;
+		} catch {
+			return 0;
+		}
+	};
+
 	const processDirectory = async (currentPath: string): Promise<void> => {
 		if (shouldStop()) return;
 
 		let directBytes = 0;
+		let fileBatch: string[] = [];
+
+		const flushBatch = async (): Promise<void> => {
+			if (fileBatch.length === 0) return;
+			const paths = fileBatch;
+			fileBatch = [];
+
+			const sizes = await Promise.all(paths.map((p) => statFileSize(p)));
+			for (const size of sizes) {
+				if (size <= 0) continue;
+				totalBytes += size;
+				if (!isSummaryOnly) {
+					directBytes += size;
+				}
+			}
+		};
+
 		try {
-			const entries = await fs.readdir(currentPath, { withFileTypes: true });
+			const entries = await runLimited(() => fs.readdir(currentPath, { withFileTypes: true }));
 
 			for (const entry of entries) {
 				if (stopScheduling) break;
@@ -105,16 +171,15 @@ export async function scanProjectSize({
 				if (entry.isDirectory()) {
 					if (!stopScheduling) queue.push(fullPath);
 				} else if (entry.isFile()) {
-					try {
-						const stats = await fs.stat(fullPath);
-						const size = stats.size;
-						totalBytes += size;
-						directBytes += size;
-					} catch {
-						// Ignore stat errors on individual files
+					if (stopScheduling || shouldStop()) break;
+					fileBatch.push(fullPath);
+					if (fileBatch.length >= statBatchSize) {
+						await flushBatch();
 					}
 				}
 			}
+
+			await flushBatch();
 		} catch (readdirError) {
 			if (
 				(readdirError as NodeJS.ErrnoException).code === 'EACCES' ||
@@ -125,7 +190,7 @@ export async function scanProjectSize({
 			// Continue scan despite errors
 		}
 
-		if (directBytes <= 0) return;
+		if (isSummaryOnly || directBytes <= 0) return;
 
 		if (collectDirectorySizes && dirSizes) {
 			dirSizes.set(currentPath, directBytes);
@@ -141,7 +206,6 @@ export async function scanProjectSize({
 		}
 	};
 
-	const maxConcurrency = Math.max(1, Math.floor(config.concurrentOperations));
 	let inFlight = 0;
 	let resolveDone: (() => void) | undefined;
 
@@ -164,7 +228,7 @@ export async function scanProjectSize({
 			queue.length = 0;
 		}
 
-		while (!stopScheduling && inFlight < maxConcurrency && queue.length > 0) {
+		while (!stopScheduling && inFlight < maxDirectoryConcurrency && queue.length > 0) {
 			if (shouldStop()) break;
 
 			const currentPath = queue.pop()!;
