@@ -5,6 +5,7 @@ import { ScanProgress } from '../../types';
 import { formatBytes } from '../../common/formatters';
 import { buildMetricsTooltip, getTooltipOptionsFromConfig } from '../sizeScan/tooltipBuilder';
 import { ScannerEventSubscription } from '../../common/scannerEvents';
+import { getSelectedLineCount, getSelectedLineCountFromSelections } from './selectionLineCounter';
 
 /**
  * Metrics status bar item - shows project size and selected LOC count
@@ -14,6 +15,7 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 	private selectedLines: number = 0;
 	private currentProgress: ScanProgress | undefined;
 	private eventSubscription: ScannerEventSubscription;
+	private disposables: vscode.Disposable[] = [];
 
 	constructor(
 		private scanner: ProjectSizeScanner,
@@ -32,31 +34,52 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 			onScanEnd: this.handleScanEnd.bind(this)
 		});
 
-		this.update();
+		// Keep selected line count in sync with editor state.
+		this.selectedLines = getSelectedLineCount(vscode.window.activeTextEditor);
+		this.disposables.push(
+			vscode.window.onDidChangeTextEditorSelection((e) => {
+				this.selectedLines = getSelectedLineCountFromSelections(e.selections);
+				this.render();
+			}),
+			vscode.window.onDidChangeActiveTextEditor((editor) => {
+				this.selectedLines = getSelectedLineCount(editor);
+				this.render();
+			})
+		);
+
+		this.render();
 		this.statusBarItem.show();
 	}
 
 	private handleScanStart(progress: ScanProgress): void {
 		this.currentProgress = progress;
-		this.updateWithProgress();
+		this.render();
 	}
 
 	private handleProgress(progress: ScanProgress): void {
 		this.currentProgress = progress;
-		this.updateWithProgress();
+		this.render();
 	}
 
 	private handleScanEnd(_progress: ScanProgress): void {
 		this.currentProgress = undefined;
-		this.update();
+		this.render();
+	}
+
+	private render(): void {
+		if (this.currentProgress) {
+			this.renderWithProgress();
+		} else {
+			this.renderIdle();
+		}
 	}
 
 	/**
 	 * Update with progress (during scanning)
 	 */
-	private updateWithProgress(): void {
+	private renderWithProgress(): void {
 		if (!this.currentProgress) {
-			this.update();
+			this.renderIdle();
 			return;
 		}
 
@@ -74,9 +97,9 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 	}
 
 	/**
-	 * Update project size display
+	 * Update project size display (idle)
 	 */
-	update(): void {
+	private renderIdle(): void {
 		const rootPath = this.scanner.getCurrentRoot();
 
 		if (!rootPath) {
@@ -116,22 +139,15 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 	}
 
 	/**
-	 * Update selected lines count
+	 * Force a refresh of the current display.
 	 */
-	updateSelection(): void {
-		const editor = vscode.window.activeTextEditor;
-		if (!editor || editor.selection.isEmpty) {
-			this.selectedLines = 0;
-		} else {
-			const start = editor.selection.start.line;
-			const end = editor.selection.end.line;
-			this.selectedLines = Math.abs(end - start) + 1;
-		}
-		this.update();
+	update(): void {
+		this.render();
 	}
 
 	dispose(): void {
 		this.eventSubscription.dispose();
+		this.disposables.forEach((d) => d.dispose());
 		this.statusBarItem.dispose();
 	}
 }

@@ -9,7 +9,7 @@ let terminalItem: TerminalStatusBarItem;
 let metricsItem: MetricsStatusBarItem;
 let scanner: ProjectSizeScanner;
 let cache: ScanCache;
-let scanPanel: MetricsPanel;
+let metricsPanel: MetricsPanel;
 
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Termetrix is now active');
@@ -21,7 +21,7 @@ export function activate(context: vscode.ExtensionContext) {
 	scanner = new ProjectSizeScanner(cache);
 
 	// Initialize scan panel
-	scanPanel = new MetricsPanel(scanner, cache, context.extensionUri);
+	metricsPanel = new MetricsPanel(scanner, cache, context.extensionUri);
 
 	// Initialize status bar items
 	terminalItem = new TerminalStatusBarItem();
@@ -29,7 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Register commands
 	const openScanPanelCmd = vscode.commands.registerCommand('termetrix.openScanPanel', () => {
-		scanPanel.show();
+		metricsPanel.show();
 	});
 
 	const refreshScanCmd = vscode.commands.registerCommand('termetrix.refreshScan', async () => {
@@ -45,6 +45,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		terminalItem,
 		metricsItem,
+		metricsPanel,
 		openScanPanelCmd,
 		refreshScanCmd,
 		openTerminalCmd,
@@ -66,9 +67,7 @@ export function activate(context: vscode.ExtensionContext) {
 	}, null, context.subscriptions);
 
 	// Watch for text selection changes (LOC counter)
-	vscode.window.onDidChangeTextEditorSelection(() => {
-		metricsItem.updateSelection();
-	}, null, context.subscriptions);
+	// (handled internally by MetricsStatusBarItem)
 }
 
 export function deactivate() {

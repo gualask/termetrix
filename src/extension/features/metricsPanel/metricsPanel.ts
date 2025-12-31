@@ -1,19 +1,25 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { ProjectSizeScanner } from '../sizeScan/projectSizeScanner';
 import { ScanCache } from '../sizeScan/scanCache';
-import { ScanProgress } from '../../types';
+import type { MessageFromExtension, ProgressData, ScanProgress } from '../../types';
 import { LOCScanner } from '../locScan/locScanner';
 import { ScannerEventSubscription } from '../../common/scannerEvents';
+import {
+	createMetricsPanelCommandHandlers,
+	dispatchMetricsPanelWebviewMessage,
+	sendMetricsPanelState,
+} from './metricsPanelCommands';
+import { getMetricsPanelHtml } from './metricsPanelHtml';
 
 /**
  * Webview panel orchestrator for project metrics visualization
  */
-export class MetricsPanel {
+export class MetricsPanel implements vscode.Disposable {
 	private panel: vscode.WebviewPanel | undefined;
 	private disposables: vscode.Disposable[] = [];
 	private locScanner: LOCScanner;
-	private eventSubscription: ScannerEventSubscription;
+	private eventSubscription: ScannerEventSubscription | undefined;
+	private readonly commandHandlers: ReturnType<typeof createMetricsPanelCommandHandlers>;
 	/** Temporary storage for directorySizes during webview session (for deep scan) */
 	private currentDirectorySizes: Record<string, number> | null = null;
 	/** Last known editor column used by the user (non-webview), for opening files outside the webview column */
@@ -25,23 +31,30 @@ export class MetricsPanel {
 		private extensionUri: vscode.Uri
 	) {
 		this.locScanner = new LOCScanner();
-
-		this.eventSubscription = new ScannerEventSubscription(scanner, {
-			onScanStart: this.handleScanStart.bind(this),
-			onProgress: this.handleProgress.bind(this),
-			onScanEnd: this.handleScanEnd.bind(this)
+		this.commandHandlers = createMetricsPanelCommandHandlers({
+			scanner: this.scanner,
+			cache: this.cache,
+			locScanner: this.locScanner,
+			isPanelOpen: () => Boolean(this.panel),
+			getPreferredEditorColumn: () => this.preferredEditorColumn,
+			getDirectorySizes: () => this.currentDirectorySizes,
+			setDirectorySizes: (value) => {
+				this.currentDirectorySizes = value;
+			},
+			sendMessage: (message) => this.sendMessage(message),
 		});
+	}
 
-		// Track the user's last active editor column so we can open files there (not in the webview column).
-		this.disposables.push(
-			vscode.window.onDidChangeActiveTextEditor((editor) => {
-				if (!editor) return;
-				const scheme = editor.document.uri.scheme;
-				if (scheme === 'file' || scheme === 'untitled') {
-					this.preferredEditorColumn = editor.viewColumn;
-				}
-			})
-		);
+	private disposePanelResources(): void {
+		this.currentDirectorySizes = null; // Free memory
+
+		if (this.eventSubscription) {
+			this.eventSubscription.dispose();
+			this.eventSubscription = undefined;
+		}
+
+		this.disposables.forEach((d) => d.dispose());
+		this.disposables = [];
 	}
 
 	/**
@@ -69,6 +82,8 @@ export class MetricsPanel {
 	 * Create webview panel
 	 */
 	private createPanel(): void {
+		this.disposePanelResources();
+
 		const webviewUri = vscode.Uri.joinPath(this.extensionUri, 'out', 'webview');
 
 		this.panel = vscode.window.createWebviewPanel(
@@ -83,11 +98,29 @@ export class MetricsPanel {
 		);
 
 		// Set HTML content
-		this.panel.webview.html = this.getWebviewHTML(this.panel.webview, webviewUri);
+		this.panel.webview.html = getMetricsPanelHtml(this.panel.webview, webviewUri);
+
+		// Subscribe to scanner events for the lifetime of this panel instance.
+		this.eventSubscription = new ScannerEventSubscription(this.scanner, {
+			onScanStart: this.handleScanStart.bind(this),
+			onProgress: this.handleProgress.bind(this),
+			onScanEnd: this.handleScanEnd.bind(this),
+		});
+
+		// Track the user's last active editor column so we can open files there (not in the webview column).
+		this.disposables.push(
+			vscode.window.onDidChangeActiveTextEditor((editor) => {
+				if (!editor) return;
+				const scheme = editor.document.uri.scheme;
+				if (scheme === 'file' || scheme === 'untitled') {
+					this.preferredEditorColumn = editor.viewColumn;
+				}
+			})
+		);
 
 		// Handle messages from webview
 		this.panel.webview.onDidReceiveMessage(
-			this.handleWebviewMessage.bind(this),
+			(message) => void this.handleWebviewMessage(message),
 			undefined,
 			this.disposables
 		);
@@ -96,9 +129,7 @@ export class MetricsPanel {
 		this.panel.onDidDispose(
 			() => {
 				this.panel = undefined;
-				this.currentDirectorySizes = null; // Free memory
-				this.disposables.forEach(d => d.dispose());
-				this.disposables = [];
+				this.disposePanelResources();
 			},
 			undefined,
 			this.disposables
@@ -106,43 +137,21 @@ export class MetricsPanel {
 	}
 
 	/**
-	 * Generate HTML for webview that loads the bundled Svelte app
-	 */
-	private getWebviewHTML(webview: vscode.Webview, webviewUri: vscode.Uri): string {
-		const scriptUri = webview.asWebviewUri(
-			vscode.Uri.joinPath(webviewUri, 'webview.js')
-		);
-		const styleUri = webview.asWebviewUri(
-			vscode.Uri.joinPath(webviewUri, 'webview.css')
-		);
-
-		return `<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src ${webview.cspSource}; style-src ${webview.cspSource} 'unsafe-inline'; connect-src ${webview.cspSource};">
-	<title>Termetrix Scanner</title>
-	<link rel="stylesheet" href="${styleUri}">
-</head>
-<body>
-	<script src="${scriptUri}"></script>
-</body>
-</html>`;
-	}
-
-	/**
 	 * Handle scan start event
 	 */
-	private handleScanStart(progress: ScanProgress): void {
-		this.sendMessage({ type: 'scanStart', data: progress });
+	private handleScanStart(_progress: ScanProgress): void {
+		this.sendMessage({ type: 'scanStart' });
 	}
 
 	/**
 	 * Handle progress event
 	 */
 	private handleProgress(progress: ScanProgress): void {
-		this.sendMessage({ type: 'progress', data: progress });
+		const progressData: ProgressData = {
+			currentBytes: progress.currentBytes,
+			directoriesScanned: progress.directoriesScanned,
+		};
+		this.sendMessage({ type: 'progress', data: progressData });
 	}
 
 	/**
@@ -156,160 +165,30 @@ export class MetricsPanel {
 	 * Update panel with current scan data
 	 */
 	private updatePanel(): void {
-		const rootPath = this.scanner.getCurrentRoot();
-		if (!rootPath) {
-			this.sendMessage({ type: 'noRoot' });
-			return;
-		}
-
-		const scanResult = this.cache.get(rootPath);
-		const isScanning = this.scanner.isScanInProgress();
-
-		this.sendMessage({
-			type: 'update',
-			data: {
-				scanResult,
-				isScanning
-			}
+		sendMetricsPanelState({
+			scanner: this.scanner,
+			cache: this.cache,
+			sendMessage: (message) => this.sendMessage(message),
 		});
 	}
 
 	/**
-	 * Command handlers map - each handler has single responsibility
-	 */
-	private readonly commandHandlers: Record<string, (path?: string) => Promise<void>> = {
-		ready: async () => {
-			// Show current state immediately (even if scanning)
-			await this.updatePanel();
-			// Trigger fresh scan in background (updates will come via events)
-			this.triggerScan();
-		},
-
-		revealInExplorer: async (targetPath) => {
-			if (targetPath) {
-				const uri = vscode.Uri.file(targetPath);
-				await vscode.commands.executeCommand('revealInExplorer', uri);
-			}
-		},
-
-		openFile: async (filePath) => {
-			const rootPath = this.scanner.getCurrentRoot();
-			if (!rootPath || !filePath) {
-				return;
-			}
-
-			const absolutePath = path.resolve(rootPath, filePath);
-			const absoluteRoot = path.resolve(rootPath);
-			if (absolutePath !== absoluteRoot && !absolutePath.startsWith(absoluteRoot + path.sep)) {
-				return;
-			}
-
-			try {
-				const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(absolutePath));
-				await vscode.window.showTextDocument(doc, {
-					preview: true,
-					viewColumn: this.preferredEditorColumn ?? vscode.ViewColumn.One,
-				});
-			} catch (error) {
-				console.error('Open file failed:', error);
-			}
-		},
-
-		refresh: async () => {
-			// Trigger fresh scan (updates will come via events)
-			this.triggerScan();
-		},
-
-		cancelScan: async () => {
-			// Cancel current scan if in progress
-			this.scanner.cancelCurrentScan();
-		},
-
-		calculateLOC: async () => {
-			await this.handleCalculateLOC();
-		},
-
-		deepScan: async () => {
-			await this.handleDeepScan();
-		},
-
-		reset: async () => {
-			// Cancel any ongoing scan
-			this.scanner.cancelCurrentScan();
-			// Clear cached directory sizes
-			this.currentDirectorySizes = null;
-			// Send noRoot to reset UI to initial state
-			this.sendMessage({ type: 'noRoot' });
-		}
-	};
-
-	/**
 	 * Handle messages from webview - delegates to command handlers
 	 */
-	private async handleWebviewMessage(message: { command: string; path?: string }): Promise<void> {
-		const handler = this.commandHandlers[message.command];
-		if (handler) {
-			await handler(message.path);
-		}
-	}
-
-	/**
-	 * Handle LOC calculation request
-	 */
-	private async handleCalculateLOC(): Promise<void> {
-		const rootPath = this.scanner.getCurrentRoot();
-		if (!rootPath || !this.panel) {
-			return;
-		}
-
-		this.sendMessage({ type: 'locCalculating' });
-
-		try {
-			const result = await this.locScanner.scan(rootPath);
-			this.sendMessage({ type: 'locResult', data: result });
-		} catch (error) {
-			console.error('LOC calculation failed:', error);
-		}
-	}
-
-	/**
-	 * Trigger a fresh scan and save directorySizes for deep scan
-	 * Single responsibility: initiate scan and cache results
-	 */
-	private async triggerScan(): Promise<void> {
-		const result = await this.scanner.scan();
-		if (result?.directorySizes) {
-			this.currentDirectorySizes = result.directorySizes;
-		}
-	}
-
-	/**
-	 * Handle deep scan request - computes cumulative sizes from current scan data
-	 */
-	private async handleDeepScan(): Promise<void> {
-		const rootPath = this.scanner.getCurrentRoot();
-		if (!rootPath || !this.panel || !this.currentDirectorySizes) {
-			return;
-		}
-
-		const deepDirectories = this.scanner.computeDeepScan(
-			this.currentDirectorySizes,
-			rootPath
-		);
-
-		this.sendMessage({ type: 'deepScanResult', data: deepDirectories });
+	private async handleWebviewMessage(message: unknown): Promise<void> {
+		await dispatchMetricsPanelWebviewMessage(message, this.commandHandlers);
 	}
 
 	/**
 	 * Send message to webview
 	 */
-	private sendMessage(message: unknown): void {
-		this.panel?.webview.postMessage(message);
+	private sendMessage(message: MessageFromExtension): void {
+		void this.panel?.webview.postMessage(message);
 	}
 
 	dispose(): void {
-		this.eventSubscription.dispose();
+		this.disposePanelResources();
 		this.panel?.dispose();
-		this.disposables.forEach(d => d.dispose());
+		this.panel = undefined;
 	}
 }
