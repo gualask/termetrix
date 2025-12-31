@@ -2,15 +2,15 @@ import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { EventEmitter } from 'events';
-import { ScanProgress, ExtendedScanResult } from '../types';
-import { ScanCache } from '../cache/scanCache';
+import { ScanProgress, ExtendedScanResult } from '../../types';
+import { ScanCache } from './scanCache';
 import { Semaphore } from './semaphore';
-import { configManager } from '../utils/configManager';
+import { configManager } from '../../common/configManager';
 
 /**
- * Project scanner with soft limits and controlled concurrency
+ * Project size scanner with soft limits and controlled concurrency
  */
-export class ProjectScanner extends EventEmitter {
+export class ProjectSizeScanner extends EventEmitter {
 	private currentRoot: string | undefined;
 	private currentScanCancellation: vscode.CancellationTokenSource | undefined;
 	private debounceTimer: NodeJS.Timeout | undefined;

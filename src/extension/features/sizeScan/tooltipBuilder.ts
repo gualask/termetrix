@@ -1,5 +1,5 @@
-import type { ScanResult } from '../types';
-import { formatBytes, formatDuration } from './formatters';
+import type { ScanResult } from '../../types';
+import { formatBytes, formatDuration } from '../../common/formatters';
 
 interface TooltipOptions {
 	maxDirectories?: number;

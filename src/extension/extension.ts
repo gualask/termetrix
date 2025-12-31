@@ -1,15 +1,15 @@
 import * as vscode from 'vscode';
-import { TerminalStatusBarItem } from './statusBar/terminalItem';
-import { MetricsStatusBarItem } from './statusBar/metricsItem';
-import { ProjectScanner } from './scanner/projectScanner';
-import { ScanCache } from './cache/scanCache';
-import { ScanPanel } from './webview/scanPanel';
+import { TerminalStatusBarItem } from './features/statusBar/terminalItem';
+import { MetricsStatusBarItem } from './features/statusBar/metricsItem';
+import { ProjectSizeScanner } from './features/sizeScan/projectSizeScanner';
+import { ScanCache } from './features/sizeScan/scanCache';
+import { MetricsPanel } from './features/metricsPanel/metricsPanel';
 
 let terminalItem: TerminalStatusBarItem;
 let metricsItem: MetricsStatusBarItem;
-let scanner: ProjectScanner;
+let scanner: ProjectSizeScanner;
 let cache: ScanCache;
-let scanPanel: ScanPanel;
+let scanPanel: MetricsPanel;
 
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Termetrix is now active');
@@ -18,10 +18,10 @@ export function activate(context: vscode.ExtensionContext) {
 	cache = new ScanCache();
 
 	// Initialize scanner
-	scanner = new ProjectScanner(cache);
+	scanner = new ProjectSizeScanner(cache);
 
 	// Initialize scan panel
-	scanPanel = new ScanPanel(scanner, cache, context.extensionUri);
+	scanPanel = new MetricsPanel(scanner, cache, context.extensionUri);
 
 	// Initialize status bar items
 	terminalItem = new TerminalStatusBarItem();

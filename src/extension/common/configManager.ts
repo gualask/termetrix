@@ -14,7 +14,7 @@ export interface AutoRefreshConfig {
 
 /**
  * Centralized configuration manager
- * Single responsibility: reading and caching extension configuration
+ * Single responsibility: reading and caching extension settings
  */
 export class ConfigManager {
 	private static instance: ConfigManager;

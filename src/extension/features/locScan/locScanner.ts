@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import type { LOCResult } from '../types';
+import type { LOCResult } from '../../types';
 
 /**
  * Source file extensions considered for LOC counting

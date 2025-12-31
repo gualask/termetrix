@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
-import { ProjectScanner } from '../scanner/projectScanner';
-import { ScanCache } from '../cache/scanCache';
-import { ScanProgress } from '../types';
-import { formatBytes } from '../utils/formatters';
-import { buildMetricsTooltip, getTooltipOptionsFromConfig } from '../utils/tooltipBuilder';
-import { ScannerEventSubscription } from '../utils/scannerEvents';
+import { ProjectSizeScanner } from '../sizeScan/projectSizeScanner';
+import { ScanCache } from '../sizeScan/scanCache';
+import { ScanProgress } from '../../types';
+import { formatBytes } from '../../common/formatters';
+import { buildMetricsTooltip, getTooltipOptionsFromConfig } from '../sizeScan/tooltipBuilder';
+import { ScannerEventSubscription } from '../../common/scannerEvents';
 
 /**
  * Metrics status bar item - shows project size and selected LOC count
@@ -16,7 +16,7 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 	private eventSubscription: ScannerEventSubscription;
 
 	constructor(
-		private scanner: ProjectScanner,
+		private scanner: ProjectSizeScanner,
 		private cache: ScanCache
 	) {
 		this.statusBarItem = vscode.window.createStatusBarItem(

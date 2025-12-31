@@ -1,4 +1,4 @@
-import { ExtendedScanResult } from '../types';
+import { ExtendedScanResult } from '../../types';
 
 /**
  * Manages in-memory cache for scan results

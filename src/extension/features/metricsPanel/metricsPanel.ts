@@ -1,15 +1,15 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { ProjectScanner } from '../scanner/projectScanner';
-import { ScanCache } from '../cache/scanCache';
-import { ScanProgress } from '../types';
-import { LOCScanner } from '../scanner/locScanner';
-import { ScannerEventSubscription } from '../utils/scannerEvents';
+import { ProjectSizeScanner } from '../sizeScan/projectSizeScanner';
+import { ScanCache } from '../sizeScan/scanCache';
+import { ScanProgress } from '../../types';
+import { LOCScanner } from '../locScan/locScanner';
+import { ScannerEventSubscription } from '../../common/scannerEvents';
 
 /**
- * Webview panel orchestrator for project scanning visualization
+ * Webview panel orchestrator for project metrics visualization
  */
-export class ScanPanel {
+export class MetricsPanel {
 	private panel: vscode.WebviewPanel | undefined;
 	private disposables: vscode.Disposable[] = [];
 	private locScanner: LOCScanner;
@@ -20,7 +20,7 @@ export class ScanPanel {
 	private preferredEditorColumn: vscode.ViewColumn | undefined;
 
 	constructor(
-		private scanner: ProjectScanner,
+		private scanner: ProjectSizeScanner,
 		private cache: ScanCache,
 		private extensionUri: vscode.Uri
 	) {

@@ -1,4 +1,4 @@
-import type { ProjectScanner } from '../scanner/projectScanner';
+import type { ProjectSizeScanner } from '../features/sizeScan/projectSizeScanner';
 import type { ScanProgress } from '../types';
 
 export interface ScanEventHandlers {
@@ -21,7 +21,7 @@ export class ScannerEventSubscription {
 	private boundHandlers: BoundHandlers;
 
 	constructor(
-		private scanner: ProjectScanner,
+		private scanner: ProjectSizeScanner,
 		handlers: ScanEventHandlers
 	) {
 		// Bind handlers with no-op fallbacks
@@ -51,7 +51,7 @@ export class ScannerEventSubscription {
  * Helper to create a subscription with automatic cleanup
  */
 export function subscribeTo(
-	scanner: ProjectScanner,
+	scanner: ProjectSizeScanner,
 	handlers: ScanEventHandlers
 ): ScannerEventSubscription {
 	return new ScannerEventSubscription(scanner, handlers);
