@@ -1,3 +1,4 @@
+import { useMemo } from 'preact/hooks';
 import type { DirectoryInfo } from '../../types';
 import { formatBytes } from '../../utils';
 import { EmptyState } from '../../components/EmptyState';
@@ -119,10 +120,19 @@ function computeDeepDisplayItems(
 }
 
 export function SizeChart({ directories, totalBytes, onReveal, isLoading }: Props) {
+	// Memoize expensive directory tree computation
+	const items = useMemo(() => {
+		if (!directories || totalBytes === 0) return [];
+		return computeDeepDisplayItems(directories, totalBytes);
+	}, [directories, totalBytes]);
+
+	const maxPercent = useMemo(() => {
+		if (items.length === 0) return 0;
+		return Math.max(...items.map(i => i.percent));
+	}, [items]);
+
 	// Show hierarchical view
 	if (directories) {
-		const items = computeDeepDisplayItems(directories, totalBytes);
-
 		if (items.length === 0) {
 			return (
 				<div class="size-chart empty">
@@ -130,8 +140,6 @@ export function SizeChart({ directories, totalBytes, onReveal, isLoading }: Prop
 				</div>
 			);
 		}
-
-		const maxPercent = Math.max(...items.map(i => i.percent));
 
 		return (
 			<div class="size-chart">

@@ -11,6 +11,7 @@ export type {
 	LOCResult,
 	ViewData,
 	ProgressData,
+	ErrorData,
 	MessageFromExtension,
 	MessageToExtension,
 } from '../shared/types';

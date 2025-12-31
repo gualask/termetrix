@@ -4,10 +4,11 @@ import { TabBar, type Tab } from './components/TabBar';
 import { LocView } from './views/loc/LocView';
 import { SizeView } from './views/size/SizeView';
 import { EmptyState } from './components/EmptyState';
+import { ErrorBanner } from './components/ErrorBanner';
 import { useScanPanelState } from './hooks/useScanPanelState';
 
 export function App() {
-	const { isReady, size, loc } = useScanPanelState();
+	const { isReady, error, dismissError, size, loc } = useScanPanelState();
 
 	const [activeTab, setActiveTab] = useState<Tab>('size');
 
@@ -29,7 +30,10 @@ export function App() {
 		<div class="app">
 			<TabBar activeTab={activeTab} onTabChange={setActiveTab} />
 
-			{activeTab === 'size' ? (
+			<div class="content">
+				{error && <ErrorBanner error={error} onDismiss={dismissError} />}
+
+				{activeTab === 'size' ? (
 				<SizeView
 					viewData={size.viewData}
 					deepDirectories={size.deepDirectories}
@@ -47,5 +51,6 @@ export function App() {
 					/>
 				)}
 			</div>
+		</div>
 	);
 }

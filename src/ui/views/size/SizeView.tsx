@@ -1,3 +1,4 @@
+import { useMemo } from 'preact/hooks';
 import { Folder, HardDrive, RefreshCw, Square, Timer } from 'lucide-preact';
 import type { DirectoryInfo, ViewData, ProgressData } from '../../types';
 import { formatBytes } from '../../utils';
@@ -66,17 +67,19 @@ export function SizeView({
 
 	const isLoading = viewData.isScanning || isDeepScanning;
 
-	// Build detailed loading label
-	let loadingLabel = 'Preparing…';
-	if (viewData.isScanning) {
-		if (progressData) {
-			loadingLabel = `Scanning… ${formatBytes(progressData.currentBytes)} (${progressData.directoriesScanned.toLocaleString()} directories)`;
-		} else {
-			loadingLabel = 'Scanning…';
+	// Memoize loading label construction
+	const loadingLabel = useMemo(() => {
+		if (viewData.isScanning) {
+			if (progressData) {
+				return `Scanning… ${formatBytes(progressData.currentBytes)} (${progressData.directoriesScanned.toLocaleString()} directories)`;
+			}
+			return 'Scanning…';
 		}
-	} else if (isDeepScanning) {
-		loadingLabel = 'Analyzing directory structure…';
-	}
+		if (isDeepScanning) {
+			return 'Analyzing directory structure…';
+		}
+		return 'Preparing…';
+	}, [viewData.isScanning, progressData, isDeepScanning]);
 
 	return (
 		<ViewLayout

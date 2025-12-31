@@ -77,6 +77,15 @@ export interface ProgressData {
 	directoriesScanned: number;
 }
 
+export interface ErrorData {
+	/** Error message to display */
+	message: string;
+	/** Optional error code for categorization */
+	code?: string;
+	/** Whether the error is recoverable */
+	recoverable?: boolean;
+}
+
 export type MessageFromExtension =
 	| { type: 'scanStart' }
 	| { type: 'progress'; data: ProgressData }
@@ -84,7 +93,8 @@ export type MessageFromExtension =
 	| { type: 'noRoot' }
 	| { type: 'locCalculating' }
 	| { type: 'locResult'; data: LOCResult }
-	| { type: 'deepScanResult'; data: DirectoryInfo[] };
+	| { type: 'deepScanResult'; data: DirectoryInfo[] }
+	| { type: 'error'; data: ErrorData };
 
 export type MessageToExtension =
 	| { command: 'ready' }

@@ -533,3 +533,139 @@ button:disabled {
     transform: rotate(360deg);
   }
 }
+
+/* Error Boundary */
+.error-boundary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.error-boundary-content {
+  max-width: 500px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.error-icon {
+  color: var(--vscode-errorForeground);
+  opacity: 0.9;
+}
+
+.error-boundary h2 {
+  margin: 0;
+  font-size: 1.5em;
+  font-weight: 600;
+}
+
+.error-message {
+  margin: 0;
+  opacity: 0.85;
+  font-size: 0.95em;
+}
+
+.error-reset-button {
+  margin-top: 8px;
+  padding: 10px 20px;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+}
+
+.error-reset-button:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+
+.error-details {
+  margin-top: 16px;
+  text-align: left;
+  width: 100%;
+}
+
+.error-details summary {
+  cursor: pointer;
+  padding: 8px;
+  background: var(--tmx-surface-1);
+  border-radius: 4px;
+  font-size: 0.9em;
+  opacity: 0.8;
+}
+
+.error-details summary:hover {
+  opacity: 1;
+}
+
+.error-details pre {
+  margin: 8px 0 0 0;
+  padding: 12px;
+  background: var(--tmx-surface-2);
+  border: 1px solid var(--tmx-border);
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.85em;
+  opacity: 0.9;
+}
+
+/* Error Banner */
+.error-banner {
+  margin: 0 0 12px 0;
+  padding: 12px 14px;
+  background: var(--vscode-inputValidation-errorBackground);
+  border-left: 3px solid var(--vscode-inputValidation-errorBorder);
+  color: var(--vscode-inputValidation-errorForeground);
+  font-size: 13px;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.error-banner-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.error-banner-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.error-banner-message {
+  font-weight: 500;
+}
+
+.error-banner-details {
+  font-size: 0.95em;
+  opacity: 0.9;
+}
+
+.error-banner-dismiss {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+  border-radius: 4px;
+}
+
+.error-banner-dismiss:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}

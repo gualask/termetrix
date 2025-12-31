@@ -1,3 +1,4 @@
+import { useMemo } from 'preact/hooks';
 import { FileText, FileX, Files, Loader2, Play, RefreshCw } from 'lucide-preact';
 import type { LOCResult } from '../../types';
 import { IconButton } from '../../components/IconButton';
@@ -68,8 +69,11 @@ export function LocView({ locResult, isCalculating, onCalculate, onOpenFile }: P
 	const scannedFiles = hasData ? locResult!.scannedFiles.toLocaleString() : '—';
 	const skippedFiles = hasData ? locResult!.skippedFiles.toLocaleString() : '—';
 
-	const sortedLanguages = Object.entries(locResult?.byLanguage ?? {})
-		.sort((a, b) => b[1] - a[1]);
+	// Memoize language sorting to avoid recalculation on every render
+	const sortedLanguages = useMemo(
+		() => Object.entries(locResult?.byLanguage ?? {}).sort((a, b) => b[1] - a[1]),
+		[locResult]
+	);
 
 	const header = (
 		<MetricsHeader

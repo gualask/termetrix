@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'preact/hooks';
-import type { DirectoryInfo, LOCResult, MessageFromExtension, ViewData, ProgressData } from '../types';
+import type { DirectoryInfo, LOCResult, MessageFromExtension, ViewData, ProgressData, ErrorData } from '../types';
 import { postToExtension } from '../vscode';
 
 interface Actions {
@@ -7,6 +7,7 @@ interface Actions {
 	revealInExplorer: (path: string) => void;
 	calculateLOC: () => void;
 	openFile: (path: string) => void;
+	dismissError: () => void;
 }
 
 interface SizeSlice {
@@ -25,8 +26,10 @@ interface LocSlice {
 
 interface State {
 	isReady: boolean;
+	error: ErrorData | null;
 	size: SizeSlice;
 	loc: LocSlice;
+	dismissError: () => void;
 }
 
 export function useScanPanelState(): State {
@@ -41,6 +44,7 @@ export function useScanPanelState(): State {
 	const [deepDirectories, setDeepDirectories] = useState<DirectoryInfo[] | null>(null);
 	const [isDeepScanning, setIsDeepScanning] = useState(false);
 	const [progressData, setProgressData] = useState<ProgressData | null>(null);
+	const [error, setError] = useState<ErrorData | null>(null);
 
 	useEffect(() => {
 		function handleMessage(event: MessageEvent<MessageFromExtension>) {
@@ -85,6 +89,9 @@ export function useScanPanelState(): State {
 					setDeepDirectories(message.data);
 					setIsDeepScanning(false);
 					break;
+				case 'error':
+					setError(message.data);
+					break;
 			}
 		}
 
@@ -110,8 +117,14 @@ export function useScanPanelState(): State {
 		postToExtension({ command: 'openFile', path });
 	}, []);
 
+	const dismissError = useCallback(() => {
+		setError(null);
+	}, []);
+
 	return {
 		isReady,
+		error,
+		dismissError,
 		size: {
 			viewData,
 			deepDirectories,
