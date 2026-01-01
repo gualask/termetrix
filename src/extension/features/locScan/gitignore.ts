@@ -39,11 +39,7 @@ function globToRegex(pattern: string): string {
 		}
 
 		// Escape regex special chars
-		if (/[.*+?^${}()|[\]\\]/.test(c)) {
-			out += '\\' + c;
-		} else {
-			out += c;
-		}
+		out += /[.*+?^${}()|[\]\\]/.test(c) ? '\\' + c : c;
 	}
 	return out;
 }
@@ -117,4 +113,3 @@ export function isGitIgnored(relativePath: string, rules: GitIgnoreRule[]): bool
 	}
 	return ignored;
 }
-

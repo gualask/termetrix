@@ -59,9 +59,7 @@ export class LOCScanner {
 		gitignoreRules: GitIgnoreRule[],
 		token?: vscode.CancellationToken
 	): Promise<void> {
-		if (token?.isCancellationRequested) {
-			return;
-		}
+		if (token?.isCancellationRequested) return;
 
 		let entries;
 		try {
@@ -71,9 +69,7 @@ export class LOCScanner {
 		}
 
 		for await (const entry of entries) {
-			if (token?.isCancellationRequested) {
-				break;
-			}
+			if (token?.isCancellationRequested) break;
 
 			const fullPath = path.join(dirPath, entry.name);
 			const relativePath = path.relative(rootPath, fullPath);
@@ -86,7 +82,10 @@ export class LOCScanner {
 
 			if (entry.isDirectory()) {
 				await this.scanDirectory(rootPath, fullPath, result, gitignoreRules, token);
-			} else if (entry.isFile()) {
+				continue;
+			}
+
+			if (entry.isFile()) {
 				await this.processFile(fullPath, relativePath, result);
 			}
 		}
@@ -145,4 +144,3 @@ export class LOCScanner {
 		}
 	}
 }
-

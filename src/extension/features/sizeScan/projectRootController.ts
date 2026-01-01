@@ -28,14 +28,12 @@ export class ProjectRootController {
 		return this.currentRoot;
 	}
 
-	handleEditorChange(editor: vscode.TextEditor, debounceMs: number): void {
-		const newRoot = this.getRootForEditor(editor);
+		handleEditorChange(editor: vscode.TextEditor, debounceMs: number): void {
+			const newRoot = this.getRootForEditor(editor);
 
-		if (!newRoot || newRoot === this.currentRoot) {
-			return;
-		}
+			if (!newRoot || newRoot === this.currentRoot) return;
 
-		this.options.onRootChangeScheduled?.();
+			this.options.onRootChangeScheduled?.();
 
 		if (this.debounceTimer) {
 			clearTimeout(this.debounceTimer);
@@ -59,4 +57,3 @@ export class ProjectRootController {
 		return projectFolder?.uri.fsPath;
 	}
 }
-

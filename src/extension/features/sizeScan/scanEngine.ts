@@ -155,31 +155,32 @@ export async function scanProjectSize({
 		try {
 			const entries = await runLimited(() => fs.readdir(currentPath, { withFileTypes: true }));
 
-			for (const entry of entries) {
-				if (stopScheduling) break;
-				if (cancellationToken.isCancellationRequested) {
-					markIncomplete('cancelled');
-					break;
-				}
-
-				const fullPath = path.join(currentPath, entry.name);
-
-				if (entry.isSymbolicLink()) {
-					continue;
-				}
-
-				if (entry.isDirectory()) {
-					if (!stopScheduling) queue.push(fullPath);
-				} else if (entry.isFile()) {
-					if (stopScheduling || shouldStop()) break;
-					fileBatch.push(fullPath);
-					if (fileBatch.length >= statBatchSize) {
-						await flushBatch();
+				for (const entry of entries) {
+					if (stopScheduling) break;
+					if (cancellationToken.isCancellationRequested) {
+						markIncomplete('cancelled');
+						return;
 					}
-				}
-			}
 
-			await flushBatch();
+					const fullPath = path.join(currentPath, entry.name);
+
+					if (entry.isSymbolicLink()) {
+						continue;
+					}
+
+					if (entry.isDirectory()) {
+						if (!stopScheduling) queue.push(fullPath);
+						continue;
+					}
+
+					if (!entry.isFile()) continue;
+					if (stopScheduling || shouldStop()) break;
+
+					fileBatch.push(fullPath);
+					if (fileBatch.length >= statBatchSize) await flushBatch();
+				}
+
+				await flushBatch();
 		} catch (readdirError) {
 			if (
 				(readdirError as NodeJS.ErrnoException).code === 'EACCES' ||
@@ -223,10 +224,8 @@ export async function scanProjectSize({
 	};
 
 	const schedule = (): void => {
-		if (stopScheduling) {
-			// Best-effort: avoid holding large queues once we know we should stop.
-			queue.length = 0;
-		}
+		// Best-effort: avoid holding large queues once we know we should stop.
+		if (stopScheduling) queue.length = 0;
 
 		while (!stopScheduling && inFlight < maxDirectoryConcurrency && queue.length > 0) {
 			if (shouldStop()) break;
@@ -237,9 +236,6 @@ export async function scanProjectSize({
 
 			inFlight++;
 			void processDirectory(currentPath)
-				.catch(() => {
-					// Continue scan despite errors
-				})
 				.finally(() => {
 					inFlight--;
 					schedule();

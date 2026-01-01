@@ -76,9 +76,10 @@ export class MetricsPanel implements vscode.Disposable {
 		if (this.panel) {
 			this.panel.reveal(vscode.ViewColumn.Beside);
 			this.updatePanel();
-		} else {
-			this.createPanel();
+			return;
 		}
+
+		this.createPanel();
 	}
 
 	/**

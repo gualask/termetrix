@@ -66,21 +66,15 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 	}
 
 	private render(): void {
-		if (this.currentProgress) {
-			this.renderWithProgress();
-		} else {
-			this.renderIdle();
-		}
+		if (this.currentProgress) return this.renderWithProgress();
+		this.renderIdle();
 	}
 
 	/**
 	 * Update with progress (during scanning)
 	 */
 	private renderWithProgress(): void {
-		if (!this.currentProgress) {
-			this.renderIdle();
-			return;
-		}
+		if (!this.currentProgress) return this.renderIdle();
 
 		// Build status bar text with spinning indicator
 		const bytesText =

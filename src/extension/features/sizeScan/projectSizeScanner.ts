@@ -144,16 +144,14 @@ export class ProjectSizeScanner extends EventEmitter {
 			showWindowProgress: boolean;
 			emitProgressEvents: boolean;
 		}
-	): Promise<ExtendedScanResult | undefined> {
-		const { showWindowProgress, ...scanOptions } = options;
-		const rootPath = rootOverride || this.getCurrentRoot();
+		): Promise<ExtendedScanResult | undefined> {
+			const { showWindowProgress, ...scanOptions } = options;
+			const rootPath = rootOverride || this.getCurrentRoot();
 
-		if (!rootPath) {
-			return undefined;
-		}
+			if (!rootPath) return undefined;
 
-		// Cancel previous scan
-		this.cancelCurrentScan();
+			// Cancel previous scan
+			this.cancelCurrentScan();
 
 		// Mark as scanning
 		this.isScanning = true;

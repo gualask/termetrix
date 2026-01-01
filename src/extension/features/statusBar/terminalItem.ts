@@ -46,11 +46,12 @@ export class TerminalStatusBarItem implements vscode.Disposable {
 				name: 'Termetrix'
 			});
 			terminal.show();
-		} else {
-			// No project folder, just create a terminal
-			const terminal = vscode.window.createTerminal('Termetrix');
-			terminal.show();
+			return;
 		}
+
+		// No project folder, just create a terminal
+		const terminal = vscode.window.createTerminal('Termetrix');
+		terminal.show();
 	}
 
 	dispose(): void {

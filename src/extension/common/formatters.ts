@@ -11,8 +11,6 @@ export { formatBytes } from '../../shared/formatters.js';
  * @returns Formatted string (e.g., "1.4s")
  */
 export function formatDuration(ms: number): string {
-	if (ms < 1000) {
-		return `${ms}ms`;
-	}
+	if (ms < 1000) return `${ms}ms`;
 	return `${(ms / 1000).toFixed(1)}s`;
 }
