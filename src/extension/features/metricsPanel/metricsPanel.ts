@@ -17,9 +17,8 @@ import { getMetricsPanelHtml } from './metricsPanelHtml';
  */
 export class MetricsPanel implements vscode.Disposable {
 	private panel: vscode.WebviewPanel | undefined;
-	private readonly disposables = new DisposableStore();
-	private locScanner: LOCScanner;
-	private eventSubscription: ScannerEventSubscription | undefined;
+	private readonly panelDisposables = new DisposableStore();
+	private readonly locScanner: LOCScanner;
 	private readonly commandHandlers: ReturnType<typeof createMetricsPanelCommandHandlers>;
 	/** Temporary storage for directorySizes during webview session (for deep scan) */
 	private currentDirectorySizes: Record<string, number> | null = null;
@@ -58,13 +57,12 @@ export class MetricsPanel implements vscode.Disposable {
 	private disposePanelResources(): void {
 		this.currentDirectorySizes = null; // Free memory
 		this.currentDirectorySizesRootPath = null;
+		this.panelDisposables.clear();
+	}
 
-		if (this.eventSubscription) {
-			this.eventSubscription.dispose();
-			this.eventSubscription = undefined;
-		}
-
-		this.disposables.clear();
+	private handlePanelDisposed(): void {
+		this.panel = undefined;
+		this.disposePanelResources();
 	}
 
 	/**
@@ -80,18 +78,19 @@ export class MetricsPanel implements vscode.Disposable {
 			return;
 		}
 
-		this.createPanel();
+		this.panel = this.createPanel();
+		this.registerPanelSubscriptions(this.panel);
 	}
 
 	/**
-	 * Create webview panel
+	 * Create webview panel (no subscriptions).
 	 */
-	private createPanel(): void {
+	private createPanel(): vscode.WebviewPanel {
 		this.disposePanelResources();
 
 		const webviewUri = vscode.Uri.joinPath(this.extensionUri, 'out', 'webview');
 
-		this.panel = vscode.window.createWebviewPanel(
+		const panel = vscode.window.createWebviewPanel(
 			'termetrixScanPanel',
 			'Termetrix Scanner',
 			vscode.ViewColumn.Beside,
@@ -103,33 +102,36 @@ export class MetricsPanel implements vscode.Disposable {
 		);
 
 		// Set HTML content
-		this.panel.webview.html = getMetricsPanelHtml(this.panel.webview, webviewUri);
+		panel.webview.html = getMetricsPanelHtml(panel.webview, webviewUri);
 
+		return panel;
+	}
+
+	private registerPanelSubscriptions(panel: vscode.WebviewPanel): void {
 		// Subscribe to scanner events for the lifetime of this panel instance.
-		this.eventSubscription = new ScannerEventSubscription(this.scanner, {
-			onScanStart: this.handleScanStart.bind(this),
-			onProgress: this.handleProgress.bind(this),
-			onScanEnd: this.handleScanEnd.bind(this),
-		});
+		this.panelDisposables.add(
+			new ScannerEventSubscription(this.scanner, {
+				onScanStart: this.handleScanStart.bind(this),
+				onProgress: this.handleProgress.bind(this),
+				onScanEnd: this.handleScanEnd.bind(this),
+			})
+		);
 
 		// Track the user's last active editor column so we can open files there (not in the webview column).
-		this.disposables.add(
+		this.panelDisposables.add(
 			vscode.window.onDidChangeActiveTextEditor((editor) => {
 				this.updatePreferredEditorColumnFrom(editor);
 			})
 		);
 
 		// Handle messages from webview
-		this.disposables.add(
-			this.panel.webview.onDidReceiveMessage((message) => void this.handleWebviewMessage(message))
+		this.panelDisposables.add(
+			panel.webview.onDidReceiveMessage((message) => void this.handleWebviewMessage(message))
 		);
 
 		// Clean up when panel is closed
-		this.disposables.add(
-			this.panel.onDidDispose(() => {
-				this.panel = undefined;
-				this.disposePanelResources();
-			})
+		this.panelDisposables.add(
+			panel.onDidDispose(() => this.handlePanelDisposed())
 		);
 	}
 
@@ -189,9 +191,8 @@ export class MetricsPanel implements vscode.Disposable {
 	}
 
 	dispose(): void {
-		this.disposePanelResources();
 		this.panel?.dispose();
-		this.panel = undefined;
-		this.disposables.dispose();
+		this.handlePanelDisposed();
+		this.panelDisposables.dispose();
 	}
 }
