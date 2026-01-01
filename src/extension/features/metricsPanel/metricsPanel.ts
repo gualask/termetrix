@@ -92,7 +92,7 @@ export class MetricsPanel implements vscode.Disposable {
 
 		const panel = vscode.window.createWebviewPanel(
 			'termetrixScanPanel',
-			'Termetrix Scanner',
+			'Termetrix Metrics',
 			vscode.ViewColumn.Beside,
 			{
 				enableScripts: true,

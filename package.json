@@ -34,7 +34,7 @@
     "commands": [
       {
         "command": "termetrix.openScanPanel",
-        "title": "Termetrix: Open Directory Navigator"
+        "title": "Termetrix: Open Metrics Panel"
       },
       {
         "command": "termetrix.refreshScan",

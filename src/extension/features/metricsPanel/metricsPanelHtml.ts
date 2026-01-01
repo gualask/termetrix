@@ -13,7 +13,7 @@ export function getMetricsPanelHtml(webview: vscode.Webview, webviewUri: vscode.
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src ${webview.cspSource}; style-src ${webview.cspSource} 'unsafe-inline'; connect-src ${webview.cspSource};">
-	<title>Termetrix Scanner</title>
+	<title>Termetrix Metrics</title>
 	<link rel="stylesheet" href="${styleUri}">
 </head>
 <body>
@@ -21,4 +21,3 @@ export function getMetricsPanelHtml(webview: vscode.Webview, webviewUri: vscode.
 </body>
 </html>`;
 }
-

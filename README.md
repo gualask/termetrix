@@ -9,9 +9,9 @@ Termetrix keeps a low-noise pulse on your project: disk usage, a quick directory
 ### Project Size (Status Bar)
 - Shows project size in the status bar (`$(database)`)
 - Shows a spinner while scanning and a warning icon if a scan was incomplete
-- Click to open the Directory Navigator panel for more metrics
+- Click to open the Metrics Panel for more details
 
-### Directory Navigator Panel (Webview)
+### Metrics Panel (Webview)
 - Two tabs: **Size** and **LOC**
 - **Size**: click a row to reveal the folder in Explorer/Finder
 - **LOC**: language breakdown + top files; click a file to open it in the editor (not inside the webview tab group)
@@ -46,7 +46,7 @@ Termetrix keeps a low-noise pulse on your project: disk usage, a quick directory
 ```
 
 - **Terminal icon** - Click to open integrated terminal
-- **Database icon + size** - Project size (click to open Directory Navigator)
+- **Database icon + size** - Project size (click to open Metrics Panel)
 - **List icon + number** - Selected lines (shown only when text is selected)
 - **Spinner icon** - Shown during scanning
 - **Warning icon** - Incomplete scan indicator
@@ -77,7 +77,7 @@ All settings are optional and have sensible defaults.
 
 All commands are accessible via Command Palette (Ctrl+Shift+P / Cmd+Shift+P):
 
-- `Termetrix: Open Directory Navigator` - Open Directory Navigator panel
+- `Termetrix: Open Metrics Panel` - Open Metrics Panel
 - `Termetrix: Refresh Project Scan` - Manually trigger project scan
 - `Termetrix: Open Terminal` - Open integrated terminal
 
