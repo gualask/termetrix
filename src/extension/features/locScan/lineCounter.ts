@@ -10,22 +10,22 @@ export function countNonEmptyLines(content: string): number {
 	const TAB = 9;
 	const CR = 13;
 
+	const hasNonWhitespace = (from: number, to: number): boolean => {
+		for (let i = from; i < to; i++) {
+			const c = content.charCodeAt(i);
+			if (c !== SPACE && c !== TAB && c !== CR) return true;
+		}
+		return false;
+	};
+
 	for (let i = 0; i <= content.length; i++) {
 		const code = i < content.length ? content.charCodeAt(i) : NEWLINE;
 
 		if (code === NEWLINE || i === content.length) {
-			// Check if line has non-whitespace content
-			for (let j = start; j < i; j++) {
-				const c = content.charCodeAt(j);
-				if (c !== SPACE && c !== TAB && c !== CR) {
-					count++;
-					break;
-				}
-			}
+			if (hasNonWhitespace(start, i)) count++;
 			start = i + 1;
 		}
 	}
 
 	return count;
 }
-

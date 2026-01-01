@@ -6,8 +6,20 @@ export interface GitIgnoreRule {
 	regex: RegExp;
 }
 
+const BACKSLASH_REGEX = /\\/g;
+const TRAILING_WHITESPACE_REGEX = /\s+$/;
+const LINE_SPLIT_REGEX = /\r?\n/;
+const REGEX_SPECIAL_CHARS = /[.*+?^${}()|[\]\\]/;
+const REGEX_SPECIAL_CHARS_GLOBAL = /[.*+?^${}()|[\]\\]/g;
+
 function toPosixPath(value: string): string {
-	return value.replace(/\\/g, '/');
+	return value.replace(BACKSLASH_REGEX, '/');
+}
+
+function consumeDoubleStar(pattern: string, startIndex: number): number {
+	let i = startIndex;
+	while (pattern[i + 1] === '*') i++;
+	return i;
 }
 
 function globToRegex(pattern: string): string {
@@ -18,18 +30,19 @@ function globToRegex(pattern: string): string {
 		// Escape sequences
 		if (c === '\\' && i + 1 < pattern.length) {
 			const next = pattern[++i];
-			out += next.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			out += next.replace(REGEX_SPECIAL_CHARS_GLOBAL, '\\$&');
 			continue;
 		}
 
 		if (c === '*') {
-			if (pattern[i + 1] === '*') {
-				// Collapse any run of ** into a single .*
-				while (pattern[i + 1] === '*') i++;
-				out += '.*';
-			} else {
+			if (pattern[i + 1] !== '*') {
 				out += '[^/]*';
+				continue;
 			}
+
+			// Collapse any run of ** into a single .*
+			i = consumeDoubleStar(pattern, i);
+			out += '.*';
 			continue;
 		}
 
@@ -39,7 +52,7 @@ function globToRegex(pattern: string): string {
 		}
 
 		// Escape regex special chars
-		out += /[.*+?^${}()|[\]\\]/.test(c) ? '\\' + c : c;
+		out += REGEX_SPECIAL_CHARS.test(c) ? '\\' + c : c;
 	}
 	return out;
 }
@@ -56,11 +69,11 @@ export async function loadGitIgnoreRules(rootPath: string): Promise<GitIgnoreRul
 
 	const rules: GitIgnoreRule[] = [];
 
-	for (const rawLine of content.split(/\r?\n/)) {
+	for (const rawLine of content.split(LINE_SPLIT_REGEX)) {
 		let line = rawLine;
 
 		// Strip trailing CR/whitespace (gitignore trims unescaped trailing spaces; keep it simple here)
-		line = line.replace(/\s+$/, '');
+		line = line.replace(TRAILING_WHITESPACE_REGEX, '');
 		if (!line) continue;
 
 		// Comments (unless escaped)
