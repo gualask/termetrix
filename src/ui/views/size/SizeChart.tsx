@@ -49,15 +49,11 @@ function getDominantChildren(
 	if (children.length === 0) return [];
 
 	const dominant = children.filter(c => c.bytes / dir.bytes >= threshold);
+	if (dominant.length === 0 || dominant.length > 5) return [];
 
-	if (dominant.length > 0 && dominant.length <= 5) {
-		const dominantTotal = dominant.reduce((sum, c) => sum + c.bytes, 0);
-		if (dominantTotal / dir.bytes >= 0.6) {
-			return dominant;
-		}
-	}
-
-	return [];
+	const dominantTotal = dominant.reduce((sum, c) => sum + c.bytes, 0);
+	if (dominantTotal / dir.bytes < 0.6) return [];
+	return dominant;
 }
 
 /**

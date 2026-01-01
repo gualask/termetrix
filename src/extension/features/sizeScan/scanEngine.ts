@@ -108,6 +108,19 @@ async function readDirEntries(
 	return await runLimited(() => fs.readdir(currentPath, { withFileTypes: true }));
 }
 
+async function tryReadDirEntries(
+	runLimited: ConcurrencyLimiter,
+	currentPath: string,
+	state: Pick<ScanRuntimeState, 'skippedCount'>
+): Promise<ReadonlyArray<import('fs').Dirent> | undefined> {
+	try {
+		return await readDirEntries(runLimited, currentPath);
+	} catch (error) {
+		if (isPermissionDeniedError(error)) state.skippedCount++;
+		return undefined;
+	}
+}
+
 function updateTopDirectories(
 	topDirectories: Array<{ path: string; absolutePath: string; bytes: number }>,
 	rootPath: string,
@@ -140,6 +153,75 @@ async function sumFileBatch(
 	}
 
 	return { totalBytesDelta, directBytesDelta };
+}
+
+async function scanDirectoryEntries(params: {
+	entries: ReadonlyArray<import('fs').Dirent>;
+	currentPath: string;
+	queue: string[];
+	state: ScanRuntimeState;
+	startTime: number;
+	maxDurationMs: number;
+	maxDirectories: number;
+	cancellationToken: SizeScanCancellationToken;
+	runLimited: ConcurrencyLimiter;
+	statBatchSize: number;
+	isSummaryOnly: boolean;
+}): Promise<number> {
+	const {
+		entries,
+		currentPath,
+		queue,
+		state,
+		startTime,
+		maxDurationMs,
+		maxDirectories,
+		cancellationToken,
+		runLimited,
+		statBatchSize,
+		isSummaryOnly,
+	} = params;
+
+	let directBytes = 0;
+	let fileBatch: string[] = [];
+
+	const flushBatch = async (): Promise<void> => {
+		if (fileBatch.length === 0) return;
+		const paths = fileBatch;
+		fileBatch = [];
+
+		const { totalBytesDelta, directBytesDelta } = await sumFileBatch(runLimited, paths, isSummaryOnly);
+		state.totalBytes += totalBytesDelta;
+		directBytes += directBytesDelta;
+	};
+
+	for (const entry of entries) {
+		if (state.stopScheduling) break;
+
+		if (cancellationToken.isCancellationRequested) {
+			markIncomplete(state, 'cancelled');
+			// Keep cancellation fast: don't flush pending stat work.
+			return directBytes;
+		}
+
+		const fullPath = path.join(currentPath, entry.name);
+
+		if (entry.isSymbolicLink()) continue;
+
+		if (entry.isDirectory()) {
+			if (!state.stopScheduling) queue.push(fullPath);
+			continue;
+		}
+
+		if (!entry.isFile()) continue;
+		if (shouldStop(state, startTime, maxDurationMs, maxDirectories, cancellationToken)) break;
+
+		fileBatch.push(fullPath);
+		if (fileBatch.length >= statBatchSize) await flushBatch();
+	}
+
+	await flushBatch();
+	return directBytes;
 }
 
 interface ProcessDirectoryParams {
@@ -183,47 +265,22 @@ async function processDirectory(params: ProcessDirectoryParams): Promise<void> {
 
 	if (shouldStop(state, startTime, maxDurationMs, maxDirectories, cancellationToken)) return;
 
-	let directBytes = 0;
-	let fileBatch: string[] = [];
+	const entries = await tryReadDirEntries(runLimited, currentPath, state);
+	if (!entries) return;
 
-	const flushBatch = async (): Promise<void> => {
-		if (fileBatch.length === 0) return;
-		const paths = fileBatch;
-		fileBatch = [];
-
-		const { totalBytesDelta, directBytesDelta } = await sumFileBatch(runLimited, paths, isSummaryOnly);
-		state.totalBytes += totalBytesDelta;
-		directBytes += directBytesDelta;
-	};
-
-	try {
-		const entries = await readDirEntries(runLimited, currentPath);
-
-		for (const entry of entries) {
-			if (state.stopScheduling) break;
-			if (cancellationToken.isCancellationRequested) return markIncomplete(state, 'cancelled');
-
-			const fullPath = path.join(currentPath, entry.name);
-
-			if (entry.isSymbolicLink()) continue;
-
-			if (entry.isDirectory()) {
-				if (!state.stopScheduling) queue.push(fullPath);
-				continue;
-			}
-
-			if (!entry.isFile()) continue;
-			if (state.stopScheduling || shouldStop(state, startTime, maxDurationMs, maxDirectories, cancellationToken)) break;
-
-			fileBatch.push(fullPath);
-			if (fileBatch.length >= statBatchSize) await flushBatch();
-		}
-
-		await flushBatch();
-	} catch (error) {
-		if (isPermissionDeniedError(error)) state.skippedCount++;
-		return;
-	}
+	const directBytes = await scanDirectoryEntries({
+		entries,
+		currentPath,
+		queue,
+		state,
+		startTime,
+		maxDurationMs,
+		maxDirectories,
+		cancellationToken,
+		runLimited,
+		statBatchSize,
+		isSummaryOnly,
+	});
 
 	if (isSummaryOnly || directBytes <= 0) return;
 	if (collectDirectorySizes && dirSizes) dirSizes.set(currentPath, directBytes);
