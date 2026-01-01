@@ -19,6 +19,34 @@ function resolvePanelPath(
 	return resolvePathIfWithinRoot(rootPath, targetPath);
 }
 
+function sendPanelError(
+	deps: Pick<MetricsPanelCommandDeps, 'sendMessage'>,
+	message: string,
+	code: string
+): void {
+	deps.sendMessage({
+		type: 'error',
+		data: {
+			message,
+			code,
+			recoverable: true,
+		},
+	});
+}
+
+async function runCommand(
+	deps: Pick<MetricsPanelCommandDeps, 'sendMessage'>,
+	label: string,
+	fn: () => Promise<void>
+): Promise<void> {
+	try {
+		await fn();
+	} catch (error) {
+		console.error(`${label} failed:`, error);
+		sendPanelError(deps, `${label} failed`, `panel.${label}`);
+	}
+}
+
 export interface MetricsPanelCommandDeps {
 	scanner: ProjectSizeScanner;
 	cache: ScanCache;
@@ -70,23 +98,23 @@ export function createMetricsPanelCommandHandlers(
 			const resolved = resolvePanelPath(deps, targetPath);
 			if (!resolved) return;
 
-			const uri = vscode.Uri.file(resolved);
-			await vscode.commands.executeCommand('revealInExplorer', uri);
+			await runCommand(deps, 'revealInExplorer', async () => {
+				const uri = vscode.Uri.file(resolved);
+				await vscode.commands.executeCommand('revealInExplorer', uri);
+			});
 		},
 
 		openFile: async (filePath) => {
 			const absolutePath = resolvePanelPath(deps, filePath);
 			if (!absolutePath) return;
 
-			try {
+			await runCommand(deps, 'openFile', async () => {
 				const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(absolutePath));
 				await vscode.window.showTextDocument(doc, {
 					preview: true,
 					viewColumn: deps.getPreferredEditorColumn() ?? vscode.ViewColumn.One,
 				});
-			} catch (error) {
-				console.error('Open file failed:', error);
-			}
+			});
 		},
 
 		refresh: async () => {
@@ -104,18 +132,20 @@ export function createMetricsPanelCommandHandlers(
 
 			deps.sendMessage({ type: 'locCalculating' });
 
-			try {
+			await runCommand(deps, 'calculateLOC', async () => {
 				const result = await deps.locScanner.scan(rootPath);
 				deps.sendMessage({ type: 'locResult', data: result });
-			} catch (error) {
-				console.error('LOC calculation failed:', error);
-			}
+			});
 		},
 
 		deepScan: async () => {
 			const rootPath = getPanelRootPath(deps);
 			const directorySizes = deps.getDirectorySizes();
-			if (!rootPath || !directorySizes) return;
+			if (!rootPath || !directorySizes) {
+				// Ensure the UI overlay can be dismissed even when we can't compute deep metrics yet.
+				deps.sendMessage({ type: 'deepScanResult', data: [] });
+				return;
+			}
 
 			const deepDirectories = deps.scanner.computeDeepScan(directorySizes, rootPath);
 			deps.sendMessage({ type: 'deepScanResult', data: deepDirectories });

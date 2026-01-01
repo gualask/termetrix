@@ -7,52 +7,39 @@ export interface ScanEventHandlers {
 	onScanEnd?: (progress: ScanProgress) => void;
 }
 
-interface BoundHandlers {
-	scanStart: (progress: ScanProgress) => void;
-	progress: (progress: ScanProgress) => void;
-	scanEnd: (progress: ScanProgress) => void;
-}
+type ScanProgressHandler = (progress: ScanProgress) => void;
+
+const noop: ScanProgressHandler = () => {};
 
 /**
  * Manages scanner event subscriptions with proper cleanup
  * Single responsibility: event subscription lifecycle
  */
 export class ScannerEventSubscription {
-	private boundHandlers: BoundHandlers;
+	private readonly onScanStart: ScanProgressHandler;
+	private readonly onProgress: ScanProgressHandler;
+	private readonly onScanEnd: ScanProgressHandler;
 
 	constructor(
 		private scanner: ProjectSizeScanner,
 		handlers: ScanEventHandlers
 	) {
-		// Bind handlers with no-op fallbacks
-		this.boundHandlers = {
-			scanStart: handlers.onScanStart?.bind(handlers) ?? (() => {}),
-			progress: handlers.onProgress?.bind(handlers) ?? (() => {}),
-			scanEnd: handlers.onScanEnd?.bind(handlers) ?? (() => {})
-		};
+		this.onScanStart = handlers.onScanStart ?? noop;
+		this.onProgress = handlers.onProgress ?? noop;
+		this.onScanEnd = handlers.onScanEnd ?? noop;
 
 		this.subscribe();
 	}
 
 	private subscribe(): void {
-		this.scanner.on('scanStart', this.boundHandlers.scanStart);
-		this.scanner.on('progress', this.boundHandlers.progress);
-		this.scanner.on('scanEnd', this.boundHandlers.scanEnd);
+		this.scanner.on('scanStart', this.onScanStart);
+		this.scanner.on('progress', this.onProgress);
+		this.scanner.on('scanEnd', this.onScanEnd);
 	}
 
 	dispose(): void {
-		this.scanner.off('scanStart', this.boundHandlers.scanStart);
-		this.scanner.off('progress', this.boundHandlers.progress);
-		this.scanner.off('scanEnd', this.boundHandlers.scanEnd);
+		this.scanner.off('scanStart', this.onScanStart);
+		this.scanner.off('progress', this.onProgress);
+		this.scanner.off('scanEnd', this.onScanEnd);
 	}
-}
-
-/**
- * Helper to create a subscription with automatic cleanup
- */
-export function subscribeTo(
-	scanner: ProjectSizeScanner,
-	handlers: ScanEventHandlers
-): ScannerEventSubscription {
-	return new ScannerEventSubscription(scanner, handlers);
 }

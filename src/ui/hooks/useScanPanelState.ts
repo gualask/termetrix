@@ -96,6 +96,7 @@ export function useScanPanelState(): State {
 					break;
 				case 'error':
 					setError(message.data);
+					setIsCalculatingLOC(false);
 					break;
 			}
 		}

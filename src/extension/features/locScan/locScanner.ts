@@ -17,7 +17,7 @@ import { countNonEmptyLines } from './lineCounter';
  * Scanner for counting lines of code in source files
  */
 export class LOCScanner {
-	private excludePatterns: RegExp[];
+	private readonly excludePatterns: RegExp[];
 
 	constructor() {
 		// Default exclusions - matches common build/dependency directories
@@ -41,9 +41,9 @@ export class LOCScanner {
 		};
 
 		const gitignoreRules = await loadGitIgnoreRules(rootPath);
-		await this.scanDirectory(rootPath, rootPath, result, gitignoreRules, token);
+		await this.scanDirectory({ rootPath, dirPath: rootPath, result, gitignoreRules, token });
 
-		// Sort and limit top files to 10
+		// Sort and limit top files
 		result.topFiles.sort((a, b) => b.lines - a.lines);
 		result.topFiles = result.topFiles.slice(0, TOP_FILES_LIMIT);
 
@@ -53,42 +53,38 @@ export class LOCScanner {
 	/**
 	 * Recursively scan a directory
 	 */
-	private async scanDirectory(
-		rootPath: string,
-		dirPath: string,
-		result: LOCResult,
-		gitignoreRules: GitIgnoreRule[],
-		token?: vscode.CancellationToken
-	): Promise<void> {
+	private async scanDirectory(params: {
+		rootPath: string;
+		dirPath: string;
+		result: LOCResult;
+		gitignoreRules: GitIgnoreRule[];
+		token?: vscode.CancellationToken;
+	}): Promise<void> {
+		const { rootPath, dirPath, result, gitignoreRules, token } = params;
 		if (token?.isCancellationRequested) return;
 
-		let entries;
+		let dir;
 		try {
-			entries = await fs.opendir(dirPath);
+			dir = await fs.opendir(dirPath);
 		} catch {
 			return;
 		}
 
-		for await (const entry of entries) {
+		for await (const entry of dir) {
 			if (token?.isCancellationRequested) break;
 
 			const fullPath = path.join(dirPath, entry.name);
 			const relativePath = path.relative(rootPath, fullPath);
 
-			// Check exclusions
-			if (this.isExcluded(relativePath) || isGitIgnored(relativePath, gitignoreRules)) {
-				result.skippedFiles++;
-				continue;
-			}
+			if (this.shouldSkip(relativePath, gitignoreRules, result)) continue;
 
 			if (entry.isDirectory()) {
-				await this.scanDirectory(rootPath, fullPath, result, gitignoreRules, token);
+				await this.scanDirectory({ rootPath, dirPath: fullPath, result, gitignoreRules, token });
 				continue;
 			}
 
-			if (entry.isFile()) {
-				await this.processFile(fullPath, relativePath, result);
-			}
+			if (!entry.isFile()) continue;
+			await this.processFile(fullPath, relativePath, result);
 		}
 	}
 
@@ -97,6 +93,12 @@ export class LOCScanner {
 	 */
 	private isExcluded(relativePath: string): boolean {
 		return this.excludePatterns.some((pattern) => pattern.test(relativePath));
+	}
+
+	private shouldSkip(relativePath: string, rules: GitIgnoreRule[], result: LOCResult): boolean {
+		if (!this.isExcluded(relativePath) && !isGitIgnored(relativePath, rules)) return false;
+		result.skippedFiles++;
+		return true;
 	}
 
 	/**
@@ -120,7 +122,6 @@ export class LOCScanner {
 			return;
 		}
 
-		// Read and count lines
 		const content = await this.tryReadTextFile(fullPath);
 		if (content === undefined) {
 			result.skippedFiles++;
@@ -128,15 +129,14 @@ export class LOCScanner {
 		}
 
 		const lines = countNonEmptyLines(content);
+		if (lines <= 0) return;
 
-		if (lines > 0) {
-			const language = LANGUAGE_MAP[ext] ?? ext.slice(1).toUpperCase();
+		const language = LANGUAGE_MAP[ext] ?? ext.slice(1).toUpperCase();
 
-			result.totalLines += lines;
-			result.byLanguage[language] = (result.byLanguage[language] ?? 0) + lines;
-			result.topFiles.push({ path: relativePath, lines, language });
-			result.scannedFiles++;
-		}
+		result.totalLines += lines;
+		result.byLanguage[language] = (result.byLanguage[language] ?? 0) + lines;
+		result.topFiles.push({ path: relativePath, lines, language });
+		result.scannedFiles++;
 	}
 
 	private async tryStat(fullPath: string): Promise<Stats | undefined> {
