@@ -46,6 +46,12 @@ export function useScanPanelState(): State {
 	const [progressData, setProgressData] = useState<ProgressData | null>(null);
 	const [error, setError] = useState<ErrorData | null>(null);
 
+	const clearSizeDerivedState = (): void => {
+		setDeepDirectories(null);
+		setIsDeepScanning(false);
+		setProgressData(null);
+	};
+
 	useEffect(() => {
 		function handleMessage(event: MessageEvent<MessageFromExtension>) {
 			const message = event.data;
@@ -58,9 +64,7 @@ export function useScanPanelState(): State {
 						// Clear incomplete flag when starting a new scan
 						scanResult: prev.scanResult ? { ...prev.scanResult, incomplete: false } : undefined
 					}));
-					setDeepDirectories(null);
-					setIsDeepScanning(false);
-					setProgressData(null);
+					clearSizeDerivedState();
 					break;
 				case 'progress':
 					setProgressData(message.data);
@@ -68,8 +72,14 @@ export function useScanPanelState(): State {
 				case 'update':
 					setIsReady(true);
 					setViewData(message.data);
-					setProgressData(null);
 					setDeepDirectories(null);
+					setProgressData(null);
+
+					if (!message.data.scanResult) {
+						setIsDeepScanning(false);
+						break;
+					}
+
 					setIsDeepScanning(true);
 					postToExtension({ command: 'deepScan' });
 					break;
@@ -79,9 +89,7 @@ export function useScanPanelState(): State {
 						isScanning: false,
 						scanResult: undefined
 					});
-					setDeepDirectories(null);
-					setIsDeepScanning(false);
-					setProgressData(null);
+					clearSizeDerivedState();
 					break;
 				case 'locCalculating':
 					setIsCalculatingLOC(true);

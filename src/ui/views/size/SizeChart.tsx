@@ -131,56 +131,46 @@ export function SizeChart({ directories, totalBytes, onReveal, isLoading }: Prop
 		return Math.max(...items.map(i => i.percent));
 	}, [items]);
 
-	// Show hierarchical view
-	if (directories) {
-		if (items.length === 0) {
-			return (
-				<div class="size-chart empty">
-					{!isLoading && <EmptyState variant="inline" message="No data available." />}
-				</div>
-			);
-		}
-
-		return (
-			<div class="size-chart">
-				{items.map((item) => (
-					<div key={item.dir.absolutePath} class="size-chart-group">
-						<RowButton
-							class="size-chart-row parent"
-							onClick={() => onReveal(item.dir.absolutePath)}
-						>
-							<div
-								class="size-chart-bar"
-								style={{ width: `${(item.percent / maxPercent) * 100}%` }}
-							/>
-							<span class="size-chart-name">{item.name}</span>
-							<div class="size-chart-value">
-								{formatBytes(item.bytes)}
-								<span class="size-chart-percent">{formatPercent(item.percent)}</span>
-							</div>
-						</RowButton>
-						{item.children?.map((child) => (
-							<RowButton
-								key={child.dir.absolutePath}
-								class="size-chart-row child"
-								onClick={() => onReveal(child.dir.absolutePath)}
-							>
-								<span class="size-chart-name">{child.name}</span>
-								<div class="size-chart-value">
-									{formatBytes(child.bytes)}
-								</div>
-							</RowButton>
-						))}
-					</div>
-				))}
-			</div>
-		);
-	}
-
-	// No data available
-	return (
+	const empty = (
 		<div class="size-chart empty">
 			{!isLoading && <EmptyState variant="inline" message="No data available." />}
+		</div>
+	);
+
+	if (!directories || items.length === 0) return empty;
+
+	return (
+		<div class="size-chart">
+			{items.map((item) => (
+				<div key={item.dir.absolutePath} class="size-chart-group">
+					<RowButton
+						class="size-chart-row parent"
+						onClick={() => onReveal(item.dir.absolutePath)}
+					>
+						<div
+							class="size-chart-bar"
+							style={{ width: `${(item.percent / maxPercent) * 100}%` }}
+						/>
+						<span class="size-chart-name">{item.name}</span>
+						<div class="size-chart-value">
+							{formatBytes(item.bytes)}
+							<span class="size-chart-percent">{formatPercent(item.percent)}</span>
+						</div>
+					</RowButton>
+					{item.children?.map((child) => (
+						<RowButton
+							key={child.dir.absolutePath}
+							class="size-chart-row child"
+							onClick={() => onReveal(child.dir.absolutePath)}
+						>
+							<span class="size-chart-name">{child.name}</span>
+							<div class="size-chart-value">
+								{formatBytes(child.bytes)}
+							</div>
+						</RowButton>
+					))}
+				</div>
+			))}
 		</div>
 	);
 }

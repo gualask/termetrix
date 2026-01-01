@@ -191,8 +191,10 @@ export class MetricsPanel implements vscode.Disposable {
 	}
 
 	dispose(): void {
-		this.panel?.dispose();
-		this.handlePanelDisposed();
+		const panel = this.panel;
+		this.panel = undefined;
+		this.disposePanelResources();
+		panel?.dispose();
 		this.panelDisposables.dispose();
 	}
 }
