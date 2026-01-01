@@ -84,7 +84,7 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 			this.currentProgress.currentBytes > 0
 				? formatBytes(this.currentProgress.currentBytes)
 				: '...';
-		let text = `$(database) ${bytesText} $(loading~spin)`;
+		let text = `$(database) ${bytesText}`;
 
 		// Add selected lines if any
 		if (this.selectedLines > 0) {
@@ -92,7 +92,6 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 		}
 
 		this.statusBarItem.text = text;
-		// Simple static tooltip during scanning (no flickering)
 		this.statusBarItem.tooltip = 'Scanning project...';
 	}
 

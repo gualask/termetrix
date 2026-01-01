@@ -25,7 +25,7 @@ export class ProjectSizeScanner extends EventEmitter {
 	private readonly autoRefreshController: AutoRefreshController;
 	private isScanning = false;
 	private lastProgressUpdate = 0;
-	private readonly progressThrottleMs = 200; // Update max 5 times/second
+	private readonly progressThrottleMs = 500;
 
 	constructor(private cache: ScanCache) {
 		super();
@@ -114,7 +114,7 @@ export class ProjectSizeScanner extends EventEmitter {
 			collectDirectorySizes: false,
 			collectTopDirectories: false,
 			showWindowProgress: false,
-			emitProgressEvents: false,
+			emitProgressEvents: true,
 		});
 	}
 

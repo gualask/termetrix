@@ -34,7 +34,7 @@ export class ConfigManager {
 			maxDurationSeconds: config.get<number>('maxDurationSeconds', 10),
 			maxDirectories: config.get<number>('maxDirectories', 50000),
 			concurrentOperations: config.get<number>('concurrentOperations', 64),
-			rootSwitchDebounceMs: config.get<number>('rootSwitchDebounceMs', 200)
+			rootSwitchDebounceMs: config.get<number>('rootSwitchDebounceMs', 200),
 		};
 	}
 
