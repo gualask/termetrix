@@ -16,6 +16,28 @@ Termetrix keeps a low-noise pulse on your project: disk usage, a quick directory
 - **Size**: click a row to reveal the folder in Explorer/Finder
 - **LOC**: language breakdown + top files; click a file to open it in the editor (not inside the webview tab group)
 
+### Size View Reading Guide (WIP)
+
+The goal of the **Size** view is to give immediate, actionable insight without requiring manual navigation.
+
+- Rows are always directories (📁).
+- Children can be deep paths (collapsed) to surface “where the weight is”.
+- Everything is relative to the parent: the remaining weight is grouped in `others`.
+- When available, directory rows show file composition metadata (file count, average size, max file).
+- Some rows can expand to list the largest files (📄).
+
+Example:
+
+```
+📁 rust/                                       10.0 GB   files: 140k  avg: 24KB  max: 210MB
+├─ 📁 target/build/deps/                        5.0 GB    files: 55,880 avg: 78KB  max: 210MB
+│  ├─ 📄 libfoo.rlib                            210 MB
+│  ├─ 📄 cache.bin                              180 MB
+│  └─ 📄 build-script-build                      95 MB
+├─ 📁 target/debug/build/blake3/                3.2 GB    files: 12,400 avg: 260KB max: 18MB
+└─ 📁 others (leaf dirs: 412)                   1.8 GB    files: 10,000 avg: 30KB  max: 100KB
+```
+
 ### 🔢 Selection Line Counter
 - Displays selected lines count when text is selected
 - Updates in real-time as selection changes

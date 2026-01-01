@@ -48,6 +48,7 @@
 - [ ] Extension icon (128x128)
 - [ ] Marketplace screenshots
 - [ ] GIF demos in README
+- [ ] Guided size breakdown (others + file composition insights)
 - [ ] Interactive tutorial on first install
 - [ ] Keyboard shortcuts (optional, user-configurable)
 
