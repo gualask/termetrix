@@ -140,14 +140,14 @@ export function SizeView({
 			panelVariant="fixed"
 			panelAriaLabel="Directory breakdown"
 		>
-				<SizePanelBody
-					scanResult={viewData.scanResult}
-					isScanning={viewData.isScanning}
-					deepDirectories={deepDirectories}
-					isLoading={isLoading}
-					loadingLabel={loadingLabel}
-					onRevealInExplorer={onRevealInExplorer}
-				/>
+			<SizePanelBody
+				scanResult={viewData.scanResult}
+				isScanning={viewData.isScanning}
+				deepDirectories={deepDirectories}
+				isLoading={isLoading}
+				loadingLabel={loadingLabel}
+				onRevealInExplorer={onRevealInExplorer}
+			/>
 		</ViewLayout>
 	);
 }

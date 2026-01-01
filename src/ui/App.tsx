@@ -12,6 +12,25 @@ export function App() {
 
 	const [activeTab, setActiveTab] = useState<Tab>('size');
 
+	const activeView =
+		activeTab === 'size' ? (
+			<SizeView
+				viewData={size.viewData}
+				deepDirectories={size.deepDirectories}
+				isDeepScanning={size.isDeepScanning}
+				progressData={size.progressData}
+				onRefreshOrCancelScan={size.actions.refreshOrCancelScan}
+				onRevealInExplorer={size.actions.revealInExplorer}
+			/>
+		) : (
+			<LocView
+				locResult={loc.result}
+				isCalculating={loc.isCalculating}
+				onCalculate={loc.actions.calculateLOC}
+				onOpenFile={loc.actions.openFile}
+			/>
+		);
+
 	if (!isReady) {
 		return (
 			<div class="app">
@@ -32,24 +51,7 @@ export function App() {
 
 			<div class="content">
 				{error && <ErrorBanner error={error} onDismiss={dismissError} />}
-
-				{activeTab === 'size' ? (
-				<SizeView
-					viewData={size.viewData}
-					deepDirectories={size.deepDirectories}
-					isDeepScanning={size.isDeepScanning}
-					progressData={size.progressData}
-					onRefreshOrCancelScan={size.actions.refreshOrCancelScan}
-					onRevealInExplorer={size.actions.revealInExplorer}
-				/>
-				) : (
-					<LocView
-						locResult={loc.result}
-						isCalculating={loc.isCalculating}
-						onCalculate={loc.actions.calculateLOC}
-						onOpenFile={loc.actions.openFile}
-					/>
-				)}
+				{activeView}
 			</div>
 		</div>
 	);

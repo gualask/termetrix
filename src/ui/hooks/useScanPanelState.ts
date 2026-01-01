@@ -46,50 +46,65 @@ export function useScanPanelState(): State {
 	const [progressData, setProgressData] = useState<ProgressData | null>(null);
 	const [error, setError] = useState<ErrorData | null>(null);
 
-	const clearSizeDerivedState = (): void => {
+	const clearSizeDerivedData = (): void => {
 		setDeepDirectories(null);
-		setIsDeepScanning(false);
 		setProgressData(null);
 	};
 
+	const resetSizeDerivedState = (): void => {
+		clearSizeDerivedData();
+		setIsDeepScanning(false);
+	};
+
 	useEffect(() => {
+		const handleScanStart = (): void => {
+			setViewData((prev) => ({
+				...prev,
+				isScanning: true,
+				// Clear incomplete flag when starting a new scan
+				scanResult: prev.scanResult ? { ...prev.scanResult, incomplete: false } : undefined,
+			}));
+			resetSizeDerivedState();
+		};
+
+		const handleUpdate = (next: ViewData): void => {
+			setIsReady(true);
+			setViewData(next);
+			clearSizeDerivedData();
+
+			if (!next.scanResult) {
+				setIsDeepScanning(false);
+				return;
+			}
+
+			setIsDeepScanning(true);
+			postToExtension({ command: 'deepScan' });
+		};
+
+		const handleNoRoot = (): void => {
+			setIsReady(true);
+			setViewData({
+				isScanning: false,
+				scanResult: undefined,
+			});
+			resetSizeDerivedState();
+		};
+
 		function handleMessage(event: MessageEvent<MessageFromExtension>) {
 			const message = event.data;
 
 			switch (message.type) {
 				case 'scanStart':
-					setViewData(prev => ({
-						...prev,
-						isScanning: true,
-						// Clear incomplete flag when starting a new scan
-						scanResult: prev.scanResult ? { ...prev.scanResult, incomplete: false } : undefined
-					}));
-					clearSizeDerivedState();
+					handleScanStart();
 					break;
 				case 'progress':
 					setProgressData(message.data);
 					break;
 				case 'update':
-					setIsReady(true);
-					setViewData(message.data);
-					setDeepDirectories(null);
-					setProgressData(null);
-
-					if (!message.data.scanResult) {
-						setIsDeepScanning(false);
-						break;
-					}
-
-					setIsDeepScanning(true);
-					postToExtension({ command: 'deepScan' });
+					handleUpdate(message.data);
 					break;
 				case 'noRoot':
-					setIsReady(true);
-					setViewData({
-						isScanning: false,
-						scanResult: undefined
-					});
-					clearSizeDerivedState();
+					handleNoRoot();
 					break;
 				case 'locCalculating':
 					setIsCalculatingLOC(true);

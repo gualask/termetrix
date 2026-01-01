@@ -24,16 +24,19 @@ function LocByLanguageSection({ sortedLanguages, totalLines }: LocByLanguageSect
 	return (
 		<section class="section">
 			<h4>By Language</h4>
-			{sortedLanguages.map(([lang, lines]) => (
-				<div key={lang} class="language-row">
-					<div class="bar-container">
-						<div class="bar" style={{ width: `${(lines / totalLines) * 100}%` }} />
+			{sortedLanguages.map(([lang, lines]) => {
+				const percent = (lines / totalLines) * 100;
+				return (
+					<div key={lang} class="language-row">
+						<div class="bar-container">
+							<div class="bar" style={{ width: `${percent}%` }} />
+						</div>
+						<span class="lang-name">{lang}</span>
+						<span class="lang-count">{lines.toLocaleString()}</span>
+						<span class="lang-percent">{percent.toFixed(1)}%</span>
 					</div>
-					<span class="lang-name">{lang}</span>
-					<span class="lang-count">{lines.toLocaleString()}</span>
-					<span class="lang-percent">{((lines / totalLines) * 100).toFixed(1)}%</span>
-				</div>
-			))}
+				);
+			})}
 		</section>
 	);
 }
@@ -117,10 +120,10 @@ export function LocView({ locResult, isCalculating, onCalculate, onOpenFile }: P
 		/>
 	);
 
-	return (
-		<ViewLayout viewClass="loc-view" header={header} panelVariant="scroll" panelAriaLabel="LOC details">
-			{hasData ? (
-				<>
+		return (
+			<ViewLayout viewClass="loc-view" header={header} panelVariant="scroll" panelAriaLabel="LOC details">
+				{hasData ? (
+					<>
 					<LocByLanguageSection
 						sortedLanguages={sortedLanguages}
 						totalLines={locResult!.totalLines}
@@ -128,17 +131,15 @@ export function LocView({ locResult, isCalculating, onCalculate, onOpenFile }: P
 
 					<LocTopFilesSection topFiles={locResult!.topFiles} onOpenFile={onOpenFile} />
 				</>
-			) : (
-				<EmptyState
-					variant="panel"
+				) : (
+					<EmptyState
+						variant="panel"
 						message="No data yet."
 						hint="Use the ▶ button in the header to calculate LOC."
 					/>
 				)}
 
-				{isCalculating && (
-					<PanelOverlay label="Calculating…" />
-				)}
-		</ViewLayout>
-	);
-}
+				{isCalculating && <PanelOverlay label="Calculating…" />}
+			</ViewLayout>
+		);
+	}
