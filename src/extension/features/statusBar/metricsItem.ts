@@ -4,6 +4,7 @@ import { ScanCache } from '../sizeScan/scanCache';
 import { ScanProgress } from '../../types';
 import { formatBytes } from '../../common/formatters';
 import { ScannerEventSubscription } from '../../common/scannerEvents';
+import { DisposableStore } from '../../common/disposableStore';
 import { getSelectedLineCount, getSelectedLineCountFromSelections } from './selectionLineCounter';
 
 /**
@@ -14,7 +15,7 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 	private selectedLines: number = 0;
 	private currentProgress: ScanProgress | undefined;
 	private eventSubscription: ScannerEventSubscription;
-	private disposables: vscode.Disposable[] = [];
+	private readonly disposables = new DisposableStore();
 
 	constructor(
 		private scanner: ProjectSizeScanner,
@@ -35,11 +36,13 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 
 		// Keep selected line count in sync with editor state.
 		this.selectedLines = getSelectedLineCount(vscode.window.activeTextEditor);
-		this.disposables.push(
+		this.disposables.add(
 			vscode.window.onDidChangeTextEditorSelection((e) => {
 				this.selectedLines = getSelectedLineCountFromSelections(e.selections);
 				this.render();
-			}),
+			})
+		);
+		this.disposables.add(
 			vscode.window.onDidChangeActiveTextEditor((editor) => {
 				this.selectedLines = getSelectedLineCount(editor);
 				this.render();
@@ -140,7 +143,7 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 
 	dispose(): void {
 		this.eventSubscription.dispose();
-		this.disposables.forEach((d) => d.dispose());
+		this.disposables.dispose();
 		this.statusBarItem.dispose();
 	}
 }

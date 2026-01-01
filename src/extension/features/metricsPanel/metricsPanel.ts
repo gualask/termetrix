@@ -4,6 +4,7 @@ import { ScanCache } from '../sizeScan/scanCache';
 import type { MessageFromExtension, ProgressData, ScanProgress } from '../../types';
 import { LOCScanner } from '../locScan/locScanner';
 import { ScannerEventSubscription } from '../../common/scannerEvents';
+import { DisposableStore } from '../../common/disposableStore';
 import {
 	createMetricsPanelCommandHandlers,
 	dispatchMetricsPanelWebviewMessage,
@@ -16,7 +17,7 @@ import { getMetricsPanelHtml } from './metricsPanelHtml';
  */
 export class MetricsPanel implements vscode.Disposable {
 	private panel: vscode.WebviewPanel | undefined;
-	private disposables: vscode.Disposable[] = [];
+	private readonly disposables = new DisposableStore();
 	private locScanner: LOCScanner;
 	private eventSubscription: ScannerEventSubscription | undefined;
 	private readonly commandHandlers: ReturnType<typeof createMetricsPanelCommandHandlers>;
@@ -56,8 +57,7 @@ export class MetricsPanel implements vscode.Disposable {
 			this.eventSubscription = undefined;
 		}
 
-		this.disposables.forEach((d) => d.dispose());
-		this.disposables = [];
+		this.disposables.clear();
 	}
 
 	/**
@@ -112,7 +112,7 @@ export class MetricsPanel implements vscode.Disposable {
 		});
 
 		// Track the user's last active editor column so we can open files there (not in the webview column).
-		this.disposables.push(
+		this.disposables.add(
 			vscode.window.onDidChangeActiveTextEditor((editor) => {
 				if (!editor) return;
 				const scheme = editor.document.uri.scheme;
@@ -123,20 +123,16 @@ export class MetricsPanel implements vscode.Disposable {
 		);
 
 		// Handle messages from webview
-		this.panel.webview.onDidReceiveMessage(
-			(message) => void this.handleWebviewMessage(message),
-			undefined,
-			this.disposables
+		this.disposables.add(
+			this.panel.webview.onDidReceiveMessage((message) => void this.handleWebviewMessage(message))
 		);
 
 		// Clean up when panel is closed
-		this.panel.onDidDispose(
-			() => {
+		this.disposables.add(
+			this.panel.onDidDispose(() => {
 				this.panel = undefined;
 				this.disposePanelResources();
-			},
-			undefined,
-			this.disposables
+			})
 		);
 	}
 
@@ -199,5 +195,6 @@ export class MetricsPanel implements vscode.Disposable {
 		this.disposePanelResources();
 		this.panel?.dispose();
 		this.panel = undefined;
+		this.disposables.dispose();
 	}
 }

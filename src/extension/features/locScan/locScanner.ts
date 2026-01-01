@@ -1,6 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import type { Stats } from 'fs';
 import type { LOCResult } from '../../types';
 import { isGitIgnored, loadGitIgnoreRules, type GitIgnoreRule } from './gitignore';
 import {
@@ -111,12 +112,8 @@ export class LOCScanner {
 		}
 
 		// Check file size (skip files > 2MB to avoid memory issues)
-		let stat;
-		try {
-			stat = await fs.stat(fullPath);
-		} catch {
-			return;
-		}
+		const stat = await this.tryStat(fullPath);
+		if (!stat) return;
 
 		if (stat.size === 0 || stat.size > MAX_FILE_SIZE_BYTES) {
 			result.skippedFiles++;
@@ -124,10 +121,8 @@ export class LOCScanner {
 		}
 
 		// Read and count lines
-		let content;
-		try {
-			content = await fs.readFile(fullPath, 'utf8');
-		} catch {
+		const content = await this.tryReadTextFile(fullPath);
+		if (content === undefined) {
 			result.skippedFiles++;
 			return;
 		}
@@ -135,12 +130,28 @@ export class LOCScanner {
 		const lines = countNonEmptyLines(content);
 
 		if (lines > 0) {
-			const language = LANGUAGE_MAP[ext] || ext.slice(1).toUpperCase();
+			const language = LANGUAGE_MAP[ext] ?? ext.slice(1).toUpperCase();
 
 			result.totalLines += lines;
-			result.byLanguage[language] = (result.byLanguage[language] || 0) + lines;
+			result.byLanguage[language] = (result.byLanguage[language] ?? 0) + lines;
 			result.topFiles.push({ path: relativePath, lines, language });
 			result.scannedFiles++;
+		}
+	}
+
+	private async tryStat(fullPath: string): Promise<Stats | undefined> {
+		try {
+			return await fs.stat(fullPath);
+		} catch {
+			return undefined;
+		}
+	}
+
+	private async tryReadTextFile(fullPath: string): Promise<string | undefined> {
+		try {
+			return await fs.readFile(fullPath, 'utf8');
+		} catch {
+			return undefined;
 		}
 	}
 }

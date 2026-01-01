@@ -7,7 +7,7 @@ import { computeDeepScan } from './deepScan';
 import { scanProjectSize } from './scanEngine';
 import { AutoRefreshController } from './autoRefreshController';
 import { ProjectRootController } from './projectRootController';
-import { createCancellableSilentSession, createCancellableWindowProgressSession } from './scanSession';
+import { createCancellableSilentSession, createCancellableWindowProgressSession, type CancellableProgressSession } from './scanSession';
 
 /**
  * Project size scanner with soft limits and controlled concurrency
@@ -144,14 +144,14 @@ export class ProjectSizeScanner extends EventEmitter {
 			showWindowProgress: boolean;
 			emitProgressEvents: boolean;
 		}
-		): Promise<ExtendedScanResult | undefined> {
-			const { showWindowProgress, ...scanOptions } = options;
-			const rootPath = rootOverride || this.getCurrentRoot();
+	): Promise<ExtendedScanResult | undefined> {
+		const { showWindowProgress, ...scanOptions } = options;
+		const rootPath = rootOverride ?? this.getCurrentRoot();
 
-			if (!rootPath) return undefined;
+		if (!rootPath) return undefined;
 
-			// Cancel previous scan
-			this.cancelCurrentScan();
+		// Cancel previous scan
+		this.cancelCurrentScan();
 
 		// Mark as scanning
 		this.isScanning = true;
@@ -159,28 +159,13 @@ export class ProjectSizeScanner extends EventEmitter {
 		// Emit scan start
 		this.emitScanStart(rootPath);
 
-		const session = showWindowProgress
-			? createCancellableWindowProgressSession({
-					title: 'Scanning project...',
-					task: (cancellationToken) => this.performScan(rootPath, cancellationToken, scanOptions),
-				})
-			: createCancellableSilentSession({
-					task: (cancellationToken) => this.performScan(rootPath, cancellationToken, scanOptions),
-				});
+		const session = this.createScanSession(rootPath, showWindowProgress, scanOptions);
 		this.currentScanCancellation = session.cancellationSource;
 
 		try {
 			const result = await session.run();
 
-			if (result) {
-				const shouldPreserveTopDirectories = !scanOptions.collectTopDirectories;
-				const previous = shouldPreserveTopDirectories ? this.cache.get(rootPath) : undefined;
-				const merged: ExtendedScanResult =
-					previous && previous.topDirectories.length > 0
-						? { ...result, topDirectories: previous.topDirectories }
-						: result;
-				this.cache.set(rootPath, merged);
-			}
+			if (result) this.cacheScanResult(rootPath, result, scanOptions);
 
 			return result;
 		} catch (error) {
@@ -195,6 +180,42 @@ export class ProjectSizeScanner extends EventEmitter {
 			// Emit scan end
 			this.emitScanEnd(rootPath);
 		}
+	}
+
+	private createScanSession(
+		rootPath: string,
+		showWindowProgress: boolean,
+		options: { collectDirectorySizes: boolean; collectTopDirectories: boolean; emitProgressEvents: boolean }
+	): CancellableProgressSession<ExtendedScanResult> {
+		const task = (cancellationToken: vscode.CancellationToken) => this.performScan(rootPath, cancellationToken, options);
+
+		if (showWindowProgress) {
+			return createCancellableWindowProgressSession({
+				title: 'Scanning project...',
+				task,
+			});
+		}
+
+		return createCancellableSilentSession({ task });
+	}
+
+	private cacheScanResult(
+		rootPath: string,
+		result: ExtendedScanResult,
+		options: { collectTopDirectories: boolean }
+	): void {
+		if (options.collectTopDirectories) {
+			this.cache.set(rootPath, result);
+			return;
+		}
+
+		const previous = this.cache.get(rootPath);
+		if (!previous?.topDirectories.length) {
+			this.cache.set(rootPath, result);
+			return;
+		}
+
+		this.cache.set(rootPath, { ...result, topDirectories: previous.topDirectories });
 	}
 
 	/**
