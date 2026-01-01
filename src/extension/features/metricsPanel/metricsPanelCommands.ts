@@ -5,6 +5,20 @@ import type { ProjectSizeScanner } from '../sizeScan/projectSizeScanner';
 import type { ScanCache } from '../sizeScan/scanCache';
 import { LOCScanner } from '../locScan/locScanner';
 
+function getPanelRootPath(deps: Pick<MetricsPanelCommandDeps, 'isPanelOpen' | 'scanner'>): string | undefined {
+	if (!deps.isPanelOpen()) return undefined;
+	return deps.scanner.getCurrentRoot();
+}
+
+function resolvePanelPath(
+	deps: Pick<MetricsPanelCommandDeps, 'isPanelOpen' | 'scanner'>,
+	targetPath: string | undefined
+): string | undefined {
+	const rootPath = getPanelRootPath(deps);
+	if (!rootPath || !targetPath) return undefined;
+	return resolvePathIfWithinRoot(rootPath, targetPath);
+}
+
 export interface MetricsPanelCommandDeps {
 	scanner: ProjectSizeScanner;
 	cache: ScanCache;
@@ -12,7 +26,7 @@ export interface MetricsPanelCommandDeps {
 	isPanelOpen: () => boolean;
 	getPreferredEditorColumn: () => vscode.ViewColumn | undefined;
 	getDirectorySizes: () => Record<string, number> | null;
-	setDirectorySizes: (value: Record<string, number> | null) => void;
+	setDirectorySizes: (value: Record<string, number> | null, rootPath: string | null) => void;
 	sendMessage: (message: MessageFromExtension) => void;
 }
 
@@ -39,9 +53,8 @@ export async function triggerSizeScanAndStoreDirectorySizes(
 	deps: Pick<MetricsPanelCommandDeps, 'scanner' | 'setDirectorySizes'>
 ): Promise<void> {
 	const result = await deps.scanner.scan();
-	if (result?.directorySizes) {
-		deps.setDirectorySizes(result.directorySizes);
-	}
+	if (!result?.directorySizes) return;
+	deps.setDirectorySizes(result.directorySizes, result.rootPath);
 }
 
 export function createMetricsPanelCommandHandlers(
@@ -54,12 +67,7 @@ export function createMetricsPanelCommandHandlers(
 		},
 
 		revealInExplorer: async (targetPath) => {
-			if (!deps.isPanelOpen()) return;
-
-			const rootPath = deps.scanner.getCurrentRoot();
-			if (!rootPath || !targetPath) return;
-
-			const resolved = resolvePathIfWithinRoot(rootPath, targetPath);
+			const resolved = resolvePanelPath(deps, targetPath);
 			if (!resolved) return;
 
 			const uri = vscode.Uri.file(resolved);
@@ -67,12 +75,7 @@ export function createMetricsPanelCommandHandlers(
 		},
 
 		openFile: async (filePath) => {
-			if (!deps.isPanelOpen()) return;
-
-			const rootPath = deps.scanner.getCurrentRoot();
-			if (!rootPath || !filePath) return;
-
-			const absolutePath = resolvePathIfWithinRoot(rootPath, filePath);
+			const absolutePath = resolvePanelPath(deps, filePath);
 			if (!absolutePath) return;
 
 			try {
@@ -96,9 +99,7 @@ export function createMetricsPanelCommandHandlers(
 		},
 
 		calculateLOC: async () => {
-			if (!deps.isPanelOpen()) return;
-
-			const rootPath = deps.scanner.getCurrentRoot();
+			const rootPath = getPanelRootPath(deps);
 			if (!rootPath) return;
 
 			deps.sendMessage({ type: 'locCalculating' });
@@ -112,9 +113,7 @@ export function createMetricsPanelCommandHandlers(
 		},
 
 		deepScan: async () => {
-			if (!deps.isPanelOpen()) return;
-
-			const rootPath = deps.scanner.getCurrentRoot();
+			const rootPath = getPanelRootPath(deps);
 			const directorySizes = deps.getDirectorySizes();
 			if (!rootPath || !directorySizes) return;
 
@@ -124,7 +123,7 @@ export function createMetricsPanelCommandHandlers(
 
 		reset: async () => {
 			deps.scanner.cancelCurrentScan();
-			deps.setDirectorySizes(null);
+			deps.setDirectorySizes(null, null);
 			deps.sendMessage({ type: 'noRoot' });
 		},
 	};
@@ -142,4 +141,3 @@ export async function dispatchMetricsPanelWebviewMessage(
 	const handler = handlers[maybeMessage.command as MessageToExtension['command']];
 	await handler(typeof maybeMessage.path === 'string' ? maybeMessage.path : undefined);
 }
-

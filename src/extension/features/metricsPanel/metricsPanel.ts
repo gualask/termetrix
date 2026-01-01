@@ -40,12 +40,19 @@ export class MetricsPanel implements vscode.Disposable {
 			isPanelOpen: () => Boolean(this.panel),
 			getPreferredEditorColumn: () => this.preferredEditorColumn,
 			getDirectorySizes: () => this.currentDirectorySizes,
-			setDirectorySizes: (value) => {
+			setDirectorySizes: (value, rootPath) => {
 				this.currentDirectorySizes = value;
-				this.currentDirectorySizesRootPath = value ? (this.scanner.getCurrentRoot() ?? null) : null;
+				this.currentDirectorySizesRootPath = value ? rootPath : null;
 			},
 			sendMessage: (message) => this.sendMessage(message),
 		});
+	}
+
+	private updatePreferredEditorColumnFrom(editor: vscode.TextEditor | undefined): void {
+		if (!editor) return;
+		const scheme = editor.document.uri.scheme;
+		if (scheme !== 'file' && scheme !== 'untitled') return;
+		this.preferredEditorColumn = editor.viewColumn;
 	}
 
 	private disposePanelResources(): void {
@@ -65,13 +72,7 @@ export class MetricsPanel implements vscode.Disposable {
 	 */
 	show(): void {
 		// Capture the current user editor column before focusing/creating the webview.
-		const editor = vscode.window.activeTextEditor;
-		if (editor) {
-			const scheme = editor.document.uri.scheme;
-			if (scheme === 'file' || scheme === 'untitled') {
-				this.preferredEditorColumn = editor.viewColumn;
-			}
-		}
+		this.updatePreferredEditorColumnFrom(vscode.window.activeTextEditor);
 
 		if (this.panel) {
 			this.panel.reveal(vscode.ViewColumn.Beside);
@@ -114,11 +115,7 @@ export class MetricsPanel implements vscode.Disposable {
 		// Track the user's last active editor column so we can open files there (not in the webview column).
 		this.disposables.add(
 			vscode.window.onDidChangeActiveTextEditor((editor) => {
-				if (!editor) return;
-				const scheme = editor.document.uri.scheme;
-				if (scheme === 'file' || scheme === 'untitled') {
-					this.preferredEditorColumn = editor.viewColumn;
-				}
+				this.updatePreferredEditorColumnFrom(editor);
 			})
 		);
 

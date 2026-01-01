@@ -22,6 +22,13 @@ export class TerminalStatusBarItem implements vscode.Disposable {
 		this.statusBarItem.show();
 	}
 
+	private showTerminal(cwd?: string): void {
+		const terminal = cwd
+			? vscode.window.createTerminal({ cwd, name: 'Termetrix' })
+			: vscode.window.createTerminal('Termetrix');
+		terminal.show();
+	}
+
 	/**
 	 * Open integrated terminal
 	 */
@@ -29,29 +36,13 @@ export class TerminalStatusBarItem implements vscode.Disposable {
 		// Prefer the current project root (same context used by the scanner).
 		const projectRoot = this.getProjectRoot?.();
 
-		if (projectRoot) {
-			const terminal = vscode.window.createTerminal({
-				cwd: projectRoot,
-				name: 'Termetrix'
-			});
-			terminal.show();
-			return;
-		}
+		if (projectRoot) return this.showTerminal(projectRoot);
 
-		// Fallback: use first workspace folder if available.
-		const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-		if (workspaceFolder) {
-			const terminal = vscode.window.createTerminal({
-				cwd: workspaceFolder.uri.fsPath,
-				name: 'Termetrix'
-			});
-			terminal.show();
-			return;
-		}
+		// Fallback: use the first opened folder (if any).
+		const firstFolder = vscode.workspace.workspaceFolders?.[0];
+		if (firstFolder) return this.showTerminal(firstFolder.uri.fsPath);
 
-		// No project folder, just create a terminal
-		const terminal = vscode.window.createTerminal('Termetrix');
-		terminal.show();
+		this.showTerminal();
 	}
 
 	dispose(): void {

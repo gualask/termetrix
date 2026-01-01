@@ -17,23 +17,24 @@ export class ProjectRootController {
 
 	initializeFromActiveEditor(): void {
 		const editor = vscode.window.activeTextEditor;
-		if (editor) {
-			this.currentRoot = this.getRootForEditor(editor);
+		if (!editor) {
+			this.currentRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 			return;
 		}
-		this.currentRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+		this.currentRoot = this.getRootForEditor(editor);
 	}
 
 	getCurrentRoot(): string | undefined {
 		return this.currentRoot;
 	}
 
-		handleEditorChange(editor: vscode.TextEditor, debounceMs: number): void {
-			const newRoot = this.getRootForEditor(editor);
+	handleEditorChange(editor: vscode.TextEditor, debounceMs: number): void {
+		const newRoot = this.getRootForEditor(editor);
 
-			if (!newRoot || newRoot === this.currentRoot) return;
+		if (!newRoot || newRoot === this.currentRoot) return;
 
-			this.options.onRootChangeScheduled?.();
+		this.options.onRootChangeScheduled?.();
 
 		if (this.debounceTimer) {
 			clearTimeout(this.debounceTimer);
@@ -46,10 +47,9 @@ export class ProjectRootController {
 	}
 
 	dispose(): void {
-		if (this.debounceTimer) {
-			clearTimeout(this.debounceTimer);
-			this.debounceTimer = undefined;
-		}
+		if (!this.debounceTimer) return;
+		clearTimeout(this.debounceTimer);
+		this.debounceTimer = undefined;
 	}
 
 	private getRootForEditor(editor: vscode.TextEditor): string | undefined {

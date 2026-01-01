@@ -3,6 +3,15 @@ import * as path from 'path';
 import type { ExtendedScanResult } from '../../types';
 import { createConcurrencyLimiter, type ConcurrencyLimiter } from '../../common/concurrencyLimiter';
 
+interface ScanRuntimeState {
+	totalBytes: number;
+	directoriesScanned: number;
+	skippedCount: number;
+	incomplete: boolean;
+	incompleteReason: 'cancelled' | 'time_limit' | 'dir_limit' | undefined;
+	stopScheduling: boolean;
+}
+
 export interface SizeScanConfig {
 	maxDurationSeconds: number;
 	maxDirectories: number;
@@ -49,6 +58,40 @@ function isPermissionDeniedError(error: unknown): boolean {
 	return code === 'EACCES' || code === 'EPERM';
 }
 
+function markIncomplete(state: ScanRuntimeState, reason: 'cancelled' | 'time_limit' | 'dir_limit'): void {
+	if (state.incomplete) return;
+	state.incomplete = true;
+	state.incompleteReason = reason;
+	state.stopScheduling = true;
+}
+
+function shouldStop(
+	state: ScanRuntimeState,
+	startTime: number,
+	maxDurationMs: number,
+	maxDirectories: number,
+	cancellationToken: SizeScanCancellationToken
+): boolean {
+	if (state.stopScheduling) return true;
+
+	if (cancellationToken.isCancellationRequested) {
+		markIncomplete(state, 'cancelled');
+		return true;
+	}
+
+	if (Date.now() - startTime > maxDurationMs) {
+		markIncomplete(state, 'time_limit');
+		return true;
+	}
+
+	if (state.directoriesScanned >= maxDirectories) {
+		markIncomplete(state, 'dir_limit');
+		return true;
+	}
+
+	return false;
+}
+
 async function statFileSize(runLimited: ConcurrencyLimiter, fullPath: string): Promise<number> {
 	try {
 		const stats = await runLimited(() => fs.stat(fullPath));
@@ -80,6 +123,113 @@ function updateTopDirectories(
 	if (topDirectories.length > topDirectoriesLimit) topDirectories.length = topDirectoriesLimit;
 }
 
+async function sumFileBatch(
+	runLimited: ConcurrencyLimiter,
+	paths: ReadonlyArray<string>,
+	isSummaryOnly: boolean
+): Promise<{ totalBytesDelta: number; directBytesDelta: number }> {
+	const sizes = await Promise.all(paths.map((p) => statFileSize(runLimited, p)));
+
+	let totalBytesDelta = 0;
+	let directBytesDelta = 0;
+
+	for (const size of sizes) {
+		if (size <= 0) continue;
+		totalBytesDelta += size;
+		if (!isSummaryOnly) directBytesDelta += size;
+	}
+
+	return { totalBytesDelta, directBytesDelta };
+}
+
+interface ProcessDirectoryParams {
+	currentPath: string;
+	rootPath: string;
+	queue: string[];
+	state: ScanRuntimeState;
+	startTime: number;
+	maxDurationMs: number;
+	maxDirectories: number;
+	cancellationToken: SizeScanCancellationToken;
+	runLimited: ConcurrencyLimiter;
+	statBatchSize: number;
+	isSummaryOnly: boolean;
+	collectDirectorySizes: boolean;
+	collectTopDirectories: boolean;
+	topDirectoriesLimit: number;
+	dirSizes: Map<string, number> | undefined;
+	topDirectories: Array<{ path: string; absolutePath: string; bytes: number }>;
+}
+
+async function processDirectory(params: ProcessDirectoryParams): Promise<void> {
+	const {
+		currentPath,
+		rootPath,
+		queue,
+		state,
+		startTime,
+		maxDurationMs,
+		maxDirectories,
+		cancellationToken,
+		runLimited,
+		statBatchSize,
+		isSummaryOnly,
+		collectDirectorySizes,
+		collectTopDirectories,
+		topDirectoriesLimit,
+		dirSizes,
+		topDirectories,
+	} = params;
+
+	if (shouldStop(state, startTime, maxDurationMs, maxDirectories, cancellationToken)) return;
+
+	let directBytes = 0;
+	let fileBatch: string[] = [];
+
+	const flushBatch = async (): Promise<void> => {
+		if (fileBatch.length === 0) return;
+		const paths = fileBatch;
+		fileBatch = [];
+
+		const { totalBytesDelta, directBytesDelta } = await sumFileBatch(runLimited, paths, isSummaryOnly);
+		state.totalBytes += totalBytesDelta;
+		directBytes += directBytesDelta;
+	};
+
+	try {
+		const entries = await readDirEntries(runLimited, currentPath);
+
+		for (const entry of entries) {
+			if (state.stopScheduling) break;
+			if (cancellationToken.isCancellationRequested) return markIncomplete(state, 'cancelled');
+
+			const fullPath = path.join(currentPath, entry.name);
+
+			if (entry.isSymbolicLink()) continue;
+
+			if (entry.isDirectory()) {
+				if (!state.stopScheduling) queue.push(fullPath);
+				continue;
+			}
+
+			if (!entry.isFile()) continue;
+			if (state.stopScheduling || shouldStop(state, startTime, maxDurationMs, maxDirectories, cancellationToken)) break;
+
+			fileBatch.push(fullPath);
+			if (fileBatch.length >= statBatchSize) await flushBatch();
+		}
+
+		await flushBatch();
+	} catch (error) {
+		if (isPermissionDeniedError(error)) state.skippedCount++;
+		return;
+	}
+
+	if (isSummaryOnly || directBytes <= 0) return;
+	if (collectDirectorySizes && dirSizes) dirSizes.set(currentPath, directBytes);
+	if (collectTopDirectories) updateTopDirectories(topDirectories, rootPath, currentPath, directBytes, topDirectoriesLimit);
+}
+
 /**
  * File-system size scan engine (no VS Code dependencies).
  * Single responsibility: compute directory sizes + metadata.
@@ -100,103 +250,18 @@ export async function scanProjectSize({
 
 	const dirSizes = collectDirectorySizes ? new Map<string, number>() : undefined;
 	const topDirectories: Array<{ path: string; absolutePath: string; bytes: number }> = [];
-	let totalBytes = 0;
-	let directoriesScanned = 0;
-	let skippedCount = 0;
-	let incomplete = false;
-	let incompleteReason: 'cancelled' | 'time_limit' | 'dir_limit' | undefined;
+	const state: ScanRuntimeState = {
+		totalBytes: 0,
+		directoriesScanned: 0,
+		skippedCount: 0,
+		incomplete: false,
+		incompleteReason: undefined,
+		stopScheduling: false,
+	};
 
 	const queue: string[] = [rootPath];
-	let stopScheduling = false;
-
 	const { maxDurationMs, maxFsConcurrency, statBatchSize, maxDirectoryConcurrency } = computeScanLimits(config);
 	const runLimited = createConcurrencyLimiter(maxFsConcurrency);
-
-	const markIncomplete = (reason: 'cancelled' | 'time_limit' | 'dir_limit'): void => {
-		if (incomplete) return;
-		incomplete = true;
-		incompleteReason = reason;
-		stopScheduling = true;
-	};
-
-	const shouldStop = (): boolean => {
-		if (stopScheduling) return true;
-		if (cancellationToken.isCancellationRequested) {
-			markIncomplete('cancelled');
-			return true;
-		}
-		if (Date.now() - startTime > maxDurationMs) {
-			markIncomplete('time_limit');
-			return true;
-		}
-		if (directoriesScanned >= config.maxDirectories) {
-			markIncomplete('dir_limit');
-			return true;
-		}
-		return false;
-	};
-
-	const processDirectory = async (currentPath: string): Promise<void> => {
-		if (shouldStop()) return;
-
-		let directBytes = 0;
-		let fileBatch: string[] = [];
-
-		const flushBatch = async (): Promise<void> => {
-			if (fileBatch.length === 0) return;
-			const paths = fileBatch;
-			fileBatch = [];
-
-			const sizes = await Promise.all(paths.map((p) => statFileSize(runLimited, p)));
-			for (const size of sizes) {
-				if (size <= 0) continue;
-				totalBytes += size;
-				if (!isSummaryOnly) directBytes += size;
-			}
-		};
-
-		try {
-			const entries = await readDirEntries(runLimited, currentPath);
-
-			for (const entry of entries) {
-				if (stopScheduling) break;
-				if (cancellationToken.isCancellationRequested) {
-					markIncomplete('cancelled');
-					return;
-				}
-
-				const fullPath = path.join(currentPath, entry.name);
-
-				if (entry.isSymbolicLink()) continue;
-
-				if (entry.isDirectory()) {
-					if (!stopScheduling) queue.push(fullPath);
-					continue;
-				}
-
-				if (!entry.isFile()) continue;
-				if (stopScheduling || shouldStop()) break;
-
-				fileBatch.push(fullPath);
-				if (fileBatch.length >= statBatchSize) await flushBatch();
-			}
-
-			await flushBatch();
-		} catch (readdirError) {
-			if (isPermissionDeniedError(readdirError)) skippedCount++;
-			// Continue scan despite errors
-		}
-
-		if (isSummaryOnly || directBytes <= 0) return;
-
-		if (collectDirectorySizes && dirSizes) {
-			dirSizes.set(currentPath, directBytes);
-		}
-
-			if (collectTopDirectories) {
-				updateTopDirectories(topDirectories, rootPath, currentPath, directBytes, topDirectoriesLimit);
-			}
-		};
 
 	let inFlight = 0;
 	let resolveDone: (() => void) | undefined;
@@ -208,7 +273,7 @@ export async function scanProjectSize({
 	const maybeFinish = (): void => {
 		if (!resolveDone) return;
 		if (inFlight !== 0) return;
-		if (stopScheduling || queue.length === 0) {
+		if (state.stopScheduling || queue.length === 0) {
 			resolveDone();
 			resolveDone = undefined;
 		}
@@ -216,17 +281,34 @@ export async function scanProjectSize({
 
 	const schedule = (): void => {
 		// Best-effort: avoid holding large queues once we know we should stop.
-		if (stopScheduling) queue.length = 0;
+		if (state.stopScheduling) queue.length = 0;
 
-		while (!stopScheduling && inFlight < maxDirectoryConcurrency && queue.length > 0) {
-			if (shouldStop()) break;
+		while (!state.stopScheduling && inFlight < maxDirectoryConcurrency && queue.length > 0) {
+			if (shouldStop(state, startTime, maxDurationMs, config.maxDirectories, cancellationToken)) break;
 
 			const currentPath = queue.pop()!;
-			directoriesScanned++;
-			onProgress?.({ totalBytes, directoriesScanned });
+			state.directoriesScanned++;
+			onProgress?.({ totalBytes: state.totalBytes, directoriesScanned: state.directoriesScanned });
 
 			inFlight++;
-			void processDirectory(currentPath)
+			void processDirectory({
+				currentPath,
+				rootPath,
+				queue,
+				state,
+				startTime,
+				maxDurationMs,
+				maxDirectories: config.maxDirectories,
+				cancellationToken,
+				runLimited,
+				statBatchSize,
+				isSummaryOnly,
+				collectDirectorySizes,
+				collectTopDirectories,
+				topDirectoriesLimit,
+				dirSizes,
+				topDirectories,
+			})
 				.finally(() => {
 					inFlight--;
 					schedule();
@@ -248,17 +330,17 @@ export async function scanProjectSize({
 
 	return {
 		rootPath,
-		totalBytes,
+		totalBytes: state.totalBytes,
 		...(directorySizes ? { directorySizes } : {}),
 		topDirectories: collectTopDirectories ? topDirectories : [],
 		metadata: {
 			startTime,
 			endTime,
 			duration: endTime - startTime,
-			directoriesScanned,
+			directoriesScanned: state.directoriesScanned,
 		},
-		incomplete,
-		incompleteReason,
-		skippedCount,
+		incomplete: state.incomplete,
+		incompleteReason: state.incompleteReason,
+		skippedCount: state.skippedCount,
 	};
 }
