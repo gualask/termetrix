@@ -5,9 +5,13 @@ import { ProjectSizeScanner } from './features/sizeScan/projectSizeScanner';
 import { ScanCache } from './features/sizeScan/scanCache';
 import { MetricsPanel } from './features/metricsPanel/metricsPanel';
 
-export function activate(context: vscode.ExtensionContext) {
-	console.log('Termetrix is now active');
-
+function createCoreServices(context: vscode.ExtensionContext): {
+	cache: ScanCache;
+	scanner: ProjectSizeScanner;
+	metricsPanel: MetricsPanel;
+	terminalItem: TerminalStatusBarItem;
+	metricsItem: MetricsStatusBarItem;
+} {
 	const cache = new ScanCache();
 	const scanner = new ProjectSizeScanner(cache);
 	const metricsPanel = new MetricsPanel(scanner, cache, context.extensionUri);
@@ -15,7 +19,17 @@ export function activate(context: vscode.ExtensionContext) {
 	const terminalItem = new TerminalStatusBarItem(() => scanner.getCurrentRoot());
 	const metricsItem = new MetricsStatusBarItem(scanner, cache);
 
-	// Register commands
+	return { cache, scanner, metricsPanel, terminalItem, metricsItem };
+}
+
+function registerCommands(params: {
+	scanner: ProjectSizeScanner;
+	metricsPanel: MetricsPanel;
+	metricsItem: MetricsStatusBarItem;
+	terminalItem: TerminalStatusBarItem;
+}): vscode.Disposable[] {
+	const { scanner, metricsPanel, metricsItem, terminalItem } = params;
+
 	const openScanPanelCmd = vscode.commands.registerCommand('termetrix.openScanPanel', () => metricsPanel.show());
 
 	const refreshScanCmd = vscode.commands.registerCommand('termetrix.refreshScan', async () => {
@@ -27,30 +41,47 @@ export function activate(context: vscode.ExtensionContext) {
 		terminalItem.openTerminal();
 	});
 
-	context.subscriptions.push(
-		terminalItem,
-		metricsItem,
-		metricsPanel,
-		openScanPanelCmd,
-		refreshScanCmd,
-		openTerminalCmd,
-		// Dispose scanner on deactivation
-		{ dispose: () => scanner.dispose() }
-	);
+	return [openScanPanelCmd, refreshScanCmd, openTerminalCmd];
+}
 
+function registerEditorTracking(params: {
+	scanner: ProjectSizeScanner;
+	metricsItem: MetricsStatusBarItem;
+}): vscode.Disposable {
+	const { scanner, metricsItem } = params;
+	return vscode.window.onDidChangeActiveTextEditor((editor) => {
+		if (!editor) return;
+		scanner.handleEditorChange(editor);
+		metricsItem.update();
+	});
+}
+
+function runInitialScan(params: { scanner: ProjectSizeScanner; metricsItem: MetricsStatusBarItem }): void {
+	const { scanner, metricsItem } = params;
 	void (async () => {
 		await scanner.scanSummary();
 		metricsItem.update();
 	})();
+}
 
-	// Watch for active editor changes (multi-root project handling)
+export function activate(context: vscode.ExtensionContext) {
+	console.log('Termetrix is now active');
+
+	const { scanner, metricsPanel, terminalItem, metricsItem } = createCoreServices(context);
+	const commands = registerCommands({ scanner, metricsPanel, metricsItem, terminalItem });
+	const editorTracking = registerEditorTracking({ scanner, metricsItem });
+
 	context.subscriptions.push(
-		vscode.window.onDidChangeActiveTextEditor((editor) => {
-			if (!editor) return;
-			scanner.handleEditorChange(editor);
-			metricsItem.update();
-		})
+		terminalItem,
+		metricsItem,
+		metricsPanel,
+		...commands,
+		editorTracking,
+		// Dispose scanner on deactivation
+		{ dispose: () => scanner.dispose() }
 	);
+
+	runInitialScan({ scanner, metricsItem });
 }
 
 export function deactivate() {

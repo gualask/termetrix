@@ -12,7 +12,7 @@ import { getSelectedLineCount, getSelectedLineCountFromSelections } from './sele
  */
 export class MetricsStatusBarItem implements vscode.Disposable {
 	private statusBarItem: vscode.StatusBarItem;
-	private selectedLines: number = 0;
+	private selectedLines = 0;
 	private currentProgress: ScanProgress | undefined;
 	private eventSubscription: ScannerEventSubscription;
 	private readonly disposables = new DisposableStore();
@@ -20,7 +20,7 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 	constructor(
 		private scanner: ProjectSizeScanner,
 		private cache: ScanCache
-	) {
+		) {
 		this.statusBarItem = vscode.window.createStatusBarItem(
 			vscode.StatusBarAlignment.Left,
 			999
@@ -38,13 +38,13 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 		this.selectedLines = getSelectedLineCount(vscode.window.activeTextEditor);
 		this.disposables.add(
 			vscode.window.onDidChangeTextEditorSelection((e) => {
-				this.selectedLines = getSelectedLineCountFromSelections(e.selections);
+				this.updateSelectedLinesFromSelections(e.selections);
 				this.render();
 			})
 		);
 		this.disposables.add(
 			vscode.window.onDidChangeActiveTextEditor((editor) => {
-				this.selectedLines = getSelectedLineCount(editor);
+				this.updateSelectedLinesFromEditor(editor);
 				this.render();
 			})
 		);
@@ -54,23 +54,37 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 	}
 
 	private handleScanStart(progress: ScanProgress): void {
-		this.currentProgress = progress;
-		this.render();
+		this.setProgress(progress);
 	}
 
 	private handleProgress(progress: ScanProgress): void {
-		this.currentProgress = progress;
-		this.render();
+		this.setProgress(progress);
 	}
 
 	private handleScanEnd(_progress: ScanProgress): void {
-		this.currentProgress = undefined;
-		this.render();
+		this.setProgress(undefined);
 	}
 
 	private render(): void {
 		if (this.currentProgress) return this.renderWithProgress();
 		this.renderIdle();
+	}
+
+	private setProgress(progress: ScanProgress | undefined): void {
+		this.currentProgress = progress;
+		this.render();
+	}
+
+	private updateSelectedLinesFromEditor(editor: vscode.TextEditor | undefined): void {
+		this.selectedLines = getSelectedLineCount(editor);
+	}
+
+	private updateSelectedLinesFromSelections(selections: readonly vscode.Selection[]): void {
+		this.selectedLines = getSelectedLineCountFromSelections(selections);
+	}
+
+	private getSelectedLinesSuffix(): string {
+		return this.selectedLines > 0 ? `   $(list-selection) ${this.selectedLines}` : '';
 	}
 
 	/**
@@ -84,12 +98,7 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 			this.currentProgress.currentBytes > 0
 				? formatBytes(this.currentProgress.currentBytes)
 				: '...';
-		let text = `$(database) ${bytesText}`;
-
-		// Add selected lines if any
-		if (this.selectedLines > 0) {
-			text += `   $(list-selection) ${this.selectedLines}`;
-		}
+		const text = `$(database) ${bytesText}${this.getSelectedLinesSuffix()}`;
 
 		this.statusBarItem.text = text;
 		this.statusBarItem.tooltip = 'Scanning project...';
@@ -123,10 +132,7 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 			text += ' $(warning)';
 		}
 
-		// Add selected lines if any
-		if (this.selectedLines > 0) {
-			text += `   $(list-selection) ${this.selectedLines}`;
-		}
+		text += this.getSelectedLinesSuffix();
 
 		this.statusBarItem.text = text;
 		// Keep tooltip minimal to avoid extra work and keep UX focused on the panel.
