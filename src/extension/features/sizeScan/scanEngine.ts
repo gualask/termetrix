@@ -294,7 +294,6 @@ interface ProcessDirectoryParams {
 	runLimited: ConcurrencyLimiter;
 	statBatchSize: number;
 	isSummaryOnly: boolean;
-	collectDirectorySizes: boolean;
 	collectTopDirectories: boolean;
 	topDirectoriesLimit: number;
 	dirSizes: Map<string, number> | undefined;
@@ -317,7 +316,6 @@ async function processDirectory(params: ProcessDirectoryParams): Promise<void> {
 		runLimited,
 		statBatchSize,
 		isSummaryOnly,
-		collectDirectorySizes,
 		collectTopDirectories,
 		topDirectoriesLimit,
 		dirSizes,
@@ -347,11 +345,77 @@ async function processDirectory(params: ProcessDirectoryParams): Promise<void> {
 	});
 
 	if (isSummaryOnly || directBytes <= 0) return;
-	if (collectDirectorySizes && dirSizes) dirSizes.set(currentPath, directBytes);
-	if (collectDirectorySizes && dirFileCounts && directFileCount > 0) dirFileCounts.set(currentPath, directFileCount);
-	if (collectDirectorySizes && dirMaxFileBytes && directMaxFileBytes > 0) dirMaxFileBytes.set(currentPath, directMaxFileBytes);
-	if (collectDirectorySizes && topFilesByDirectory && topFiles.length > 0) topFilesByDirectory.set(currentPath, topFiles);
+
+	dirSizes?.set(currentPath, directBytes);
+	if (directFileCount > 0) dirFileCounts?.set(currentPath, directFileCount);
+	if (directMaxFileBytes > 0) dirMaxFileBytes?.set(currentPath, directMaxFileBytes);
+	if (topFiles.length > 0) topFilesByDirectory?.set(currentPath, topFiles);
 	if (collectTopDirectories) updateTopDirectories(topDirectories, rootPath, currentPath, directBytes, topDirectoriesLimit);
+}
+
+async function runDirectoryQueue(params: {
+	queue: string[];
+	state: ScanRuntimeState;
+	startTime: number;
+	maxDurationMs: number;
+	maxDirectories: number;
+	cancellationToken: SizeScanCancellationToken;
+	maxDirectoryConcurrency: number;
+	onProgress?: (progress: SizeScanProgress) => void;
+	runOneDirectory: (currentPath: string) => Promise<void>;
+}): Promise<void> {
+	const {
+		queue,
+		state,
+		startTime,
+		maxDurationMs,
+		maxDirectories,
+		cancellationToken,
+		maxDirectoryConcurrency,
+		onProgress,
+		runOneDirectory,
+	} = params;
+
+	let inFlight = 0;
+	let resolveDone: (() => void) | undefined;
+
+	const done = new Promise<void>((resolve) => {
+		resolveDone = resolve;
+	});
+
+	const maybeFinish = (): void => {
+		if (!resolveDone) return;
+		if (inFlight !== 0) return;
+		if (state.stopScheduling || queue.length === 0) {
+			resolveDone();
+			resolveDone = undefined;
+		}
+	};
+
+	const schedule = (): void => {
+		// Best-effort: avoid holding large queues once we know we should stop.
+		if (state.stopScheduling) queue.length = 0;
+
+		while (!state.stopScheduling && inFlight < maxDirectoryConcurrency && queue.length > 0) {
+			if (shouldStop(state, startTime, maxDurationMs, maxDirectories, cancellationToken)) break;
+
+			const currentPath = queue.pop()!;
+			state.directoriesScanned++;
+			onProgress?.({ totalBytes: state.totalBytes, directoriesScanned: state.directoriesScanned });
+
+			inFlight++;
+			void runOneDirectory(currentPath).finally(() => {
+				inFlight--;
+				schedule();
+				maybeFinish();
+			});
+		}
+
+		maybeFinish();
+	};
+
+	schedule();
+	await done;
 }
 
 /**
@@ -390,35 +454,17 @@ export async function scanProjectSize({
 	const { maxDurationMs, maxFsConcurrency, statBatchSize, maxDirectoryConcurrency } = computeScanLimits(config);
 	const runLimited = createConcurrencyLimiter(maxFsConcurrency);
 
-	let inFlight = 0;
-	let resolveDone: (() => void) | undefined;
-
-	const done = new Promise<void>((resolve) => {
-		resolveDone = resolve;
-	});
-
-	const maybeFinish = (): void => {
-		if (!resolveDone) return;
-		if (inFlight !== 0) return;
-		if (state.stopScheduling || queue.length === 0) {
-			resolveDone();
-			resolveDone = undefined;
-		}
-	};
-
-	const schedule = (): void => {
-		// Best-effort: avoid holding large queues once we know we should stop.
-		if (state.stopScheduling) queue.length = 0;
-
-		while (!state.stopScheduling && inFlight < maxDirectoryConcurrency && queue.length > 0) {
-			if (shouldStop(state, startTime, maxDurationMs, config.maxDirectories, cancellationToken)) break;
-
-			const currentPath = queue.pop()!;
-			state.directoriesScanned++;
-			onProgress?.({ totalBytes: state.totalBytes, directoriesScanned: state.directoriesScanned });
-
-			inFlight++;
-			void processDirectory({
+	await runDirectoryQueue({
+		queue,
+		state,
+		startTime,
+		maxDurationMs,
+		maxDirectories: config.maxDirectories,
+		cancellationToken,
+		maxDirectoryConcurrency,
+		onProgress,
+		runOneDirectory: async (currentPath) =>
+			processDirectory({
 				currentPath,
 				rootPath,
 				queue,
@@ -430,27 +476,15 @@ export async function scanProjectSize({
 				runLimited,
 				statBatchSize,
 				isSummaryOnly,
-					collectDirectorySizes,
-					collectTopDirectories,
-					topDirectoriesLimit,
-					dirSizes,
-					dirFileCounts,
-					dirMaxFileBytes,
-					topFilesByDirectory,
-					topDirectories,
-				})
-					.finally(() => {
-						inFlight--;
-					schedule();
-					maybeFinish();
-				});
-		}
-
-		maybeFinish();
-	};
-
-	schedule();
-	await done;
+				collectTopDirectories,
+				topDirectoriesLimit,
+				dirSizes,
+				dirFileCounts,
+				dirMaxFileBytes,
+				topFilesByDirectory,
+				topDirectories,
+			}),
+	});
 
 	const endTime = Date.now();
 
