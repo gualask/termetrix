@@ -1,5 +1,7 @@
 import { ExtendedScanResult } from '../../types';
 
+const MAX_CACHE_ENTRIES = 10;
+
 /**
  * Manages in-memory cache for scan results
  */
@@ -25,20 +27,14 @@ export class ScanCache {
 			topFilesByDirectory: _topFilesByDirectory,
 			...slimResult
 		} = result;
+		// Simple LRU-ish behavior: refresh insertion order on updates.
+		if (this.memoryCache.has(rootPath)) this.memoryCache.delete(rootPath);
 		this.memoryCache.set(rootPath, slimResult);
-	}
 
-	/**
-	 * Clear memory cache for a specific root
-	 */
-	clear(rootPath: string): void {
-		this.memoryCache.delete(rootPath);
-	}
-
-	/**
-	 * Clear all memory cache
-	 */
-	clearAll(): void {
-		this.memoryCache.clear();
+		while (this.memoryCache.size > MAX_CACHE_ENTRIES) {
+			const oldestKey = this.memoryCache.keys().next().value as string | undefined;
+			if (!oldestKey) break;
+			this.memoryCache.delete(oldestKey);
+		}
 	}
 }
