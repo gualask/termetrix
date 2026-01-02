@@ -1,7 +1,7 @@
 import { useMemo } from 'preact/hooks';
 import { File as FileIcon, Folder, MoreHorizontal } from 'lucide-preact';
 import type { SizeBreakdownLeafDirectory, SizeBreakdownOthers, SizeBreakdownResult } from '../../types';
-import { formatBytes } from '../../utils';
+import { formatBytes, formatFileStats } from '../../utils';
 import { EmptyState } from '../../components/EmptyState';
 import { RowButton } from '../../components/RowButton';
 
@@ -9,12 +9,6 @@ interface Props {
 	breakdown: SizeBreakdownResult;
 	onReveal: (path: string) => void;
 	isLoading?: boolean;
-}
-
-function formatFileStats(bytes: number, fileCount: number, maxFileBytes: number): string {
-	const avg = fileCount > 0 ? bytes / fileCount : 0;
-	const maxText = maxFileBytes > 0 ? formatBytes(maxFileBytes) : '—';
-	return `files: ${fileCount.toLocaleString()} · avg: ${formatBytes(avg)} · max: ${maxText}`;
 }
 
 function isOthers(entry: SizeBreakdownLeafDirectory | SizeBreakdownOthers): entry is SizeBreakdownOthers {
@@ -52,7 +46,7 @@ export function SizeChart({ breakdown, onReveal, isLoading }: Props) {
 						<span class="size-chart-name">{parent.path}</span>
 						<div class="size-chart-value">
 							<div class="size-chart-bytes">{formatBytes(parent.bytes)}</div>
-							<div class="size-chart-meta">{formatFileStats(parent.bytes, parent.fileCount, parent.maxFileBytes)}</div>
+							<div class="size-chart-meta">{formatFileStats(parent)}</div>
 						</div>
 					</RowButton>
 
@@ -72,7 +66,7 @@ export function SizeChart({ breakdown, onReveal, isLoading }: Props) {
 									<span class="size-chart-name">{label}</span>
 									<div class="size-chart-value">
 										<div class="size-chart-bytes">{formatBytes(entry.bytes)}</div>
-										<div class="size-chart-meta">{formatFileStats(entry.bytes, entry.fileCount, entry.maxFileBytes)}</div>
+										<div class="size-chart-meta">{formatFileStats(entry)}</div>
 									</div>
 								</RowButton>
 							);
@@ -91,7 +85,7 @@ export function SizeChart({ breakdown, onReveal, isLoading }: Props) {
 									<span class="size-chart-name">{leaf.path}</span>
 									<div class="size-chart-value">
 										<div class="size-chart-bytes">{formatBytes(leaf.bytes)}</div>
-										<div class="size-chart-meta">{formatFileStats(leaf.bytes, leaf.fileCount, leaf.maxFileBytes)}</div>
+										<div class="size-chart-meta">{formatFileStats(leaf)}</div>
 									</div>
 								</RowButton>
 
