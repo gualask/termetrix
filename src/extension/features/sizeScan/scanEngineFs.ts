@@ -8,24 +8,37 @@ import { isPermissionDeniedError, markIncomplete, shouldStop } from './scanEngin
 // This is used to populate the UI "large files" list without re-scanning.
 const TOP_FILE_CANDIDATES_PER_DIRECTORY = 20;
 
+// HOT PATH: called for many files during scans; keep changes minimal and avoid extra allocations/syscalls.
 function pushTopFile(topFiles: TopFile[], candidate: TopFile, limit: number): void {
 	if (limit <= 0 || candidate.bytes <= 0) return;
 
-	const currentLength = topFiles.length;
-	if (currentLength === 0) {
+	// Empty array
+	if (topFiles.length === 0) {
 		topFiles.push(candidate);
 		return;
 	}
 
-	const smallest = topFiles[currentLength - 1];
-	if (currentLength >= limit && candidate.bytes <= smallest.bytes) return;
+	// List is full: check if it can enter (array is sorted desc)
+	if (topFiles.length >= limit) {
+		const last = topFiles[topFiles.length - 1];
+		if (candidate.bytes <= last.bytes) return;
+		// Drop the smallest so insertion is always safe and the cap stays constant
+		topFiles.pop();
+	}
 
-	let insertAt = 0;
-	while (insertAt < currentLength && candidate.bytes <= topFiles[insertAt].bytes) insertAt++;
+	// Find insertion point and insert (keep descending order)
+	let insertAt = topFiles.length;
+	for (let i = 0; i < topFiles.length; i++) {
+		if (candidate.bytes > topFiles[i].bytes) {
+			insertAt = i;
+			break;
+		}
+	}
 
-	if (insertAt === currentLength) topFiles.push(candidate);
+	if (insertAt === topFiles.length) topFiles.push(candidate);
 	else topFiles.splice(insertAt, 0, candidate);
 
+	// Safety: shouldn't be needed, but protects against future changes
 	if (topFiles.length > limit) topFiles.length = limit;
 }
 
@@ -73,12 +86,14 @@ function updateTopDirectories(
 	if (topDirectories.length > topDirectoriesLimit) topDirectories.length = topDirectoriesLimit;
 }
 
+// HOT PATH: runs for every stat batch in summary mode; keep it tight.
 async function sumFileBatchSummary(
 	runLimited: ConcurrencyLimiter,
 	paths: ReadonlyArray<string>
 ): Promise<{
 	totalBytesDelta: number;
 }> {
+	// Summary-only: only total bytes (no per-directory metadata).
 	const sizes = await Promise.all(paths.map((p) => statFileSize(runLimited, p)));
 	let totalBytesDelta = 0;
 	for (const size of sizes) {
@@ -87,6 +102,7 @@ async function sumFileBatchSummary(
 	return { totalBytesDelta };
 }
 
+// HOT PATH: runs for every stat batch in UI mode; keep it tight and allocation-light.
 async function sumFileBatchFull(
 	runLimited: ConcurrencyLimiter,
 	paths: ReadonlyArray<string>,
@@ -98,6 +114,7 @@ async function sumFileBatchFull(
 	maxFileBytesDelta: number;
 	topFilesDelta: TopFile[];
 }> {
+	// Full: also compute metadata (counts/max/top files) for the UI.
 	const sizes = await Promise.all(paths.map((p) => statFileSize(runLimited, p)));
 
 	let totalBytesDelta = 0;
@@ -120,6 +137,7 @@ async function sumFileBatchFull(
 	return { totalBytesDelta, directBytesDelta, fileCountDelta, maxFileBytesDelta, topFilesDelta };
 }
 
+// HOT PATH: per-directory traversal loop; changes here directly impact scan performance and cancellation responsiveness.
 async function scanDirectoryEntries(params: {
 	entries: ReadonlyArray<import('fs').Dirent>;
 	currentPath: string;
@@ -154,16 +172,19 @@ async function scanDirectoryEntries(params: {
 	let fileBatch: string[] = [];
 
 	const flushBatch = async (): Promise<void> => {
+		// Nothing to flush
 		if (fileBatch.length === 0) return;
 		const paths = fileBatch;
 		fileBatch = [];
 
 		if (isSummaryOnly) {
+			// Status bar / summary mode: update only the total
 			const { totalBytesDelta } = await sumFileBatchSummary(runLimited, paths);
 			state.totalBytes += totalBytesDelta;
 			return;
 		}
 
+		// UI mode: update total + direct bytes/count/max/top files
 		const { totalBytesDelta, directBytesDelta, fileCountDelta, maxFileBytesDelta, topFilesDelta } = await sumFileBatchFull(
 			runLimited,
 			paths,
@@ -180,12 +201,13 @@ async function scanDirectoryEntries(params: {
 	for (const entry of entries) {
 		if (state.stopScheduling) break;
 
+		// Cancellation: keep it fast (do not flush pending stat work)
 		if (cancellationToken.isCancellationRequested) {
 			markIncomplete(state, 'cancelled');
-			// Keep cancellation fast: don't flush pending stat work.
 			return { directBytes, directFileCount, directMaxFileBytes, topFiles };
 		}
 
+		// Do not follow symlinks (avoids cycles and double counting)
 		const isSymlink = entry.isSymbolicLink();
 		const isDirectory = !isSymlink && entry.isDirectory();
 		const isFile = !isSymlink && !isDirectory && entry.isFile();
@@ -195,13 +217,18 @@ async function scanDirectoryEntries(params: {
 		const fullPath = path.join(currentPath, entry.name);
 
 		if (isDirectory) {
+			// Directory: enqueue for later scan
 			if (!state.stopScheduling) queue.push(fullPath);
 			continue;
 		}
 
+		// Other (socket, fifo, ...): ignore
 		if (!isFile) continue;
+
+		// Limits: check before stat'ing to avoid wasted IO
 		if (shouldStop(state, startTime, maxDurationMs, maxDirectories, cancellationToken)) break;
 
+		// File: batch up, then stat in parallel groups
 		fileBatch.push(fullPath);
 		if (fileBatch.length >= statBatchSize) await flushBatch();
 	}
@@ -210,6 +237,7 @@ async function scanDirectoryEntries(params: {
 	return { directBytes, directFileCount, directMaxFileBytes, topFiles };
 }
 
+// HOT PATH (per-directory): keep it focused, avoid extra IO and expensive path operations.
 export async function processDirectory(params: {
 	currentPath: string;
 	rootPath: string;
@@ -256,6 +284,7 @@ export async function processDirectory(params: {
 	const entries = await tryReadDirEntries(runLimited, currentPath, state);
 	if (!entries) return;
 
+	// Note: these are *direct bytes* (only direct files under `currentPath`, not recursive).
 	const { directBytes, directFileCount, directMaxFileBytes, topFiles } = await scanDirectoryEntries({
 		entries,
 		currentPath,

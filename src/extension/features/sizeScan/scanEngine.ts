@@ -9,7 +9,8 @@ export type { SizeScanConfig, SizeScanProgress, SizeScanCancellationToken, SizeS
 /**
  * File-system size scan engine (no VS Code dependencies).
  * Single responsibility: compute directory sizes + metadata.
- */
+ * HOT PATH: entry point for scanning; keep overhead minimal and avoid extra IO.
+ */ 
 export async function scanProjectSize({
 	rootPath,
 	config,

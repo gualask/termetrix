@@ -53,6 +53,7 @@ export function shouldStop(
 	return false;
 }
 
+// HOT PATH (per-directory scheduling): affects scan throughput and stop/cancel latency.
 export async function runDirectoryQueue(params: {
 	queue: string[];
 	state: ScanRuntimeState;
@@ -84,6 +85,7 @@ export async function runDirectoryQueue(params: {
 	});
 
 	const maybeFinish = (): void => {
+		// Finish when no work is in-flight and nothing is left to schedule.
 		if (!resolveDone) return;
 		if (inFlight !== 0) return;
 		if (state.stopScheduling || queue.length === 0) {
@@ -93,9 +95,10 @@ export async function runDirectoryQueue(params: {
 	};
 
 	const schedule = (): void => {
-		// Best-effort: avoid holding large queues once we know we should stop.
+		// Best-effort: avoid holding a big queue once we know we should stop.
 		if (state.stopScheduling) queue.length = 0;
 
+		// Drain the queue while we have concurrency budget.
 		while (!state.stopScheduling && inFlight < maxDirectoryConcurrency && queue.length > 0) {
 			if (shouldStop(state, startTime, maxDurationMs, maxDirectories, cancellationToken)) break;
 
@@ -104,6 +107,7 @@ export async function runDirectoryQueue(params: {
 			onProgress?.({ totalBytes: state.totalBytes, directoriesScanned: state.directoriesScanned });
 
 			inFlight++;
+			// Worker will push newly discovered subdirectories back into `queue`.
 			void runOneDirectory(currentPath).finally(() => {
 				inFlight--;
 				schedule();
@@ -117,4 +121,3 @@ export async function runDirectoryQueue(params: {
 	schedule();
 	await done;
 }
-

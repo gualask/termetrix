@@ -159,6 +159,123 @@ function computeLeafFiles(params: {
 	return files.length > 0 ? files : undefined;
 }
 
+function selectLeafDirectories(params: {
+	parentAbsolutePath: string;
+	parentBytes: number;
+	leafEntries: CandidateDirectory[];
+	coverageTarget: number;
+	minItemPercent: number;
+	maxItems: number;
+	topFilesByDirectory?: Record<string, TopFile[]>;
+	fileCoverageTarget: number;
+	minFilePercent: number;
+	maxFilesPerLeaf: number;
+	largeFileThresholdBytes: number;
+}): {
+	selected: SizeBreakdownLeafDirectory[];
+	selectedBytes: number;
+	selectedFileCount: number;
+	selectedLeafDirSet: Set<string>;
+} {
+	const {
+		parentAbsolutePath,
+		parentBytes,
+		leafEntries,
+		coverageTarget,
+		minItemPercent,
+		maxItems,
+		topFilesByDirectory,
+		fileCoverageTarget,
+		minFilePercent,
+		maxFilesPerLeaf,
+		largeFileThresholdBytes,
+	} = params;
+
+	// Biggest first, so selection converges quickly.
+	leafEntries.sort((a, b) => b.bytes - a.bytes);
+
+	// Per-parent thresholds (relative to the segment totals).
+	const minItemBytes = parentBytes > 0 ? parentBytes * minItemPercent : 0;
+	const selected: SizeBreakdownLeafDirectory[] = [];
+	const selectedLeafDirSet = new Set<string>();
+
+	let selectedBytes = 0;
+	let selectedFileCount = 0;
+
+	for (const entry of leafEntries) {
+		// Stop when we have enough items or remaining items are too small.
+		if (selected.length >= maxItems) break;
+		if (selected.length > 0 && entry.bytes < minItemBytes) break;
+
+		const rawRelative = path.relative(parentAbsolutePath, entry.absolutePath);
+		const displayRelative = rawRelative ? toDisplayPath(rawRelative) : '.';
+		const leafDir: SizeBreakdownLeafDirectory = {
+			kind: 'leafDirectory',
+			path: displayRelative,
+			absolutePath: entry.absolutePath,
+			bytes: entry.bytes,
+			fileCount: entry.fileCount,
+			maxFileBytes: entry.maxFileBytes,
+		};
+
+		const files = computeLeafFiles({
+			leafAbsolutePath: entry.absolutePath,
+			leafBytes: entry.bytes,
+			leafMaxFileBytes: entry.maxFileBytes,
+			topFilesByDirectory,
+			fileCoverageTarget,
+			minFilePercent,
+			maxFilesPerLeaf,
+			largeFileThresholdBytes,
+		});
+		if (files) leafDir.files = files;
+
+		selected.push(leafDir);
+		selectedLeafDirSet.add(entry.absolutePath);
+
+		selectedBytes += entry.bytes;
+		selectedFileCount += entry.fileCount;
+
+		// Stop once we've covered enough of the parent's bytes.
+		if (parentBytes > 0 && selectedBytes / parentBytes >= coverageTarget) break;
+	}
+
+	return { selected, selectedBytes, selectedFileCount, selectedLeafDirSet };
+}
+
+function computeOthersRow(params: {
+	parentBytes: number;
+	parentFileCount: number;
+	selectedBytes: number;
+	selectedFileCount: number;
+	leafEntries: CandidateDirectory[];
+	selectedLeafDirSet: Set<string>;
+}): SizeBreakdownOthers | undefined {
+	const { parentBytes, parentFileCount, selectedBytes, selectedFileCount, leafEntries, selectedLeafDirSet } = params;
+
+	// "Others" is relative to this top-level segment (not the full project).
+	const othersBytes = Math.max(0, parentBytes - selectedBytes);
+	const othersLeafDirs = Math.max(0, leafEntries.length - selectedLeafDirSet.size);
+	const othersFileCount = Math.max(0, parentFileCount - selectedFileCount);
+
+	if (othersBytes <= 0 && othersLeafDirs <= 0 && othersFileCount <= 0) return undefined;
+
+	let othersMaxFileBytes = 0;
+	// Compute max file bytes among non-selected candidates to reduce "what's inside?" doubt.
+	for (const candidate of leafEntries) {
+		if (selectedLeafDirSet.has(candidate.absolutePath)) continue;
+		if (candidate.maxFileBytes > othersMaxFileBytes) othersMaxFileBytes = candidate.maxFileBytes;
+	}
+
+	return {
+		kind: 'others',
+		bytes: othersBytes,
+		fileCount: othersFileCount,
+		maxFileBytes: othersMaxFileBytes,
+		leafDirs: othersLeafDirs,
+	};
+}
+
 export function computeSizeBreakdown(input: ComputeSizeBreakdownInput): SizeBreakdownResult {
 	const {
 		rootPath,
@@ -204,72 +321,32 @@ export function computeSizeBreakdown(input: ComputeSizeBreakdownInput): SizeBrea
 
 		if (bytes <= 0 && fileCount <= 0) continue;
 
+		// Candidates are direct-bytes directories under this top-level segment.
 		const leafEntries = candidatesBySeg.get(seg) ?? [];
-		leafEntries.sort((a, b) => b.bytes - a.bytes);
-
-		const minItemBytes = bytes > 0 ? bytes * minItemPercent : 0;
-		const selected: SizeBreakdownLeafDirectory[] = [];
-		const selectedLeafDirSet = new Set<string>();
-
-		let selectedBytes = 0;
-		let selectedFileCount = 0;
-
-		for (const entry of leafEntries) {
-			if (selected.length >= maxItems) break;
-			if (selected.length > 0 && entry.bytes < minItemBytes) break;
-
-			const rawRelative = path.relative(absolutePath, entry.absolutePath);
-			const displayRelative = rawRelative ? toDisplayPath(rawRelative) : '.';
-			const leafDir: SizeBreakdownLeafDirectory = {
-				kind: 'leafDirectory',
-				path: displayRelative,
-				absolutePath: entry.absolutePath,
-				bytes: entry.bytes,
-				fileCount: entry.fileCount,
-				maxFileBytes: entry.maxFileBytes,
-			};
-
-			const files = computeLeafFiles({
-				leafAbsolutePath: entry.absolutePath,
-				leafBytes: entry.bytes,
-				leafMaxFileBytes: entry.maxFileBytes,
-				topFilesByDirectory,
-				fileCoverageTarget,
-				minFilePercent,
-				maxFilesPerLeaf,
-				largeFileThresholdBytes,
-			});
-			if (files) leafDir.files = files;
-
-			selected.push(leafDir);
-			selectedLeafDirSet.add(entry.absolutePath);
-
-			selectedBytes += entry.bytes;
-			selectedFileCount += entry.fileCount;
-
-			if (bytes > 0 && selectedBytes / bytes >= coverageTarget) break;
-		}
-
-		const othersBytes = Math.max(0, bytes - selectedBytes);
-		const othersLeafDirs = Math.max(0, leafEntries.length - selected.length);
-		const othersFileCount = Math.max(0, fileCount - selectedFileCount);
-
-		let othersMaxFileBytes = 0;
-		for (const candidate of leafEntries) {
-			if (selectedLeafDirSet.has(candidate.absolutePath)) continue;
-			if (candidate.maxFileBytes > othersMaxFileBytes) othersMaxFileBytes = candidate.maxFileBytes;
-		}
+		const { selected, selectedBytes, selectedFileCount, selectedLeafDirSet } = selectLeafDirectories({
+			parentAbsolutePath: absolutePath,
+			parentBytes: bytes,
+			leafEntries,
+			coverageTarget,
+			minItemPercent,
+			maxItems,
+			topFilesByDirectory,
+			fileCoverageTarget,
+			minFilePercent,
+			maxFilesPerLeaf,
+			largeFileThresholdBytes,
+		});
 
 		const entries: Array<SizeBreakdownLeafDirectory | SizeBreakdownOthers> = [...selected];
-		if (othersBytes > 0 || othersLeafDirs > 0 || othersFileCount > 0) {
-			entries.push({
-				kind: 'others',
-				bytes: othersBytes,
-				fileCount: othersFileCount,
-				maxFileBytes: othersMaxFileBytes,
-				leafDirs: othersLeafDirs,
-			});
-		}
+		const others = computeOthersRow({
+			parentBytes: bytes,
+			parentFileCount: fileCount,
+			selectedBytes,
+			selectedFileCount,
+			leafEntries,
+			selectedLeafDirSet,
+		});
+		if (others) entries.push(others);
 
 		parents.push({
 			kind: 'parent',
