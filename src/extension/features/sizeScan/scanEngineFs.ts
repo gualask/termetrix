@@ -9,25 +9,22 @@ import { isPermissionDeniedError, markIncomplete, shouldStop } from './scanEngin
 const TOP_FILE_CANDIDATES_PER_DIRECTORY = 20;
 
 function pushTopFile(topFiles: TopFile[], candidate: TopFile, limit: number): void {
-	if (limit <= 0) return;
-	if (candidate.bytes <= 0) return;
+	if (limit <= 0 || candidate.bytes <= 0) return;
 
-	const last = topFiles[topFiles.length - 1];
-	if (topFiles.length >= limit && last && candidate.bytes <= last.bytes) return;
-
-	let insertAt = -1;
-	for (let i = 0; i < topFiles.length; i++) {
-		if (candidate.bytes > topFiles[i].bytes) {
-			insertAt = i;
-			break;
-		}
-	}
-
-	if (insertAt === -1) {
+	const currentLength = topFiles.length;
+	if (currentLength === 0) {
 		topFiles.push(candidate);
-	} else {
-		topFiles.splice(insertAt, 0, candidate);
+		return;
 	}
+
+	const smallest = topFiles[currentLength - 1];
+	if (currentLength >= limit && candidate.bytes <= smallest.bytes) return;
+
+	let insertAt = 0;
+	while (insertAt < currentLength && candidate.bytes <= topFiles[insertAt].bytes) insertAt++;
+
+	if (insertAt === currentLength) topFiles.push(candidate);
+	else topFiles.splice(insertAt, 0, candidate);
 
 	if (topFiles.length > limit) topFiles.length = limit;
 }
@@ -76,10 +73,23 @@ function updateTopDirectories(
 	if (topDirectories.length > topDirectoriesLimit) topDirectories.length = topDirectoriesLimit;
 }
 
-async function sumFileBatch(
+async function sumFileBatchSummary(
+	runLimited: ConcurrencyLimiter,
+	paths: ReadonlyArray<string>
+): Promise<{
+	totalBytesDelta: number;
+}> {
+	const sizes = await Promise.all(paths.map((p) => statFileSize(runLimited, p)));
+	let totalBytesDelta = 0;
+	for (const size of sizes) {
+		if (size > 0) totalBytesDelta += size;
+	}
+	return { totalBytesDelta };
+}
+
+async function sumFileBatchFull(
 	runLimited: ConcurrencyLimiter,
 	paths: ReadonlyArray<string>,
-	isSummaryOnly: boolean,
 	topFilesLimit: number
 ): Promise<{
 	totalBytesDelta: number;
@@ -101,12 +111,10 @@ async function sumFileBatch(
 		if (size <= 0) continue;
 		totalBytesDelta += size;
 
-		if (!isSummaryOnly) {
-			directBytesDelta += size;
-			fileCountDelta++;
-			if (size > maxFileBytesDelta) maxFileBytesDelta = size;
-			pushTopFile(topFilesDelta, { absolutePath: paths[i], name: path.basename(paths[i]), bytes: size }, topFilesLimit);
-		}
+		directBytesDelta += size;
+		fileCountDelta++;
+		if (size > maxFileBytesDelta) maxFileBytesDelta = size;
+		pushTopFile(topFilesDelta, { absolutePath: paths[i], name: path.basename(paths[i]), bytes: size }, topFilesLimit);
 	}
 
 	return { totalBytesDelta, directBytesDelta, fileCountDelta, maxFileBytesDelta, topFilesDelta };
@@ -150,12 +158,18 @@ async function scanDirectoryEntries(params: {
 		const paths = fileBatch;
 		fileBatch = [];
 
-		const { totalBytesDelta, directBytesDelta, fileCountDelta, maxFileBytesDelta, topFilesDelta } = await sumFileBatch(
+		if (isSummaryOnly) {
+			const { totalBytesDelta } = await sumFileBatchSummary(runLimited, paths);
+			state.totalBytes += totalBytesDelta;
+			return;
+		}
+
+		const { totalBytesDelta, directBytesDelta, fileCountDelta, maxFileBytesDelta, topFilesDelta } = await sumFileBatchFull(
 			runLimited,
 			paths,
-			isSummaryOnly,
 			TOP_FILE_CANDIDATES_PER_DIRECTORY
 		);
+
 		state.totalBytes += totalBytesDelta;
 		directBytes += directBytesDelta;
 		directFileCount += fileCountDelta;
@@ -172,16 +186,20 @@ async function scanDirectoryEntries(params: {
 			return { directBytes, directFileCount, directMaxFileBytes, topFiles };
 		}
 
+		const isSymlink = entry.isSymbolicLink();
+		const isDirectory = !isSymlink && entry.isDirectory();
+		const isFile = !isSymlink && !isDirectory && entry.isFile();
+
+		if (isSymlink) continue;
+
 		const fullPath = path.join(currentPath, entry.name);
 
-		if (entry.isSymbolicLink()) continue;
-
-		if (entry.isDirectory()) {
+		if (isDirectory) {
 			if (!state.stopScheduling) queue.push(fullPath);
 			continue;
 		}
 
-		if (!entry.isFile()) continue;
+		if (!isFile) continue;
 		if (shouldStop(state, startTime, maxDurationMs, maxDirectories, cancellationToken)) break;
 
 		fileBatch.push(fullPath);
@@ -260,4 +278,3 @@ export async function processDirectory(params: {
 	if (topFiles.length > 0) topFilesByDirectory?.set(currentPath, topFiles);
 	if (collectTopDirectories) updateTopDirectories(topDirectories, rootPath, currentPath, directBytes, topDirectoriesLimit);
 }
-
