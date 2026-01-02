@@ -135,7 +135,7 @@ export function LocView({ locResult, isCalculating, onCalculate, onOpenFile }: P
 					<EmptyState
 						variant="panel"
 						message="No data yet."
-						hint="Use the ▶ button in the header to calculate LOC."
+						hint="Use the run button in the header to calculate LOC."
 					/>
 				)}
 

@@ -4,6 +4,7 @@ import { resolvePathIfWithinRoot } from '../../common/pathUtils';
 import type { ProjectSizeScanner } from '../sizeScan/projectSizeScanner';
 import type { ScanCache } from '../sizeScan/scanCache';
 import { LOCScanner } from '../locScan/locScanner';
+import type { SizeScanInternals } from '../sizeScan/sizeScanInternals';
 
 function getPanelRootPath(deps: Pick<MetricsPanelCommandDeps, 'isPanelOpen' | 'scanner'>): string | undefined {
 	if (!deps.isPanelOpen()) return undefined;
@@ -53,8 +54,8 @@ export interface MetricsPanelCommandDeps {
 	locScanner: LOCScanner;
 	isPanelOpen: () => boolean;
 	getPreferredEditorColumn: () => vscode.ViewColumn | undefined;
-	getDirectorySizes: () => Record<string, number> | null;
-	setDirectorySizes: (value: Record<string, number> | null, rootPath: string | null) => void;
+	getSizeScanInternals: () => SizeScanInternals | null;
+	setSizeScanInternals: (value: SizeScanInternals | null, rootPath: string | null) => void;
 	sendMessage: (message: MessageFromExtension) => void;
 }
 
@@ -77,12 +78,20 @@ export function sendMetricsPanelState(deps: Pick<MetricsPanelCommandDeps, 'scann
 	});
 }
 
-export async function triggerSizeScanAndStoreDirectorySizes(
-	deps: Pick<MetricsPanelCommandDeps, 'scanner' | 'setDirectorySizes'>
+export async function triggerSizeScanAndStoreInternals(
+	deps: Pick<MetricsPanelCommandDeps, 'scanner' | 'setSizeScanInternals'>
 ): Promise<void> {
 	const result = await deps.scanner.scan();
 	if (!result?.directorySizes) return;
-	deps.setDirectorySizes(result.directorySizes, result.rootPath);
+	deps.setSizeScanInternals(
+		{
+			directorySizes: result.directorySizes,
+			directoryFileCounts: result.directoryFileCounts,
+			directoryMaxFileBytes: result.directoryMaxFileBytes,
+			topFilesByDirectory: result.topFilesByDirectory,
+		},
+		result.rootPath
+	);
 }
 
 export function createMetricsPanelCommandHandlers(
@@ -91,7 +100,7 @@ export function createMetricsPanelCommandHandlers(
 	return {
 		ready: async () => {
 			sendMetricsPanelState(deps);
-			void triggerSizeScanAndStoreDirectorySizes(deps);
+			void triggerSizeScanAndStoreInternals(deps);
 		},
 
 		revealInExplorer: async (targetPath) => {
@@ -119,7 +128,7 @@ export function createMetricsPanelCommandHandlers(
 
 		refresh: async () => {
 			if (!deps.isPanelOpen()) return;
-			void triggerSizeScanAndStoreDirectorySizes(deps);
+			void triggerSizeScanAndStoreInternals(deps);
 		},
 
 		cancelScan: async () => {
@@ -138,26 +147,26 @@ export function createMetricsPanelCommandHandlers(
 			});
 		},
 
-		deepScan: async () => {
-			const rootPath = getPanelRootPath(deps);
-			const directorySizes = deps.getDirectorySizes();
-			if (!rootPath || !directorySizes) {
-				// Ensure the UI overlay can be dismissed even when we can't compute deep metrics yet.
-				deps.sendMessage({ type: 'deepScanResult', data: [] });
-				return;
-			}
+			deepScan: async () => {
+				const rootPath = getPanelRootPath(deps);
+				const internals = deps.getSizeScanInternals();
+				if (!rootPath || !internals) {
+					// Ensure the UI overlay can be dismissed even when we can't compute deep metrics yet.
+					deps.sendMessage({ type: 'deepScanResult', data: { rootPath: rootPath ?? '', parents: [] } });
+					return;
+				}
 
-			const deepDirectories = deps.scanner.computeDeepScan(directorySizes, rootPath);
-			deps.sendMessage({ type: 'deepScanResult', data: deepDirectories });
-		},
+				const breakdown = deps.scanner.computeSizeBreakdown({ rootPath, ...internals });
+				deps.sendMessage({ type: 'deepScanResult', data: breakdown });
+			},
 
-		reset: async () => {
-			deps.scanner.cancelCurrentScan();
-			deps.setDirectorySizes(null, null);
-			deps.sendMessage({ type: 'noRoot' });
-		},
-	};
-}
+			reset: async () => {
+				deps.scanner.cancelCurrentScan();
+				deps.setSizeScanInternals(null, null);
+				deps.sendMessage({ type: 'noRoot' });
+			},
+		};
+	}
 
 export async function dispatchMetricsPanelWebviewMessage(
 	message: unknown,

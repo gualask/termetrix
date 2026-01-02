@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'preact/hooks';
-import type { DirectoryInfo, LOCResult, MessageFromExtension, ViewData, ProgressData, ErrorData } from '../types';
+import type { SizeBreakdownResult, LOCResult, MessageFromExtension, ViewData, ProgressData, ErrorData } from '../types';
 import { postToExtension } from '../vscode';
 
 interface Actions {
@@ -12,7 +12,7 @@ interface Actions {
 
 interface SizeSlice {
 	viewData: ViewData;
-	deepDirectories: DirectoryInfo[] | null;
+	breakdown: SizeBreakdownResult | null;
 	isDeepScanning: boolean;
 	progressData: ProgressData | null;
 	actions: Pick<Actions, 'refreshOrCancelScan' | 'revealInExplorer'>;
@@ -41,13 +41,13 @@ export function useScanPanelState(): State {
 	const [locResult, setLocResult] = useState<LOCResult | null>(null);
 	const [isCalculatingLOC, setIsCalculatingLOC] = useState(false);
 	const [isReady, setIsReady] = useState(false);
-	const [deepDirectories, setDeepDirectories] = useState<DirectoryInfo[] | null>(null);
+	const [breakdown, setBreakdown] = useState<SizeBreakdownResult | null>(null);
 	const [isDeepScanning, setIsDeepScanning] = useState(false);
 	const [progressData, setProgressData] = useState<ProgressData | null>(null);
 	const [error, setError] = useState<ErrorData | null>(null);
 
 	const clearSizeDerivedData = (): void => {
-		setDeepDirectories(null);
+		setBreakdown(null);
 		setProgressData(null);
 	};
 
@@ -114,7 +114,7 @@ export function useScanPanelState(): State {
 					setIsCalculatingLOC(false);
 					break;
 				case 'deepScanResult':
-					setDeepDirectories(message.data);
+					setBreakdown(message.data);
 					setIsDeepScanning(false);
 					break;
 				case 'error':
@@ -153,15 +153,15 @@ export function useScanPanelState(): State {
 	return {
 		isReady,
 		error,
-		dismissError,
-		size: {
-			viewData,
-			deepDirectories,
-			isDeepScanning,
-			progressData,
-			actions: {
-				refreshOrCancelScan,
-				revealInExplorer
+			dismissError,
+			size: {
+				viewData,
+				breakdown,
+				isDeepScanning,
+				progressData,
+				actions: {
+					refreshOrCancelScan,
+					revealInExplorer
 			}
 		},
 		loc: {

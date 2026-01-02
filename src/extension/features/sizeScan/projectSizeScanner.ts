@@ -3,11 +3,12 @@ import { EventEmitter } from 'events';
 import type { ScanProgress, ExtendedScanResult } from '../../types';
 import { ScanCache } from './scanCache';
 import { configManager } from '../../common/configManager';
-import { computeDeepScan } from './deepScan';
+import { computeSizeBreakdown } from './sizeBreakdown';
 import { scanProjectSize } from './scanEngine';
 import { AutoRefreshController } from './autoRefreshController';
 import { ProjectRootController } from './projectRootController';
 import { createCancellableSilentSession, createCancellableWindowProgressSession, type CancellableProgressSession } from './scanSession';
+import type { SizeScanInternals } from './sizeScanInternals';
 
 type RunScanOptions = {
 	collectDirectorySizes: boolean;
@@ -239,12 +240,9 @@ export class ProjectSizeScanner extends EventEmitter {
 	}
 
 	/**
-	 * Compute deep scan with cumulative sizes from cached directorySizes
+	 * Compute the size breakdown view model from cached scan internals.
 	 */
-	computeDeepScan(
-		directorySizes: Record<string, number>,
-		rootPath: string
-	): Array<{ path: string; absolutePath: string; bytes: number }> {
-		return computeDeepScan(directorySizes, rootPath);
+	computeSizeBreakdown(params: { rootPath: string } & SizeScanInternals) {
+		return computeSizeBreakdown(params);
 	}
 }

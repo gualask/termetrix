@@ -3,6 +3,10 @@ import * as path from 'path';
 import type { ExtendedScanResult } from '../../types';
 import { createConcurrencyLimiter, type ConcurrencyLimiter } from '../../common/concurrencyLimiter';
 
+// Keep a small shortlist of the largest direct files per directory.
+// This is used to populate the UI "large files" list without re-scanning.
+const TOP_FILE_CANDIDATES_PER_DIRECTORY = 20;
+
 interface ScanRuntimeState {
 	totalBytes: number;
 	directoriesScanned: number;
@@ -63,6 +67,32 @@ function markIncomplete(state: ScanRuntimeState, reason: 'cancelled' | 'time_lim
 	state.incomplete = true;
 	state.incompleteReason = reason;
 	state.stopScheduling = true;
+}
+
+type TopFile = { absolutePath: string; name: string; bytes: number };
+
+function pushTopFile(topFiles: TopFile[], candidate: TopFile, limit: number): void {
+	if (limit <= 0) return;
+	if (candidate.bytes <= 0) return;
+
+	const last = topFiles[topFiles.length - 1];
+	if (topFiles.length >= limit && last && candidate.bytes <= last.bytes) return;
+
+	let insertAt = -1;
+	for (let i = 0; i < topFiles.length; i++) {
+		if (candidate.bytes > topFiles[i].bytes) {
+			insertAt = i;
+			break;
+		}
+	}
+
+	if (insertAt === -1) {
+		topFiles.push(candidate);
+	} else {
+		topFiles.splice(insertAt, 0, candidate);
+	}
+
+	if (topFiles.length > limit) topFiles.length = limit;
 }
 
 function shouldStop(
@@ -139,20 +169,37 @@ function updateTopDirectories(
 async function sumFileBatch(
 	runLimited: ConcurrencyLimiter,
 	paths: ReadonlyArray<string>,
-	isSummaryOnly: boolean
-): Promise<{ totalBytesDelta: number; directBytesDelta: number }> {
+	isSummaryOnly: boolean,
+	topFilesLimit: number
+): Promise<{
+	totalBytesDelta: number;
+	directBytesDelta: number;
+	fileCountDelta: number;
+	maxFileBytesDelta: number;
+	topFilesDelta: TopFile[];
+}> {
 	const sizes = await Promise.all(paths.map((p) => statFileSize(runLimited, p)));
 
 	let totalBytesDelta = 0;
 	let directBytesDelta = 0;
+	let fileCountDelta = 0;
+	let maxFileBytesDelta = 0;
+	const topFilesDelta: TopFile[] = [];
 
-	for (const size of sizes) {
+	for (let i = 0; i < sizes.length; i++) {
+		const size = sizes[i];
 		if (size <= 0) continue;
 		totalBytesDelta += size;
-		if (!isSummaryOnly) directBytesDelta += size;
+
+		if (!isSummaryOnly) {
+			directBytesDelta += size;
+			fileCountDelta++;
+			if (size > maxFileBytesDelta) maxFileBytesDelta = size;
+			pushTopFile(topFilesDelta, { absolutePath: paths[i], name: path.basename(paths[i]), bytes: size }, topFilesLimit);
+		}
 	}
 
-	return { totalBytesDelta, directBytesDelta };
+	return { totalBytesDelta, directBytesDelta, fileCountDelta, maxFileBytesDelta, topFilesDelta };
 }
 
 async function scanDirectoryEntries(params: {
@@ -167,7 +214,7 @@ async function scanDirectoryEntries(params: {
 	runLimited: ConcurrencyLimiter;
 	statBatchSize: number;
 	isSummaryOnly: boolean;
-}): Promise<number> {
+}): Promise<{ directBytes: number; directFileCount: number; directMaxFileBytes: number; topFiles: TopFile[] }> {
 	const {
 		entries,
 		currentPath,
@@ -183,6 +230,9 @@ async function scanDirectoryEntries(params: {
 	} = params;
 
 	let directBytes = 0;
+	let directFileCount = 0;
+	let directMaxFileBytes = 0;
+	const topFiles: TopFile[] = [];
 	let fileBatch: string[] = [];
 
 	const flushBatch = async (): Promise<void> => {
@@ -190,9 +240,17 @@ async function scanDirectoryEntries(params: {
 		const paths = fileBatch;
 		fileBatch = [];
 
-		const { totalBytesDelta, directBytesDelta } = await sumFileBatch(runLimited, paths, isSummaryOnly);
+		const { totalBytesDelta, directBytesDelta, fileCountDelta, maxFileBytesDelta, topFilesDelta } = await sumFileBatch(
+			runLimited,
+			paths,
+			isSummaryOnly,
+			TOP_FILE_CANDIDATES_PER_DIRECTORY
+		);
 		state.totalBytes += totalBytesDelta;
 		directBytes += directBytesDelta;
+		directFileCount += fileCountDelta;
+		if (maxFileBytesDelta > directMaxFileBytes) directMaxFileBytes = maxFileBytesDelta;
+		for (const f of topFilesDelta) pushTopFile(topFiles, f, TOP_FILE_CANDIDATES_PER_DIRECTORY);
 	};
 
 	for (const entry of entries) {
@@ -201,7 +259,7 @@ async function scanDirectoryEntries(params: {
 		if (cancellationToken.isCancellationRequested) {
 			markIncomplete(state, 'cancelled');
 			// Keep cancellation fast: don't flush pending stat work.
-			return directBytes;
+			return { directBytes, directFileCount, directMaxFileBytes, topFiles };
 		}
 
 		const fullPath = path.join(currentPath, entry.name);
@@ -221,7 +279,7 @@ async function scanDirectoryEntries(params: {
 	}
 
 	await flushBatch();
-	return directBytes;
+	return { directBytes, directFileCount, directMaxFileBytes, topFiles };
 }
 
 interface ProcessDirectoryParams {
@@ -240,6 +298,9 @@ interface ProcessDirectoryParams {
 	collectTopDirectories: boolean;
 	topDirectoriesLimit: number;
 	dirSizes: Map<string, number> | undefined;
+	dirFileCounts: Map<string, number> | undefined;
+	dirMaxFileBytes: Map<string, number> | undefined;
+	topFilesByDirectory: Map<string, TopFile[]> | undefined;
 	topDirectories: Array<{ path: string; absolutePath: string; bytes: number }>;
 }
 
@@ -260,6 +321,9 @@ async function processDirectory(params: ProcessDirectoryParams): Promise<void> {
 		collectTopDirectories,
 		topDirectoriesLimit,
 		dirSizes,
+		dirFileCounts,
+		dirMaxFileBytes,
+		topFilesByDirectory,
 		topDirectories,
 	} = params;
 
@@ -268,7 +332,7 @@ async function processDirectory(params: ProcessDirectoryParams): Promise<void> {
 	const entries = await tryReadDirEntries(runLimited, currentPath, state);
 	if (!entries) return;
 
-	const directBytes = await scanDirectoryEntries({
+	const { directBytes, directFileCount, directMaxFileBytes, topFiles } = await scanDirectoryEntries({
 		entries,
 		currentPath,
 		queue,
@@ -284,6 +348,9 @@ async function processDirectory(params: ProcessDirectoryParams): Promise<void> {
 
 	if (isSummaryOnly || directBytes <= 0) return;
 	if (collectDirectorySizes && dirSizes) dirSizes.set(currentPath, directBytes);
+	if (collectDirectorySizes && dirFileCounts && directFileCount > 0) dirFileCounts.set(currentPath, directFileCount);
+	if (collectDirectorySizes && dirMaxFileBytes && directMaxFileBytes > 0) dirMaxFileBytes.set(currentPath, directMaxFileBytes);
+	if (collectDirectorySizes && topFilesByDirectory && topFiles.length > 0) topFilesByDirectory.set(currentPath, topFiles);
 	if (collectTopDirectories) updateTopDirectories(topDirectories, rootPath, currentPath, directBytes, topDirectoriesLimit);
 }
 
@@ -306,6 +373,9 @@ export async function scanProjectSize({
 	const isSummaryOnly = !collectDirectorySizes && !collectTopDirectories;
 
 	const dirSizes = collectDirectorySizes ? new Map<string, number>() : undefined;
+	const dirFileCounts = collectDirectorySizes ? new Map<string, number>() : undefined;
+	const dirMaxFileBytes = collectDirectorySizes ? new Map<string, number>() : undefined;
+	const topFilesByDirectory = collectDirectorySizes ? new Map<string, TopFile[]>() : undefined;
 	const topDirectories: Array<{ path: string; absolutePath: string; bytes: number }> = [];
 	const state: ScanRuntimeState = {
 		totalBytes: 0,
@@ -360,14 +430,17 @@ export async function scanProjectSize({
 				runLimited,
 				statBatchSize,
 				isSummaryOnly,
-				collectDirectorySizes,
-				collectTopDirectories,
-				topDirectoriesLimit,
-				dirSizes,
-				topDirectories,
-			})
-				.finally(() => {
-					inFlight--;
+					collectDirectorySizes,
+					collectTopDirectories,
+					topDirectoriesLimit,
+					dirSizes,
+					dirFileCounts,
+					dirMaxFileBytes,
+					topFilesByDirectory,
+					topDirectories,
+				})
+					.finally(() => {
+						inFlight--;
 					schedule();
 					maybeFinish();
 				});
@@ -385,10 +458,25 @@ export async function scanProjectSize({
 		? Object.fromEntries(dirSizes.entries())
 		: undefined;
 
+	const directoryFileCounts: Record<string, number> | undefined = collectDirectorySizes && dirFileCounts
+		? Object.fromEntries(dirFileCounts.entries())
+		: undefined;
+
+	const directoryMaxFileBytes: Record<string, number> | undefined = collectDirectorySizes && dirMaxFileBytes
+		? Object.fromEntries(dirMaxFileBytes.entries())
+		: undefined;
+
+	const topFilesByDirectoryResult: Record<string, TopFile[]> | undefined = collectDirectorySizes && topFilesByDirectory
+		? Object.fromEntries(topFilesByDirectory.entries())
+		: undefined;
+
 	return {
 		rootPath,
 		totalBytes: state.totalBytes,
 		...(directorySizes ? { directorySizes } : {}),
+		...(directoryFileCounts ? { directoryFileCounts } : {}),
+		...(directoryMaxFileBytes ? { directoryMaxFileBytes } : {}),
+		...(topFilesByDirectoryResult ? { topFilesByDirectory: topFilesByDirectoryResult } : {}),
 		topDirectories: collectTopDirectories ? topDirectories : [],
 		metadata: {
 			startTime,

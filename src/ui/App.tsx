@@ -16,7 +16,7 @@ export function App() {
 		activeTab === 'size' ? (
 			<SizeView
 				viewData={size.viewData}
-				deepDirectories={size.deepDirectories}
+				breakdown={size.breakdown}
 				isDeepScanning={size.isDeepScanning}
 				progressData={size.progressData}
 				onRefreshOrCancelScan={size.actions.refreshOrCancelScan}

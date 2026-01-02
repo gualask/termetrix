@@ -17,8 +17,14 @@ export class ScanCache {
 	 * Store scan result in memory cache (without directorySizes to save memory)
 	 */
 	set(rootPath: string, result: ExtendedScanResult): void {
-		// Remove directorySizes before caching (only needed temporarily for deep scan)
-		const { directorySizes: _directorySizes, ...slimResult } = result;
+		// Remove internal, heavyweight fields before caching (only needed temporarily for deep scan)
+		const {
+			directorySizes: _directorySizes,
+			directoryFileCounts: _directoryFileCounts,
+			directoryMaxFileBytes: _directoryMaxFileBytes,
+			topFilesByDirectory: _topFilesByDirectory,
+			...slimResult
+		} = result;
 		this.memoryCache.set(rootPath, slimResult);
 	}
 

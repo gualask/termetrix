@@ -18,6 +18,67 @@ export interface DirectoryInfo {
 	bytes: number;
 }
 
+// ============================================================================
+// Size View Breakdown Types
+// ============================================================================
+
+export interface SizeBreakdownFile {
+	/** File basename */
+	name: string;
+	/** Absolute path */
+	absolutePath: string;
+	/** Size in bytes */
+	bytes: number;
+}
+
+export interface SizeBreakdownLeafDirectory {
+	kind: 'leafDirectory';
+	/** Display path (relative to the top-level parent) */
+	path: string;
+	/** Absolute path */
+	absolutePath: string;
+	/** Cumulative size in bytes */
+	bytes: number;
+	/** Total file count in this directory */
+	fileCount: number;
+	/** Max file size in bytes */
+	maxFileBytes: number;
+	/** Largest files in this directory (optional) */
+	files?: SizeBreakdownFile[];
+}
+
+export interface SizeBreakdownOthers {
+	kind: 'others';
+	/** Remaining size in bytes (relative to the parent) */
+	bytes: number;
+	/** File count inside "others" */
+	fileCount: number;
+	/** Max file size inside "others" */
+	maxFileBytes: number;
+	/** Leaf directory count aggregated in "others" */
+	leafDirs: number;
+}
+
+export interface SizeBreakdownParent {
+	kind: 'parent';
+	/** Top-level directory name (relative to scan root) */
+	path: string;
+	/** Absolute path */
+	absolutePath: string;
+	/** Cumulative size in bytes */
+	bytes: number;
+	/** Total file count in this subtree */
+	fileCount: number;
+	/** Max file size in this subtree */
+	maxFileBytes: number;
+	entries: Array<SizeBreakdownLeafDirectory | SizeBreakdownOthers>;
+}
+
+export interface SizeBreakdownResult {
+	rootPath: string;
+	parents: SizeBreakdownParent[];
+}
+
 export interface ScanMetadata {
 	/** Timestamp when scan started */
 	startTime: number;
@@ -93,7 +154,7 @@ export type MessageFromExtension =
 	| { type: 'noRoot' }
 	| { type: 'locCalculating' }
 	| { type: 'locResult'; data: LOCResult }
-	| { type: 'deepScanResult'; data: DirectoryInfo[] }
+	| { type: 'deepScanResult'; data: SizeBreakdownResult }
 	| { type: 'error'; data: ErrorData };
 
 export type MessageToExtension =

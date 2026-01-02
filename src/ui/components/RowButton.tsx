@@ -2,7 +2,7 @@ import type { ComponentChildren } from 'preact';
 
 interface Props {
 	class?: string;
-	onClick: () => void;
+	onClick?: () => void;
 	disabled?: boolean;
 	title?: string;
 	ariaLabel?: string;

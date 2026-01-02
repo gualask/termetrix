@@ -1,170 +1,119 @@
 import { useMemo } from 'preact/hooks';
-import type { DirectoryInfo } from '../../types';
+import { File as FileIcon, Folder, MoreHorizontal } from 'lucide-preact';
+import type { SizeBreakdownLeafDirectory, SizeBreakdownOthers, SizeBreakdownResult } from '../../types';
 import { formatBytes } from '../../utils';
 import { EmptyState } from '../../components/EmptyState';
 import { RowButton } from '../../components/RowButton';
 
 interface Props {
-	directories: DirectoryInfo[] | null;
-	totalBytes: number;
+	breakdown: SizeBreakdownResult;
 	onReveal: (path: string) => void;
 	isLoading?: boolean;
 }
 
-interface DisplayItem {
-	dir: DirectoryInfo;
-	name: string;
-	bytes: number;
-	percent: number;
-	children?: DisplayItem[];
+function formatFileStats(bytes: number, fileCount: number, maxFileBytes: number): string {
+	const avg = fileCount > 0 ? bytes / fileCount : 0;
+	const maxText = maxFileBytes > 0 ? formatBytes(maxFileBytes) : '—';
+	return `files: ${fileCount.toLocaleString()} · avg: ${formatBytes(avg)} · max: ${maxText}`;
 }
 
-function formatPercent(percent: number): string {
-	if (!Number.isFinite(percent) || percent <= 0) return '0%';
-	if (percent < 0.1) return '<0.1%';
-	return `${percent.toFixed(1)}%`;
+function isOthers(entry: SizeBreakdownLeafDirectory | SizeBreakdownOthers): entry is SizeBreakdownOthers {
+	return entry.kind === 'others';
 }
 
-/**
- * Find direct children of a path
- */
-function getDirectChildren(parentPath: string, allDirs: DirectoryInfo[]): DirectoryInfo[] {
-	const prefix = parentPath ? parentPath + '/' : '';
-	return allDirs.filter(d => {
-		if (!d.path.startsWith(prefix)) return false;
-		const rest = d.path.slice(prefix.length);
-		return rest.length > 0 && !rest.includes('/');
-	});
-}
+export function SizeChart({ breakdown, onReveal, isLoading }: Props) {
+	const parents = breakdown.parents;
 
-/**
- * Check if a directory has dominant children (concentrated size distribution)
- */
-function getDominantChildren(
-	dir: DirectoryInfo,
-	allDirs: DirectoryInfo[],
-	threshold: number = 0.25
-): DirectoryInfo[] {
-	const children = getDirectChildren(dir.path, allDirs);
-	if (children.length === 0) return [];
+	const maxParentBytes = useMemo(() => {
+		if (parents.length === 0) return 0;
+		return Math.max(...parents.map((p) => p.bytes));
+	}, [parents]);
 
-	const dominant = children.filter(c => c.bytes / dir.bytes >= threshold);
-	if (dominant.length === 0 || dominant.length > 5) return [];
-
-	const dominantTotal = dominant.reduce((sum, c) => sum + c.bytes, 0);
-	if (dominantTotal / dir.bytes < 0.6) return [];
-	return dominant;
-}
-
-/**
- * Recursively find the deepest interesting directories
- */
-function findDeepInteresting(
-	dir: DirectoryInfo,
-	allDirs: DirectoryInfo[]
-): DirectoryInfo[] {
-	const dominant = getDominantChildren(dir, allDirs);
-
-	if (dominant.length === 0) {
-		return [dir];
+	if (parents.length === 0) {
+		return (
+			<div class="size-chart empty">
+				{!isLoading && <EmptyState variant="inline" message="No data available." />}
+			</div>
+		);
 	}
-
-	const results: DirectoryInfo[] = [];
-	for (const child of dominant) {
-		results.push(...findDeepInteresting(child, allDirs));
-	}
-	return results;
-}
-
-/**
- * Build display items with 2-level hierarchy for deep mode
- */
-function computeDeepDisplayItems(
-	directories: DirectoryInfo[],
-	totalBytes: number
-): DisplayItem[] {
-	if (directories.length === 0 || totalBytes === 0) return [];
-
-	const topLevel = getDirectChildren('', directories);
-	const sorted = [...topLevel].sort((a, b) => b.bytes - a.bytes);
-
-	return sorted.map(dir => {
-		const interesting = findDeepInteresting(dir, directories);
-
-		const children = interesting
-			.filter(d => d.path !== dir.path)
-			.sort((a, b) => b.bytes - a.bytes);
-
-		const item: DisplayItem = {
-			dir,
-			name: dir.path,
-			bytes: dir.bytes,
-			percent: (dir.bytes / totalBytes) * 100
-		};
-
-		if (children.length > 0) {
-			item.children = children.map(child => ({
-				dir: child,
-				name: child.path.slice(dir.path.length + 1),
-				bytes: child.bytes,
-				percent: (child.bytes / totalBytes) * 100
-			}));
-		}
-
-		return item;
-	});
-}
-
-export function SizeChart({ directories, totalBytes, onReveal, isLoading }: Props) {
-	// Memoize expensive directory tree computation
-	const items = useMemo(() => {
-		if (!directories || totalBytes === 0) return [];
-		return computeDeepDisplayItems(directories, totalBytes);
-	}, [directories, totalBytes]);
-
-	const maxPercent = useMemo(() => {
-		if (items.length === 0) return 0;
-		return Math.max(...items.map(i => i.percent));
-	}, [items]);
-
-	const empty = (
-		<div class="size-chart empty">
-			{!isLoading && <EmptyState variant="inline" message="No data available." />}
-		</div>
-	);
-
-	if (!directories || items.length === 0) return empty;
 
 	return (
 		<div class="size-chart">
-			{items.map((item) => (
-				<div key={item.dir.absolutePath} class="size-chart-group">
-					<RowButton
-						class="size-chart-row parent"
-						onClick={() => onReveal(item.dir.absolutePath)}
-					>
+			{parents.map((parent) => (
+				<div key={parent.absolutePath} class="size-chart-group">
+					<RowButton class="size-chart-row parent" onClick={() => onReveal(parent.absolutePath)}>
 						<div
 							class="size-chart-bar"
-							style={{ width: `${(item.percent / maxPercent) * 100}%` }}
+							style={{ width: `${maxParentBytes > 0 ? (parent.bytes / maxParentBytes) * 100 : 0}%` }}
 						/>
-						<span class="size-chart-name">{item.name}</span>
+						<span class="size-chart-icon" aria-hidden="true">
+							<Folder size={16} />
+						</span>
+						<span class="size-chart-name">{parent.path}</span>
 						<div class="size-chart-value">
-							{formatBytes(item.bytes)}
-							<span class="size-chart-percent">{formatPercent(item.percent)}</span>
+							<div class="size-chart-bytes">{formatBytes(parent.bytes)}</div>
+							<div class="size-chart-meta">{formatFileStats(parent.bytes, parent.fileCount, parent.maxFileBytes)}</div>
 						</div>
 					</RowButton>
-					{item.children?.map((child) => (
-						<RowButton
-							key={child.dir.absolutePath}
-							class="size-chart-row child"
-							onClick={() => onReveal(child.dir.absolutePath)}
-						>
-							<span class="size-chart-name">{child.name}</span>
-							<div class="size-chart-value">
-								{formatBytes(child.bytes)}
+
+					{parent.entries.map((entry) => {
+						if (isOthers(entry)) {
+							const label = `others (leaf dirs: ${entry.leafDirs.toLocaleString()})`;
+							return (
+								<RowButton
+									key={`${parent.absolutePath}::others`}
+									class="size-chart-row child"
+									disabled
+									title="Aggregated remainder"
+								>
+									<span class="size-chart-icon" aria-hidden="true">
+										<MoreHorizontal size={16} />
+									</span>
+									<span class="size-chart-name">{label}</span>
+									<div class="size-chart-value">
+										<div class="size-chart-bytes">{formatBytes(entry.bytes)}</div>
+										<div class="size-chart-meta">{formatFileStats(entry.bytes, entry.fileCount, entry.maxFileBytes)}</div>
+									</div>
+								</RowButton>
+							);
+						}
+
+						const leaf = entry as SizeBreakdownLeafDirectory;
+						const leafWidth = parent.bytes > 0 ? (leaf.bytes / parent.bytes) * 100 : 0;
+
+						return (
+							<div key={leaf.absolutePath}>
+								<RowButton class="size-chart-row child" onClick={() => onReveal(leaf.absolutePath)}>
+									<div class="size-chart-bar" style={{ width: `${leafWidth}%` }} />
+									<span class="size-chart-icon" aria-hidden="true">
+										<Folder size={16} />
+									</span>
+									<span class="size-chart-name">{leaf.path}</span>
+									<div class="size-chart-value">
+										<div class="size-chart-bytes">{formatBytes(leaf.bytes)}</div>
+										<div class="size-chart-meta">{formatFileStats(leaf.bytes, leaf.fileCount, leaf.maxFileBytes)}</div>
+									</div>
+								</RowButton>
+
+								{leaf.files?.map((f) => (
+									<RowButton
+										key={f.absolutePath}
+										class="size-chart-row file"
+										onClick={() => onReveal(f.absolutePath)}
+										title={`Reveal ${f.name}`}
+									>
+										<span class="size-chart-icon" aria-hidden="true">
+											<FileIcon size={16} />
+										</span>
+										<span class="size-chart-name">{f.name}</span>
+										<div class="size-chart-value">
+											<div class="size-chart-bytes">{formatBytes(f.bytes)}</div>
+										</div>
+									</RowButton>
+								))}
 							</div>
-						</RowButton>
-					))}
+						);
+					})}
 				</div>
 			))}
 		</div>

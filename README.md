@@ -24,7 +24,7 @@ The goal of the **Size** view is to give immediate, actionable insight without r
 - Children can be deep paths (collapsed) to surface “where the weight is”.
 - Everything is relative to the parent: the remaining weight is grouped in `others`.
 - When available, directory rows show file composition metadata (file count, average size, max file).
-- Some rows can expand to list the largest files (📄).
+- Some rows list the largest files directly (📄).
 
 Example:
 

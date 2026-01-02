@@ -7,6 +7,11 @@
 // Re-export all shared types
 export type {
 	DirectoryInfo,
+	SizeBreakdownFile,
+	SizeBreakdownLeafDirectory,
+	SizeBreakdownOthers,
+	SizeBreakdownParent,
+	SizeBreakdownResult,
 	ScanMetadata,
 	LOCResult,
 	ViewData,
@@ -40,4 +45,10 @@ export interface ScanProgress {
 export type ExtendedScanResult = BaseScanResult & {
 	/** Internal: directory sizes by absolute path (not persisted, not sent to webview) */
 	directorySizes?: Record<string, number>;
+	/** Internal: direct file counts by directory absolute path (not persisted, not sent to webview) */
+	directoryFileCounts?: Record<string, number>;
+	/** Internal: max direct file size by directory absolute path (not persisted, not sent to webview) */
+	directoryMaxFileBytes?: Record<string, number>;
+	/** Internal: top direct files by directory absolute path (not persisted, not sent to webview) */
+	topFilesByDirectory?: Record<string, Array<{ absolutePath: string; name: string; bytes: number }>>;
 };

@@ -1,6 +1,6 @@
 import { useMemo } from 'preact/hooks';
-import { Folder, HardDrive, RefreshCw, Square, Timer } from 'lucide-preact';
-import type { DirectoryInfo, ViewData, ProgressData } from '../../types';
+import { AlertTriangle, Folder, HardDrive, RefreshCw, Square, Timer } from 'lucide-preact';
+import type { SizeBreakdownResult, ViewData, ProgressData } from '../../types';
 import { formatBytes } from '../../utils';
 import { SizeChart } from './SizeChart';
 import { IconButton } from '../../components/IconButton';
@@ -69,16 +69,16 @@ function SizeHeader(props: { viewData: ViewData; onRefreshOrCancelScan: () => vo
 function SizePanelBody(props: {
 	scanResult: ViewData['scanResult'];
 	isScanning: boolean;
-	deepDirectories: DirectoryInfo[] | null;
+	breakdown: SizeBreakdownResult | null;
 	isLoading: boolean;
 	loadingLabel: string;
 	onRevealInExplorer: (path: string) => void;
 }) {
-	const { scanResult, isScanning, deepDirectories, isLoading, loadingLabel, onRevealInExplorer } = props;
+	const { scanResult, isScanning, breakdown, isLoading, loadingLabel, onRevealInExplorer } = props;
 
 	const showIncompleteWarning = Boolean(scanResult?.incomplete && !isScanning);
 
-	if (!deepDirectories) {
+	if (!breakdown) {
 		if (!isLoading) {
 			return (
 				<EmptyState
@@ -95,12 +95,14 @@ function SizePanelBody(props: {
 	return (
 		<>
 			{showIncompleteWarning && (
-				<div class="warning-banner">⚠ Scan incomplete ({scanResult?.incompleteReason})</div>
+				<div class="warning-banner">
+					<AlertTriangle size={14} aria-hidden="true" />
+					<span>Scan incomplete ({scanResult?.incompleteReason})</span>
+				</div>
 			)}
 
 			<SizeChart
-				directories={deepDirectories}
-				totalBytes={scanResult?.totalBytes ?? 0}
+				breakdown={breakdown}
 				onReveal={onRevealInExplorer}
 				isLoading={isLoading}
 			/>
@@ -112,7 +114,7 @@ function SizePanelBody(props: {
 
 interface Props {
 	viewData: ViewData;
-	deepDirectories: DirectoryInfo[] | null;
+	breakdown: SizeBreakdownResult | null;
 	isDeepScanning: boolean;
 	progressData: ProgressData | null;
 	onRefreshOrCancelScan: () => void;
@@ -121,7 +123,7 @@ interface Props {
 
 export function SizeView({
 	viewData,
-	deepDirectories,
+	breakdown,
 	isDeepScanning,
 	progressData,
 	onRefreshOrCancelScan,
@@ -139,15 +141,15 @@ export function SizeView({
 			header={<SizeHeader viewData={viewData} onRefreshOrCancelScan={onRefreshOrCancelScan} />}
 			panelVariant="fixed"
 			panelAriaLabel="Directory breakdown"
-		>
-			<SizePanelBody
-				scanResult={viewData.scanResult}
-				isScanning={viewData.isScanning}
-				deepDirectories={deepDirectories}
-				isLoading={isLoading}
-				loadingLabel={loadingLabel}
-				onRevealInExplorer={onRevealInExplorer}
-			/>
+			>
+				<SizePanelBody
+					scanResult={viewData.scanResult}
+					isScanning={viewData.isScanning}
+					breakdown={breakdown}
+					isLoading={isLoading}
+					loadingLabel={loadingLabel}
+					onRevealInExplorer={onRevealInExplorer}
+				/>
 		</ViewLayout>
 	);
 }

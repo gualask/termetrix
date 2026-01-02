@@ -6,6 +6,11 @@
 
 export type {
 	DirectoryInfo,
+	SizeBreakdownFile,
+	SizeBreakdownLeafDirectory,
+	SizeBreakdownOthers,
+	SizeBreakdownParent,
+	SizeBreakdownResult,
 	ScanMetadata,
 	ScanResult,
 	LOCResult,

@@ -11,6 +11,7 @@ import {
 	sendMetricsPanelState,
 } from './metricsPanelCommands';
 import { getMetricsPanelHtml } from './metricsPanelHtml';
+import type { SizeScanInternals } from '../sizeScan/sizeScanInternals';
 
 /**
  * Webview panel orchestrator for project metrics visualization
@@ -20,9 +21,9 @@ export class MetricsPanel implements vscode.Disposable {
 	private readonly panelDisposables = new DisposableStore();
 	private readonly locScanner: LOCScanner;
 	private readonly commandHandlers: ReturnType<typeof createMetricsPanelCommandHandlers>;
-	/** Temporary storage for directorySizes during webview session (for deep scan) */
-	private currentDirectorySizes: Record<string, number> | null = null;
-	private currentDirectorySizesRootPath: string | null = null;
+	/** Temporary storage for size scan internals during webview session (for breakdown computation) */
+	private currentSizeScanInternals: SizeScanInternals | null = null;
+	private currentSizeScanInternalsRootPath: string | null = null;
 	/** Last known editor column used by the user (non-webview), for opening files outside the webview column */
 	private preferredEditorColumn: vscode.ViewColumn | undefined;
 
@@ -38,10 +39,10 @@ export class MetricsPanel implements vscode.Disposable {
 			locScanner: this.locScanner,
 			isPanelOpen: () => Boolean(this.panel),
 			getPreferredEditorColumn: () => this.preferredEditorColumn,
-			getDirectorySizes: () => this.currentDirectorySizes,
-			setDirectorySizes: (value, rootPath) => {
-				this.currentDirectorySizes = value;
-				this.currentDirectorySizesRootPath = value ? rootPath : null;
+			getSizeScanInternals: () => this.currentSizeScanInternals,
+			setSizeScanInternals: (value, rootPath) => {
+				this.currentSizeScanInternals = value;
+				this.currentSizeScanInternalsRootPath = value ? rootPath : null;
 			},
 			sendMessage: (message) => this.sendMessage(message),
 		});
@@ -55,8 +56,8 @@ export class MetricsPanel implements vscode.Disposable {
 	}
 
 	private disposePanelResources(): void {
-		this.currentDirectorySizes = null; // Free memory
-		this.currentDirectorySizesRootPath = null;
+		this.currentSizeScanInternals = null; // Free memory
+		this.currentSizeScanInternalsRootPath = null;
 		this.panelDisposables.clear();
 	}
 
@@ -139,10 +140,10 @@ export class MetricsPanel implements vscode.Disposable {
 	 * Handle scan start event
 	 */
 	private handleScanStart(progress: ScanProgress): void {
-		// If the scan root changes, invalidate directorySizes from the previous root.
-		if (progress.rootPath !== this.currentDirectorySizesRootPath) {
-			this.currentDirectorySizes = null;
-			this.currentDirectorySizesRootPath = null;
+		// If the scan root changes, invalidate scan internals from the previous root.
+		if (progress.rootPath !== this.currentSizeScanInternalsRootPath) {
+			this.currentSizeScanInternals = null;
+			this.currentSizeScanInternalsRootPath = null;
 		}
 		this.sendMessage({ type: 'scanStart' });
 	}
