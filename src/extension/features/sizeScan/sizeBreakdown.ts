@@ -3,6 +3,8 @@ import type { SizeBreakdownFile, SizeBreakdownLeafDirectory, SizeBreakdownOthers
 import { isPathWithinRoot } from '../../common/pathUtils';
 
 type TopFile = { absolutePath: string; name: string; bytes: number };
+type CandidateDirectory = { absolutePath: string; bytes: number; fileCount: number; maxFileBytes: number };
+type TopLevelTotals = { bytes: number; fileCount: number; maxFileBytes: number };
 
 export interface ComputeSizeBreakdownOptions {
 	coverageTarget?: number;
@@ -27,100 +29,134 @@ function toDisplayPath(relativePath: string): string {
 	return relativePath.split(path.sep).join('/');
 }
 
-function bumpSum(map: Map<string, number>, key: string, delta: number): void {
-	map.set(key, (map.get(key) ?? 0) + delta);
+function getTopLevelSegment(rootPath: string, absolutePath: string): string | undefined {
+	if (absolutePath === rootPath) return undefined;
+	if (!isPathWithinRoot(absolutePath, rootPath)) return undefined;
+	const relative = path.relative(rootPath, absolutePath);
+	if (!relative || relative.startsWith('..')) return undefined;
+	const seg = relative.split(path.sep)[0];
+	return seg || undefined;
 }
 
-function bumpMax(map: Map<string, number>, key: string, candidate: number): void {
-	if (candidate <= 0) return;
-	const current = map.get(key) ?? 0;
-	if (candidate > current) map.set(key, candidate);
+function bumpTotalsBytes(totalsBySeg: Map<string, TopLevelTotals>, seg: string, bytes: number): void {
+	const current = totalsBySeg.get(seg) ?? { bytes: 0, fileCount: 0, maxFileBytes: 0 };
+	current.bytes += bytes;
+	totalsBySeg.set(seg, current);
 }
 
-function walkAncestorsWithinRoot(startPath: string, rootPath: string, cb: (ancestor: string) => void): void {
-	let currentPath = startPath;
-	while (true) {
-		const parentPath = path.dirname(currentPath);
-		if (
-			parentPath === currentPath ||
-			!isPathWithinRoot(parentPath, rootPath) ||
-			parentPath.length < rootPath.length
-		) {
-			break;
-		}
-		cb(parentPath);
-		currentPath = parentPath;
-	}
+function bumpTotalsFileCount(totalsBySeg: Map<string, TopLevelTotals>, seg: string, fileCount: number): void {
+	const current = totalsBySeg.get(seg) ?? { bytes: 0, fileCount: 0, maxFileBytes: 0 };
+	current.fileCount += fileCount;
+	totalsBySeg.set(seg, current);
 }
 
-function computeCumulativeBytes(rootPath: string, directorySizes: Record<string, number>): Map<string, number> {
-	const cumulativeBytes = new Map<string, number>();
-
-	for (const [dirPath, directBytes] of Object.entries(directorySizes)) {
-		if (directBytes <= 0) continue;
-		if (!isPathWithinRoot(dirPath, rootPath)) continue;
-
-		bumpSum(cumulativeBytes, dirPath, directBytes);
-		walkAncestorsWithinRoot(dirPath, rootPath, (ancestor) => bumpSum(cumulativeBytes, ancestor, directBytes));
-	}
-
-	return cumulativeBytes;
+function bumpTotalsMaxFileBytes(totalsBySeg: Map<string, TopLevelTotals>, seg: string, maxFileBytes: number): void {
+	if (maxFileBytes <= 0) return;
+	const current = totalsBySeg.get(seg) ?? { bytes: 0, fileCount: 0, maxFileBytes: 0 };
+	if (maxFileBytes > current.maxFileBytes) current.maxFileBytes = maxFileBytes;
+	totalsBySeg.set(seg, current);
 }
 
-function computeCumulativeFileCounts(rootPath: string, directoryFileCounts: Record<string, number>): Map<string, number> {
-	const cumulativeFileCounts = new Map<string, number>();
+function computeTopLevelTotals(params: {
+	rootPath: string;
+	directorySizes: Record<string, number>;
+	directoryFileCounts: Record<string, number>;
+	directoryMaxFileBytes: Record<string, number>;
+}): Map<string, TopLevelTotals> {
+	const { rootPath, directorySizes, directoryFileCounts, directoryMaxFileBytes } = params;
+	const totalsBySeg = new Map<string, TopLevelTotals>();
 
-	for (const [dirPath, directCount] of Object.entries(directoryFileCounts)) {
-		if (directCount <= 0) continue;
-		if (!isPathWithinRoot(dirPath, rootPath)) continue;
-
-		bumpSum(cumulativeFileCounts, dirPath, directCount);
-		walkAncestorsWithinRoot(dirPath, rootPath, (ancestor) => bumpSum(cumulativeFileCounts, ancestor, directCount));
+	for (const [dirPath, bytes] of Object.entries(directorySizes)) {
+		if (bytes <= 0) continue;
+		const seg = getTopLevelSegment(rootPath, dirPath);
+		if (!seg) continue;
+		bumpTotalsBytes(totalsBySeg, seg, bytes);
 	}
 
-	return cumulativeFileCounts;
-}
-
-function computeCumulativeMaxFileBytes(rootPath: string, directoryMaxFileBytes: Record<string, number>): Map<string, number> {
-	const cumulativeMaxFileBytes = new Map<string, number>();
-
-	for (const [dirPath, directMax] of Object.entries(directoryMaxFileBytes)) {
-		if (directMax <= 0) continue;
-		if (!isPathWithinRoot(dirPath, rootPath)) continue;
-
-		bumpMax(cumulativeMaxFileBytes, dirPath, directMax);
-		walkAncestorsWithinRoot(dirPath, rootPath, (ancestor) => bumpMax(cumulativeMaxFileBytes, ancestor, directMax));
+	for (const [dirPath, fileCount] of Object.entries(directoryFileCounts)) {
+		if (fileCount <= 0) continue;
+		const seg = getTopLevelSegment(rootPath, dirPath);
+		if (!seg) continue;
+		bumpTotalsFileCount(totalsBySeg, seg, fileCount);
 	}
 
-	return cumulativeMaxFileBytes;
-}
-
-function computeFileLeafDirectories(rootPath: string, directoryFileCounts: Record<string, number>): string[] {
-	const dirsWithDirectFiles = Object.entries(directoryFileCounts)
-		.filter(([, count]) => count > 0)
-		.map(([dirPath]) => dirPath)
-		.filter((dirPath) => dirPath !== rootPath && isPathWithinRoot(dirPath, rootPath));
-
-	const directFilesSet = new Set(dirsWithDirectFiles);
-	const hasChildWithFiles = new Set<string>();
-
-	for (const dirPath of dirsWithDirectFiles) {
-		let currentPath = dirPath;
-		while (true) {
-			const parentPath = path.dirname(currentPath);
-			if (
-				parentPath === currentPath ||
-				!isPathWithinRoot(parentPath, rootPath) ||
-				parentPath.length < rootPath.length
-			) {
-				break;
-			}
-			if (directFilesSet.has(parentPath)) hasChildWithFiles.add(parentPath);
-			currentPath = parentPath;
-		}
+	for (const [dirPath, maxFileBytes] of Object.entries(directoryMaxFileBytes)) {
+		if (maxFileBytes <= 0) continue;
+		const seg = getTopLevelSegment(rootPath, dirPath);
+		if (!seg) continue;
+		bumpTotalsMaxFileBytes(totalsBySeg, seg, maxFileBytes);
 	}
 
-	return dirsWithDirectFiles.filter((dirPath) => !hasChildWithFiles.has(dirPath));
+	return totalsBySeg;
+}
+
+function computeCandidatesByTopLevel(params: {
+	rootPath: string;
+	directorySizes: Record<string, number>;
+	directoryFileCounts: Record<string, number>;
+	directoryMaxFileBytes: Record<string, number>;
+}): Map<string, CandidateDirectory[]> {
+	const { rootPath, directorySizes, directoryFileCounts, directoryMaxFileBytes } = params;
+	const candidatesBySeg = new Map<string, CandidateDirectory[]>();
+
+	for (const [dirPath, bytes] of Object.entries(directorySizes)) {
+		if (bytes <= 0) continue;
+		const seg = getTopLevelSegment(rootPath, dirPath);
+		if (!seg) continue;
+		const list = candidatesBySeg.get(seg);
+		const candidate: CandidateDirectory = {
+			absolutePath: dirPath,
+			bytes,
+			fileCount: directoryFileCounts[dirPath] ?? 0,
+			maxFileBytes: directoryMaxFileBytes[dirPath] ?? 0,
+		};
+		if (list) list.push(candidate);
+		else candidatesBySeg.set(seg, [candidate]);
+	}
+
+	return candidatesBySeg;
+}
+
+function computeLeafFiles(params: {
+	leafAbsolutePath: string;
+	leafBytes: number;
+	leafMaxFileBytes: number;
+	topFilesByDirectory?: Record<string, TopFile[]>;
+	fileCoverageTarget: number;
+	minFilePercent: number;
+	maxFilesPerLeaf: number;
+	largeFileThresholdBytes: number;
+}): SizeBreakdownFile[] | undefined {
+	const {
+		leafAbsolutePath,
+		leafBytes,
+		leafMaxFileBytes,
+		topFilesByDirectory,
+		fileCoverageTarget,
+		minFilePercent,
+		maxFilesPerLeaf,
+		largeFileThresholdBytes,
+	} = params;
+
+	if (!topFilesByDirectory) return undefined;
+	if (leafMaxFileBytes < largeFileThresholdBytes) return undefined;
+
+	const candidates = topFilesByDirectory[leafAbsolutePath] ?? [];
+	if (candidates.length === 0) return undefined;
+
+	const minFileBytes = leafBytes > 0 ? leafBytes * minFilePercent : 0;
+	let coveredBytes = 0;
+	const files: SizeBreakdownFile[] = [];
+
+	for (const f of candidates) {
+		if (files.length >= maxFilesPerLeaf) break;
+		if (files.length > 0 && f.bytes < minFileBytes) break;
+		files.push({ name: f.name, absolutePath: f.absolutePath, bytes: f.bytes });
+		coveredBytes += f.bytes;
+		if (leafBytes > 0 && coveredBytes / leafBytes >= fileCoverageTarget) break;
+	}
+
+	return files.length > 0 ? files : undefined;
 }
 
 export function computeSizeBreakdown(input: ComputeSizeBreakdownInput): SizeBreakdownResult {
@@ -141,60 +177,34 @@ export function computeSizeBreakdown(input: ComputeSizeBreakdownInput): SizeBrea
 	const maxFilesPerLeaf = options?.maxFilesPerLeaf ?? Math.max(3, Math.floor(1 / minFilePercent));
 	const largeFileThresholdBytes = options?.largeFileThresholdBytes ?? 10 * 1024 * 1024;
 
-	const cumulativeBytes = computeCumulativeBytes(rootPath, directorySizes);
-	const cumulativeFileCounts = computeCumulativeFileCounts(rootPath, directoryFileCounts ?? {});
-	const cumulativeMaxFileBytes = computeCumulativeMaxFileBytes(rootPath, directoryMaxFileBytes ?? {});
+	const directoryFileCountsValue = directoryFileCounts ?? {};
+	const directoryMaxFileBytesValue = directoryMaxFileBytes ?? {};
 
-	const topLevelSegments = new Set<string>();
-	for (const dirPath of cumulativeBytes.keys()) {
-		if (dirPath === rootPath) continue;
-		const relative = path.relative(rootPath, dirPath);
-		if (!relative || relative.startsWith('..')) continue;
-		topLevelSegments.add(relative.split(path.sep)[0]);
-	}
-
-	const fileLeafDirs = computeFileLeafDirectories(rootPath, directoryFileCounts ?? {});
-	const leafDirsByTopLevel = new Map<string, string[]>();
-	for (const leafDirPath of fileLeafDirs) {
-		const relative = path.relative(rootPath, leafDirPath);
-		if (!relative || relative.startsWith('..')) continue;
-		const seg = relative.split(path.sep)[0];
-		const list = leafDirsByTopLevel.get(seg);
-		if (list) list.push(leafDirPath);
-		else leafDirsByTopLevel.set(seg, [leafDirPath]);
-	}
-
-	const maxDirsByTopLevel = new Map<string, Array<{ dirPath: string; maxFileBytes: number }>>();
-	for (const [dirPath, maxFileBytesValue] of Object.entries(directoryMaxFileBytes ?? {})) {
-		if (maxFileBytesValue <= 0) continue;
-		const relative = path.relative(rootPath, dirPath);
-		if (!relative || relative.startsWith('..')) continue;
-		const seg = relative.split(path.sep)[0];
-		const list = maxDirsByTopLevel.get(seg);
-		const entry = { dirPath, maxFileBytes: maxFileBytesValue };
-		if (list) list.push(entry);
-		else maxDirsByTopLevel.set(seg, [entry]);
-	}
+	const totalsBySeg = computeTopLevelTotals({
+		rootPath,
+		directorySizes,
+		directoryFileCounts: directoryFileCountsValue,
+		directoryMaxFileBytes: directoryMaxFileBytesValue,
+	});
+	const candidatesBySeg = computeCandidatesByTopLevel({
+		rootPath,
+		directorySizes,
+		directoryFileCounts: directoryFileCountsValue,
+		directoryMaxFileBytes: directoryMaxFileBytesValue,
+	});
+	const segments = new Set<string>([...totalsBySeg.keys(), ...candidatesBySeg.keys()]);
 
 	const parents: SizeBreakdownParent[] = [];
-	for (const seg of topLevelSegments) {
+	for (const seg of segments) {
 		const absolutePath = path.join(rootPath, seg);
-		const bytes = cumulativeBytes.get(absolutePath) ?? 0;
-		const fileCount = cumulativeFileCounts.get(absolutePath) ?? 0;
-		const maxFileBytes = cumulativeMaxFileBytes.get(absolutePath) ?? 0;
+		const totals = totalsBySeg.get(seg) ?? { bytes: 0, fileCount: 0, maxFileBytes: 0 };
+		const bytes = totals.bytes;
+		const fileCount = totals.fileCount;
+		const maxFileBytes = totals.maxFileBytes;
 
 		if (bytes <= 0 && fileCount <= 0) continue;
 
-		const leafDirs = leafDirsByTopLevel.get(seg) ?? [];
-		const leafEntries: Array<{ absolutePath: string; bytes: number; fileCount: number; maxFileBytes: number }> = [];
-		for (const leafDirPath of leafDirs) {
-			leafEntries.push({
-				absolutePath: leafDirPath,
-				bytes: cumulativeBytes.get(leafDirPath) ?? 0,
-				fileCount: cumulativeFileCounts.get(leafDirPath) ?? 0,
-				maxFileBytes: cumulativeMaxFileBytes.get(leafDirPath) ?? 0,
-			});
-		}
+		const leafEntries = candidatesBySeg.get(seg) ?? [];
 		leafEntries.sort((a, b) => b.bytes - a.bytes);
 
 		const minItemBytes = bytes > 0 ? bytes * minItemPercent : 0;
@@ -219,21 +229,17 @@ export function computeSizeBreakdown(input: ComputeSizeBreakdownInput): SizeBrea
 				maxFileBytes: entry.maxFileBytes,
 			};
 
-			if (entry.maxFileBytes >= largeFileThresholdBytes) {
-				const candidates = topFilesByDirectory?.[entry.absolutePath] ?? [];
-				const minFileBytes = entry.bytes > 0 ? entry.bytes * minFilePercent : 0;
-				let coveredBytes = 0;
-				const files: SizeBreakdownFile[] = [];
-
-				for (const f of candidates) {
-					if (files.length >= maxFilesPerLeaf) break;
-					if (files.length > 0 && f.bytes < minFileBytes) break;
-					files.push({ name: f.name, absolutePath: f.absolutePath, bytes: f.bytes });
-					coveredBytes += f.bytes;
-					if (entry.bytes > 0 && coveredBytes / entry.bytes >= fileCoverageTarget) break;
-				}
-				if (files.length > 0) leafDir.files = files;
-			}
+			const files = computeLeafFiles({
+				leafAbsolutePath: entry.absolutePath,
+				leafBytes: entry.bytes,
+				leafMaxFileBytes: entry.maxFileBytes,
+				topFilesByDirectory,
+				fileCoverageTarget,
+				minFilePercent,
+				maxFilesPerLeaf,
+				largeFileThresholdBytes,
+			});
+			if (files) leafDir.files = files;
 
 			selected.push(leafDir);
 			selectedLeafDirSet.add(entry.absolutePath);
@@ -245,12 +251,12 @@ export function computeSizeBreakdown(input: ComputeSizeBreakdownInput): SizeBrea
 		}
 
 		const othersBytes = Math.max(0, bytes - selectedBytes);
-		const othersLeafDirs = Math.max(0, leafDirs.length - selected.length);
+		const othersLeafDirs = Math.max(0, leafEntries.length - selected.length);
 		const othersFileCount = Math.max(0, fileCount - selectedFileCount);
 
 		let othersMaxFileBytes = 0;
-		for (const candidate of maxDirsByTopLevel.get(seg) ?? []) {
-			if (selectedLeafDirSet.has(candidate.dirPath)) continue;
+		for (const candidate of leafEntries) {
+			if (selectedLeafDirSet.has(candidate.absolutePath)) continue;
 			if (candidate.maxFileBytes > othersMaxFileBytes) othersMaxFileBytes = candidate.maxFileBytes;
 		}
 

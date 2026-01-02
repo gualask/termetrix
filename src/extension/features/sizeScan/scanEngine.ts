@@ -51,27 +51,27 @@ export async function scanProjectSize({
 		cancellationToken,
 		maxDirectoryConcurrency,
 		onProgress,
-			runOneDirectory: async (currentPath) =>
-				processDirectory({
-					currentPath,
-					rootPath,
+		runOneDirectory: async (currentPath) =>
+			processDirectory({
+				currentPath,
+				rootPath,
 				queue,
 				state,
 				startTime,
 				maxDurationMs,
 				maxDirectories: config.maxDirectories,
 				cancellationToken,
-					runLimited,
-					statBatchSize,
-					isSummaryOnly,
-					collectTopDirectories,
-					topDirectoriesLimit,
-					dirSizes,
-					dirFileCounts,
-					dirMaxFileBytes,
-					topFilesByDirectory,
-					topDirectories,
-				}),
+				runLimited,
+				statBatchSize,
+				isSummaryOnly,
+				collectTopDirectories,
+				topDirectoriesLimit,
+				dirSizes,
+				dirFileCounts,
+				dirMaxFileBytes,
+				topFilesByDirectory,
+				topDirectories,
+			}),
 	});
 
 	const endTime = Date.now();
