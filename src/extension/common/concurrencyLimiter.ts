@@ -1,5 +1,10 @@
 export type ConcurrencyLimiter = <T>(fn: () => Promise<T>) => Promise<T>;
 
+/**
+ * Creates a simple concurrency limiter for async operations.
+ * @param maxConcurrency - Maximum number of concurrent operations allowed.
+ * @returns A function that runs the provided async work respecting the concurrency limit.
+ */
 export function createConcurrencyLimiter(maxConcurrency: number): ConcurrencyLimiter {
 	let active = 0;
 	const queue: Array<() => void> = [];

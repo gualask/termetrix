@@ -3,5 +3,8 @@
  * Keep formatting consistent between extension and webview by sharing the same implementation.
  */
 
-// Re-export shared formatters
+/**
+ * Formats a byte count into a human-friendly string.
+ * Re-exported from the shared implementation used by the webview.
+ */
 export { formatBytes } from '../../shared/formatters.js';

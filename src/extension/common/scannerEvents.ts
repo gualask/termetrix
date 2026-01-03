@@ -20,6 +20,11 @@ export class ScannerEventSubscription {
 	private readonly onProgress: ScanProgressHandler;
 	private readonly onScanEnd: ScanProgressHandler;
 
+	/**
+	 * Subscribes to scanner events and forwards them to the provided handlers.
+	 * @param scanner - Scanner event emitter.
+	 * @param handlers - Optional event callbacks.
+	 */
 	constructor(
 		private scanner: ProjectSizeScanner,
 		handlers: ScanEventHandlers
@@ -31,6 +36,10 @@ export class ScannerEventSubscription {
 		this.subscribe();
 	}
 
+	/**
+	 * Registers event listeners on the scanner.
+	 * @returns void
+	 */
 	private subscribe(): void {
 		// Subscribe once, then rely on `dispose()` for cleanup to avoid leaking listeners.
 		this.scanner.on('scanStart', this.onScanStart);
@@ -38,6 +47,10 @@ export class ScannerEventSubscription {
 		this.scanner.on('scanEnd', this.onScanEnd);
 	}
 
+	/**
+	 * Unsubscribes from scanner events.
+	 * @returns void
+	 */
 	dispose(): void {
 		// Remove the exact same handler references that were registered.
 		this.scanner.off('scanStart', this.onScanStart);
