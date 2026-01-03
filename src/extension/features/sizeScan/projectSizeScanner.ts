@@ -31,7 +31,10 @@ export class ProjectSizeScanner extends EventEmitter {
 	constructor(private cache: ScanCache) {
 		super();
 		this.rootController = new ProjectRootController({
+			// Root changes can arrive in bursts (multi-root + editor switching).
+			// Cancel early so we don't waste IO on a root that is no longer relevant.
 			onRootChangeScheduled: () => this.cancelCurrentScan(),
+			// When the root stabilizes, refresh the fast scan so status bar/panel have fresh totals.
 			onRootChanged: (rootPath) => void this.scanSummary(rootPath),
 		});
 		this.rootController.initializeFromActiveEditor();
@@ -39,6 +42,7 @@ export class ProjectSizeScanner extends EventEmitter {
 		this.autoRefreshController = new AutoRefreshController({
 			isScanning: () => this.isScanning,
 			getCurrentRoot: () => this.getCurrentRoot(),
+			// Auto-refresh should be cheap and non-intrusive: use the summary scan.
 			refresh: () => void this.scanSummary(),
 		});
 		this.autoRefreshController.start();
@@ -145,12 +149,14 @@ export class ProjectSizeScanner extends EventEmitter {
 		if (!rootPath) return undefined;
 
 		this.beginScan(rootPath);
+		// Session abstraction ensures window-progress + cancellation are wired consistently.
 		const session = this.createScanSession(rootPath, showWindowProgress, scanOptions);
 		this.currentScanCancellation = session.cancellationSource;
 
 		try {
 			const result = await session.run();
 
+			// Cache only what downstream consumers need; heavy internals are stored separately (webview lifetime).
 			if (result) this.cacheScanResult(rootPath, result, scanOptions.collectTopDirectories);
 
 			return result;
@@ -190,6 +196,7 @@ export class ProjectSizeScanner extends EventEmitter {
 			return;
 		}
 
+		// Summary scans don't collect top directories. Keep previous values so the UI doesn't regress.
 		const previous = this.cache.get(rootPath);
 		if (!previous?.topDirectories.length) {
 			this.cache.set(rootPath, result);
@@ -223,6 +230,7 @@ export class ProjectSizeScanner extends EventEmitter {
 			config,
 			cancellationToken,
 			options: scanOptions,
+			// Progress events are throttled to avoid spamming the webview/status bar.
 			onProgress: ({ totalBytes, directoriesScanned }) => {
 				this.emitProgress(rootPath, totalBytes, directoriesScanned);
 			},
@@ -235,6 +243,7 @@ export class ProjectSizeScanner extends EventEmitter {
 	cancelCurrentScan(): void {
 		const cancellationSource = this.currentScanCancellation;
 		if (!cancellationSource) return;
+		// Cancellation is best-effort; the engine checks the token frequently to stop quickly.
 		cancellationSource.cancel();
 		this.currentScanCancellation = undefined;
 	}

@@ -27,10 +27,12 @@ export class ScanCache {
 			topFilesByDirectory: _topFilesByDirectory,
 			...slimResult
 		} = result;
+
 		// Simple LRU-ish behavior: refresh insertion order on updates.
 		if (this.memoryCache.has(rootPath)) this.memoryCache.delete(rootPath);
 		this.memoryCache.set(rootPath, slimResult);
 
+		// Bound memory usage for long-lived VS Code sessions (e.g. frequent root switches in multi-root workspaces).
 		while (this.memoryCache.size > MAX_CACHE_ENTRIES) {
 			const oldestKey = this.memoryCache.keys().next().value as string | undefined;
 			if (!oldestKey) break;

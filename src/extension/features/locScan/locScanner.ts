@@ -40,6 +40,7 @@ export class LOCScanner {
 			skippedFiles: 0,
 		};
 
+		// Load ignore rules once, then reuse during traversal.
 		const gitignoreRules = await loadGitIgnoreRules(rootPath);
 		await this.scanDirectory({ rootPath, dirPath: rootPath, result, gitignoreRules, token });
 
@@ -60,6 +61,7 @@ export class LOCScanner {
 		gitignoreRules: GitIgnoreRule[];
 		token?: vscode.CancellationToken;
 	}): Promise<void> {
+		// HOT PATH: walks many directories/files; keep changes minimal and avoid extra allocations.
 		const { rootPath, dirPath, result, gitignoreRules, token } = params;
 		if (token?.isCancellationRequested) return;
 
@@ -76,6 +78,7 @@ export class LOCScanner {
 			const fullPath = path.join(dirPath, entry.name);
 			const relativePath = path.relative(rootPath, fullPath);
 
+			// Exclude early to avoid unnecessary stat/read work.
 			if (this.shouldSkip(relativePath, gitignoreRules, result)) continue;
 
 			if (entry.isDirectory()) {
@@ -105,6 +108,7 @@ export class LOCScanner {
 	 * Process a single file and count its lines
 	 */
 	private async processFile(fullPath: string, relativePath: string, result: LOCResult): Promise<void> {
+		// HOT PATH: called for many files; keep changes minimal and avoid expensive work for skipped files.
 		const ext = path.extname(fullPath);
 
 		// Only process source files
@@ -113,7 +117,7 @@ export class LOCScanner {
 			return;
 		}
 
-		// Check file size (skip files > 2MB to avoid memory issues)
+		// Check file size (skip large files to avoid memory issues)
 		const stat = await this.tryStat(fullPath);
 		if (!stat) return;
 
@@ -131,6 +135,7 @@ export class LOCScanner {
 		const lines = countNonEmptyLines(content);
 		if (lines <= 0) return;
 
+		// Stable language key for aggregation.
 		const language = LANGUAGE_MAP[ext] ?? ext.slice(1).toUpperCase();
 
 		result.totalLines += lines;

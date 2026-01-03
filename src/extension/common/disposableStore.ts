@@ -9,6 +9,7 @@ export class DisposableStore implements vscode.Disposable {
 	}
 
 	clear(): void {
+		// Dispose in reverse order to match typical "create -> dispose" lifetimes.
 		while (this.disposables.length) {
 			this.disposables.pop()?.dispose();
 		}

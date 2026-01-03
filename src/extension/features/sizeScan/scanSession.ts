@@ -11,6 +11,34 @@ export interface CancellableProgressSession<T> {
 	dispose: () => void;
 }
 
+type CancellableTask<T> = (cancellationToken: vscode.CancellationToken) => Promise<T>;
+
+function runWithCancellableWindowProgress<T>(
+	title: string,
+	cancellationSource: vscode.CancellationTokenSource,
+	task: CancellableTask<T>
+): Thenable<T> {
+	return vscode.window.withProgress(
+		{
+			location: vscode.ProgressLocation.Window,
+			title,
+			cancellable: true,
+		},
+		async (_progress, uiToken) => {
+			// Bridge the UI cancellation token to our internal token source.
+			const cancellationBridge = uiToken.onCancellationRequested(() => {
+				cancellationSource.cancel();
+			});
+
+			try {
+				return await task(cancellationSource.token);
+			} finally {
+				cancellationBridge.dispose();
+			}
+		}
+	);
+}
+
 /**
  * Creates a cancellable VS Code window progress session that links the UI cancellation token
  * to an internal CancellationTokenSource.
@@ -25,24 +53,8 @@ export function createCancellableWindowProgressSession<T>({
 
 	return {
 		cancellationSource,
-		run: () =>
-			vscode.window.withProgress(
-				{
-					location: vscode.ProgressLocation.Window,
-					title,
-					cancellable: true,
-				},
-				async (_progress, token) => {
-					token.onCancellationRequested(() => {
-						cancellationSource.cancel();
-					});
-
-					return await task(cancellationSource.token);
-				}
-			),
-		dispose: () => {
-			cancellationSource.dispose();
-		},
+		run: () => runWithCancellableWindowProgress(title, cancellationSource, task),
+		dispose: () => cancellationSource.dispose(),
 	};
 }
 
@@ -60,8 +72,6 @@ export function createCancellableSilentSession<T>({
 	return {
 		cancellationSource,
 		run: () => task(cancellationSource.token),
-		dispose: () => {
-			cancellationSource.dispose();
-		},
+		dispose: () => cancellationSource.dispose(),
 	};
 }

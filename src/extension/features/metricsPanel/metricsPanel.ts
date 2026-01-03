@@ -9,6 +9,7 @@ import {
 	createMetricsPanelCommandHandlers,
 	dispatchMetricsPanelWebviewMessage,
 	sendMetricsPanelState,
+	type MetricsPanelCommandDeps,
 } from './metricsPanelCommands';
 import { getMetricsPanelHtml } from './metricsPanelHtml';
 import type { SizeScanInternals } from '../sizeScan/sizeScanInternals';
@@ -19,7 +20,7 @@ import type { SizeScanInternals } from '../sizeScan/sizeScanInternals';
 export class MetricsPanel implements vscode.Disposable {
 	private panel: vscode.WebviewPanel | undefined;
 	private readonly panelDisposables = new DisposableStore();
-	private readonly locScanner: LOCScanner;
+	private readonly locScanner = new LOCScanner();
 	private readonly commandHandlers: ReturnType<typeof createMetricsPanelCommandHandlers>;
 	/** Temporary storage for size scan internals during webview session (for breakdown computation) */
 	private currentSizeScanInternals: SizeScanInternals | null = null;
@@ -32,8 +33,19 @@ export class MetricsPanel implements vscode.Disposable {
 		private cache: ScanCache,
 		private extensionUri: vscode.Uri
 	) {
-		this.locScanner = new LOCScanner();
-		this.commandHandlers = createMetricsPanelCommandHandlers({
+		this.commandHandlers = createMetricsPanelCommandHandlers(this.createCommandDeps());
+	}
+
+	private updatePreferredEditorColumnFrom(editor: vscode.TextEditor | undefined): void {
+		if (!editor) return;
+		const scheme = editor.document.uri.scheme;
+		if (scheme !== 'file' && scheme !== 'untitled') return;
+		// Remember the column so "openFile" from the webview doesn't steal focus from where the user works.
+		this.preferredEditorColumn = editor.viewColumn;
+	}
+
+	private createCommandDeps(): MetricsPanelCommandDeps {
+		return {
 			scanner: this.scanner,
 			cache: this.cache,
 			locScanner: this.locScanner,
@@ -45,17 +57,11 @@ export class MetricsPanel implements vscode.Disposable {
 				this.currentSizeScanInternalsRootPath = value ? rootPath : null;
 			},
 			sendMessage: (message) => this.sendMessage(message),
-		});
-	}
-
-	private updatePreferredEditorColumnFrom(editor: vscode.TextEditor | undefined): void {
-		if (!editor) return;
-		const scheme = editor.document.uri.scheme;
-		if (scheme !== 'file' && scheme !== 'untitled') return;
-		this.preferredEditorColumn = editor.viewColumn;
+		};
 	}
 
 	private disposePanelResources(): void {
+		// Internals can be large on big projects; always clear when the panel is disposed.
 		this.currentSizeScanInternals = null; // Free memory
 		this.currentSizeScanInternalsRootPath = null;
 		this.panelDisposables.clear();
@@ -74,6 +80,7 @@ export class MetricsPanel implements vscode.Disposable {
 		this.updatePreferredEditorColumnFrom(vscode.window.activeTextEditor);
 
 		if (this.panel) {
+			// If already open, just focus and push the latest cached state.
 			this.panel.reveal(vscode.ViewColumn.Beside);
 			this.updatePanel();
 			return;
@@ -97,42 +104,39 @@ export class MetricsPanel implements vscode.Disposable {
 			vscode.ViewColumn.Beside,
 			{
 				enableScripts: true,
+				// Keep UI state across tab switches; we still explicitly refresh data on scan end / user actions.
 				retainContextWhenHidden: true,
-				localResourceRoots: [webviewUri]
+				localResourceRoots: [webviewUri],
 			}
 		);
 
-		// Set HTML content
 		panel.webview.html = getMetricsPanelHtml(panel.webview, webviewUri);
 
 		return panel;
 	}
 
 	private registerPanelSubscriptions(panel: vscode.WebviewPanel): void {
-		// Subscribe to scanner events for the lifetime of this panel instance.
-		this.panelDisposables.add(
-			new ScannerEventSubscription(this.scanner, {
-				onScanStart: this.handleScanStart.bind(this),
-				onProgress: this.handleProgress.bind(this),
-				onScanEnd: this.handleScanEnd.bind(this),
-			})
+		// Scanner progress events can be frequent; keep handlers minimal.
+		const scanEvents = new ScannerEventSubscription(this.scanner, {
+			onScanStart: (progress) => this.handleScanStart(progress),
+			onProgress: (progress) => this.handleProgress(progress),
+			onScanEnd: () => this.updatePanel(),
+		});
+
+		// Track the user's last active editor column so "openFile" doesn't steal focus from the webview.
+		const activeEditorListener = vscode.window.onDidChangeActiveTextEditor((editor) => {
+			this.updatePreferredEditorColumnFrom(editor);
+		});
+
+		// The dispatcher validates message shape; handlers are the only entry points into VS Code APIs.
+		const webviewMessageListener = panel.webview.onDidReceiveMessage((message) =>
+			void dispatchMetricsPanelWebviewMessage(message, this.commandHandlers)
 		);
 
-		// Track the user's last active editor column so we can open files there (not in the webview column).
-		this.panelDisposables.add(
-			vscode.window.onDidChangeActiveTextEditor((editor) => {
-				this.updatePreferredEditorColumnFrom(editor);
-			})
-		);
+		const disposeListener = panel.onDidDispose(() => this.handlePanelDisposed());
 
-		// Handle messages from webview
 		this.panelDisposables.add(
-			panel.webview.onDidReceiveMessage((message) => void this.handleWebviewMessage(message))
-		);
-
-		// Clean up when panel is closed
-		this.panelDisposables.add(
-			panel.onDidDispose(() => this.handlePanelDisposed())
+			vscode.Disposable.from(scanEvents, activeEditorListener, webviewMessageListener, disposeListener)
 		);
 	}
 
@@ -145,6 +149,7 @@ export class MetricsPanel implements vscode.Disposable {
 			this.currentSizeScanInternals = null;
 			this.currentSizeScanInternalsRootPath = null;
 		}
+		// UI updates for scan start/progress do not require full cached state.
 		this.sendMessage({ type: 'scanStart' });
 	}
 
@@ -160,13 +165,6 @@ export class MetricsPanel implements vscode.Disposable {
 	}
 
 	/**
-	 * Handle scan end event
-	 */
-	private handleScanEnd(_progress: ScanProgress): void {
-		this.updatePanel();
-	}
-
-	/**
 	 * Update panel with current scan data
 	 */
 	private updatePanel(): void {
@@ -178,17 +176,12 @@ export class MetricsPanel implements vscode.Disposable {
 	}
 
 	/**
-	 * Handle messages from webview - delegates to command handlers
-	 */
-	private async handleWebviewMessage(message: unknown): Promise<void> {
-		await dispatchMetricsPanelWebviewMessage(message, this.commandHandlers);
-	}
-
-	/**
 	 * Send message to webview
 	 */
 	private sendMessage(message: MessageFromExtension): void {
-		void this.panel?.webview.postMessage(message);
+		const panel = this.panel;
+		if (!panel) return;
+		void panel.webview.postMessage(message);
 	}
 
 	dispose(): void {

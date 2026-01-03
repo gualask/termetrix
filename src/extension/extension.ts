@@ -12,6 +12,7 @@ function createCoreServices(context: vscode.ExtensionContext): {
 	terminalItem: TerminalStatusBarItem;
 	metricsItem: MetricsStatusBarItem;
 } {
+	// Core services are created once per activation and disposed via `context.subscriptions`.
 	const cache = new ScanCache();
 	const scanner = new ProjectSizeScanner(cache);
 	const metricsPanel = new MetricsPanel(scanner, cache, context.extensionUri);
@@ -30,9 +31,11 @@ function registerCommands(params: {
 }): vscode.Disposable[] {
 	const { scanner, metricsPanel, metricsItem, terminalItem } = params;
 
+	// Commands are the public surface of the extension. Keep handlers small and delegate to services.
 	const openScanPanelCmd = vscode.commands.registerCommand('termetrix.openScanPanel', () => metricsPanel.show());
 
 	const refreshScanCmd = vscode.commands.registerCommand('termetrix.refreshScan', async () => {
+		// Explicit refresh: run the full scan and then refresh the status bar.
 		await scanner.scan();
 		metricsItem.update();
 	});
@@ -51,6 +54,7 @@ function registerEditorTracking(params: {
 	const { scanner, metricsItem } = params;
 	return vscode.window.onDidChangeActiveTextEditor((editor) => {
 		if (!editor) return;
+		// Root selection is tied to the active editor (multi-root workspaces).
 		scanner.handleEditorChange(editor);
 		metricsItem.update();
 	});
@@ -59,6 +63,7 @@ function registerEditorTracking(params: {
 function runInitialScan(params: { scanner: ProjectSizeScanner; metricsItem: MetricsStatusBarItem }): void {
 	const { scanner, metricsItem } = params;
 	void (async () => {
+		// Keep activation snappy: start with the summary scan and let the user trigger deeper views.
 		await scanner.scanSummary();
 		metricsItem.update();
 	})();
@@ -71,6 +76,7 @@ export function activate(context: vscode.ExtensionContext) {
 	const commands = registerCommands({ scanner, metricsPanel, metricsItem, terminalItem });
 	const editorTracking = registerEditorTracking({ scanner, metricsItem });
 
+	// Ensure everything is disposed on deactivation.
 	context.subscriptions.push(
 		terminalItem,
 		metricsItem,

@@ -23,6 +23,7 @@ export class TerminalStatusBarItem implements vscode.Disposable {
 	}
 
 	private showTerminal(cwd?: string): void {
+		// Prefer setting `cwd` so the user lands in the same context used by scans.
 		const terminal = cwd
 			? vscode.window.createTerminal({ cwd, name: 'Termetrix' })
 			: vscode.window.createTerminal('Termetrix');
@@ -42,6 +43,7 @@ export class TerminalStatusBarItem implements vscode.Disposable {
 		const firstFolder = vscode.workspace.workspaceFolders?.[0];
 		if (firstFolder) return this.showTerminal(firstFolder.uri.fsPath);
 
+		// Final fallback: use VS Code defaults.
 		this.showTerminal();
 	}
 

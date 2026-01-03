@@ -80,3 +80,6 @@ export const DEFAULT_EXCLUDES = ['node_modules', '.git', 'dist', 'out', 'build',
 export const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024;
 export const TOP_FILES_LIMIT = 10;
 
+// Notes:
+// - `DEFAULT_EXCLUDES` is applied before `.gitignore` rules for a fast common-case skip.
+// - `MAX_FILE_SIZE_BYTES` prevents reading very large files into memory during LOC scans.

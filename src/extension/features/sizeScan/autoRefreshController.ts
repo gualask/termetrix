@@ -18,10 +18,12 @@ export class AutoRefreshController {
 	constructor(private options: AutoRefreshControllerOptions) {}
 
 	start(): void {
+		// Apply immediately so the first timer reflects current config.
 		this.applyConfig();
 
 		this.configSubscription?.dispose();
 		this.configSubscription = configManager.onConfigChange(() => {
+			// Reconfigure the timer when settings change.
 			this.applyConfig();
 		});
 	}
@@ -36,6 +38,7 @@ export class AutoRefreshController {
 		const { enabled, minutes } = configManager.getAutoRefreshConfig();
 
 		if (!enabled) {
+			// Disabled: ensure the timer is stopped.
 			this.stopTimer();
 			return;
 		}
@@ -48,6 +51,7 @@ export class AutoRefreshController {
 
 		const intervalMs = minutes * 60 * 1000;
 		this.timer = setInterval(() => {
+			// Avoid overlapping scans; refresh is best-effort and should stay quiet.
 			if (this.options.isScanning() || !this.options.getCurrentRoot()) return;
 			this.options.refresh();
 		}, intervalMs);
@@ -59,4 +63,3 @@ export class AutoRefreshController {
 		this.timer = undefined;
 	}
 }
-

@@ -22,46 +22,107 @@ function consumeDoubleStar(pattern: string, startIndex: number): number {
 	return i;
 }
 
+/**
+ * Converts a gitignore-style glob pattern into a regex fragment.
+ *
+ * Supported tokens:
+ * - `*` matches within a single path segment (no `/`)
+ * - `**` matches across path segments
+ * - `?` matches a single character within a segment
+ * - `\\` escapes the next character
+ */
 function globToRegex(pattern: string): string {
 	let out = '';
 	for (let i = 0; i < pattern.length; i++) {
 		const c = pattern[i];
 
-		// Escape sequences
+		// 1) Escape sequences: `\X` means "treat X literally" (even if it would be a glob token).
 		if (c === '\\' && i + 1 < pattern.length) {
 			const next = pattern[++i];
 			out += next.replace(REGEX_SPECIAL_CHARS_GLOBAL, '\\$&');
 			continue;
 		}
 
-		if (c === '*') {
-			if (pattern[i + 1] !== '*') {
-				out += '[^/]*';
-				continue;
-			}
-
-			// Collapse any run of ** into a single .*
-			i = consumeDoubleStar(pattern, i);
-			out += '.*';
-			continue;
-		}
-
+		// 2) Single-char wildcard within a segment.
 		if (c === '?') {
 			out += '[^/]';
 			continue;
 		}
 
-		// Escape regex special chars
-		out += REGEX_SPECIAL_CHARS.test(c) ? '\\' + c : c;
+		// 3) Literal character (escape only if it would be special in regex).
+		if (c !== '*') {
+			out += REGEX_SPECIAL_CHARS.test(c) ? '\\' + c : c;
+			continue;
+		}
+
+		// 4) `*` / `**` wildcards. Single `*` stays within one path segment; `**` can cross segments.
+		if (pattern[i + 1] !== '*') {
+			// Single star: match within a path segment.
+			out += '[^/]*';
+			continue;
+		}
+
+		// Collapse any run of `**...*` into a single `.*`.
+		i = consumeDoubleStar(pattern, i);
+		out += '.*';
 	}
 	return out;
 }
 
+type ParsedGitIgnoreLine = {
+	negated: boolean;
+	anchored: boolean;
+	directoryOnly: boolean;
+	pattern: string;
+};
+
+function parseGitIgnoreLine(rawLine: string): ParsedGitIgnoreLine | null {
+	// Best-effort gitignore parsing; correctness is "good enough" for LOC scanning filters.
+	let line = rawLine.replace(TRAILING_WHITESPACE_REGEX, '');
+	if (!line) return null;
+
+	// Comments (unless escaped).
+	if (line.startsWith('#')) return null;
+	if (line.startsWith('\\#')) line = line.slice(1);
+	if (line.startsWith('\\!')) line = line.slice(1);
+
+	let negated = false;
+	if (line.startsWith('!')) {
+		negated = true;
+		line = line.slice(1);
+	}
+	if (!line) return null;
+
+	let directoryOnly = false;
+	if (line.endsWith('/')) {
+		directoryOnly = true;
+		line = line.slice(0, -1);
+	}
+
+	const anchored = line.startsWith('/');
+	if (anchored) line = line.slice(1);
+	if (!line) return null;
+
+	return { negated, anchored, directoryOnly, pattern: line };
+}
+
+function compileRuleRegex(parsed: Omit<ParsedGitIgnoreLine, 'negated'>): RegExp {
+	// Prefix semantics are intentionally simplified: non-anchored patterns can match at any depth.
+	const prefix = parsed.anchored ? '^' : '(^|.*/)';
+	const suffix = parsed.directoryOnly ? '(/.*)?$' : '$';
+	return new RegExp(prefix + globToRegex(parsed.pattern) + suffix);
+}
+
+/**
+ * Loads `.gitignore` rules from the repo root (best-effort).
+ * When no `.gitignore` exists, returns an empty rule set.
+ */
 export async function loadGitIgnoreRules(rootPath: string): Promise<GitIgnoreRule[]> {
 	const gitignorePath = path.join(rootPath, '.gitignore');
 
 	let content = '';
 	try {
+		// Best-effort: if there's no .gitignore, we just scan everything.
 		content = await fs.readFile(gitignorePath, 'utf8');
 	} catch {
 		return [];
@@ -70,50 +131,22 @@ export async function loadGitIgnoreRules(rootPath: string): Promise<GitIgnoreRul
 	const rules: GitIgnoreRule[] = [];
 
 	for (const rawLine of content.split(LINE_SPLIT_REGEX)) {
-		let line = rawLine;
-
-		// Strip trailing CR/whitespace (gitignore trims unescaped trailing spaces; keep it simple here)
-		line = line.replace(TRAILING_WHITESPACE_REGEX, '');
-		if (!line) continue;
-
-		// Comments (unless escaped)
-		if (line.startsWith('#')) continue;
-		if (line.startsWith('\\#')) line = line.slice(1);
-		if (line.startsWith('\\!')) line = line.slice(1);
-
-		let negated = false;
-		if (line.startsWith('!')) {
-			negated = true;
-			line = line.slice(1);
-		}
-
-		if (!line) continue;
-
-		let directoryOnly = false;
-		if (line.endsWith('/')) {
-			directoryOnly = true;
-			line = line.slice(0, -1);
-		}
-
-		const anchored = line.startsWith('/');
-		if (anchored) {
-			line = line.slice(1);
-		}
-
-		const hasSlash = line.includes('/');
-
-		const prefix = anchored ? '^' : hasSlash ? '(^|.*/)' : '(^|.*/)'; // basename patterns still match in any directory
-		const suffix = directoryOnly ? '(/.*)?$' : '$';
-
-		const body = globToRegex(line);
-		const regex = new RegExp(prefix + body + suffix);
-
-		rules.push({ negated, regex });
+		const parsed = parseGitIgnoreLine(rawLine);
+		if (!parsed) continue;
+		rules.push({
+			negated: parsed.negated,
+			regex: compileRuleRegex(parsed),
+		});
 	}
 
 	return rules;
 }
 
+/**
+ * Returns true if `relativePath` should be ignored by the provided gitignore rules.
+ *
+ * Rules are applied in order; later matches override earlier ones (including negation).
+ */
 export function isGitIgnored(relativePath: string, rules: GitIgnoreRule[]): boolean {
 	if (rules.length === 0) return false;
 	const posix = toPosixPath(relativePath);

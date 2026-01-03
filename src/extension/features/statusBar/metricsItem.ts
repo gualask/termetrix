@@ -8,61 +8,61 @@ import { DisposableStore } from '../../common/disposableStore';
 import { getSelectedLineCount, getSelectedLineCountFromSelections } from './selectionLineCounter';
 
 /**
- * Metrics status bar item - shows project size and selected LOC count
+ * Status bar item showing project size and selected line count.
  */
 export class MetricsStatusBarItem implements vscode.Disposable {
-	private statusBarItem: vscode.StatusBarItem;
+	private readonly statusBarItem: vscode.StatusBarItem;
 	private selectedLines = 0;
 	private currentProgress: ScanProgress | undefined;
-	private eventSubscription: ScannerEventSubscription;
 	private readonly disposables = new DisposableStore();
 
 	constructor(
-		private scanner: ProjectSizeScanner,
-		private cache: ScanCache
-		) {
-		this.statusBarItem = vscode.window.createStatusBarItem(
-			vscode.StatusBarAlignment.Left,
-			999
-		);
+		private readonly scanner: ProjectSizeScanner,
+		private readonly cache: ScanCache
+	) {
+		this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 999);
 		this.statusBarItem.command = 'termetrix.openScanPanel';
 
-		// Subscribe to scanner events using shared utility
-		this.eventSubscription = new ScannerEventSubscription(scanner, {
-			onScanStart: this.handleScanStart.bind(this),
-			onProgress: this.handleProgress.bind(this),
-			onScanEnd: this.handleScanEnd.bind(this)
-		});
+		const scannerSubscription = this.createScannerSubscription();
+		const selectionListener = this.createSelectionListener();
+		const activeEditorListener = this.createActiveEditorListener();
+
+		this.disposables.add(
+			vscode.Disposable.from(
+				this.statusBarItem,
+				scannerSubscription,
+				selectionListener,
+				activeEditorListener
+			)
+		);
 
 		// Keep selected line count in sync with editor state.
 		this.selectedLines = getSelectedLineCount(vscode.window.activeTextEditor);
-		this.disposables.add(
-			vscode.window.onDidChangeTextEditorSelection((e) => {
-				this.updateSelectedLinesFromSelections(e.selections);
-				this.render();
-			})
-		);
-		this.disposables.add(
-			vscode.window.onDidChangeActiveTextEditor((editor) => {
-				this.updateSelectedLinesFromEditor(editor);
-				this.render();
-			})
-		);
 
 		this.render();
 		this.statusBarItem.show();
 	}
 
-	private handleScanStart(progress: ScanProgress): void {
-		this.setProgress(progress);
+	private createScannerSubscription(): vscode.Disposable {
+		return new ScannerEventSubscription(this.scanner, {
+			onScanStart: (progress) => this.setProgress(progress),
+			onProgress: (progress) => this.setProgress(progress),
+			onScanEnd: () => this.setProgress(undefined),
+		});
 	}
 
-	private handleProgress(progress: ScanProgress): void {
-		this.setProgress(progress);
+	private createSelectionListener(): vscode.Disposable {
+		return vscode.window.onDidChangeTextEditorSelection((e) => {
+			if (!this.updateSelectedLinesFromSelections(e.selections)) return;
+			this.render();
+		});
 	}
 
-	private handleScanEnd(_progress: ScanProgress): void {
-		this.setProgress(undefined);
+	private createActiveEditorListener(): vscode.Disposable {
+		return vscode.window.onDidChangeActiveTextEditor((editor) => {
+			if (!this.updateSelectedLinesFromEditor(editor)) return;
+			this.render();
+		});
 	}
 
 	private render(): void {
@@ -75,12 +75,18 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 		this.render();
 	}
 
-	private updateSelectedLinesFromEditor(editor: vscode.TextEditor | undefined): void {
-		this.selectedLines = getSelectedLineCount(editor);
+	private updateSelectedLinesFromEditor(editor: vscode.TextEditor | undefined): boolean {
+		const next = getSelectedLineCount(editor);
+		if (next === this.selectedLines) return false;
+		this.selectedLines = next;
+		return true;
 	}
 
-	private updateSelectedLinesFromSelections(selections: readonly vscode.Selection[]): void {
-		this.selectedLines = getSelectedLineCountFromSelections(selections);
+	private updateSelectedLinesFromSelections(selections: readonly vscode.Selection[]): boolean {
+		const next = getSelectedLineCountFromSelections(selections);
+		if (next === this.selectedLines) return false;
+		this.selectedLines = next;
+		return true;
 	}
 
 	private getSelectedLinesSuffix(): string {
@@ -93,7 +99,7 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 	private renderWithProgress(): void {
 		if (!this.currentProgress) return this.renderIdle();
 
-		// Build status bar text with spinning indicator
+		// During scans, show the currently accumulated bytes (not the cached total).
 		const bytesText =
 			this.currentProgress.currentBytes > 0
 				? formatBytes(this.currentProgress.currentBytes)
@@ -116,6 +122,7 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 			return;
 		}
 
+		// Read cached values; do not trigger scans from the status bar.
 		const scanResult = this.cache.get(rootPath);
 
 		if (!scanResult) {
@@ -147,8 +154,6 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 	}
 
 	dispose(): void {
-		this.eventSubscription.dispose();
 		this.disposables.dispose();
-		this.statusBarItem.dispose();
 	}
 }

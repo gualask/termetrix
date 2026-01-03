@@ -22,6 +22,7 @@ export class ConfigManager {
 	private constructor() {}
 
 	static getInstance(): ConfigManager {
+		// Singleton: extension services can import `configManager` without manual wiring.
 		if (!ConfigManager.instance) {
 			ConfigManager.instance = new ConfigManager();
 		}
@@ -29,6 +30,7 @@ export class ConfigManager {
 	}
 
 	getScanConfig(): ScanConfig {
+		// Read settings on demand so changes apply immediately without restarting the extension.
 		const config = vscode.workspace.getConfiguration('termetrix.scan');
 		return {
 			maxDurationSeconds: config.get<number>('maxDurationSeconds', 10),
@@ -51,6 +53,7 @@ export class ConfigManager {
 	 */
 	onConfigChange(callback: () => void): vscode.Disposable {
 		return vscode.workspace.onDidChangeConfiguration(e => {
+			// Filter to our namespace to avoid work on unrelated settings changes.
 			if (e.affectsConfiguration('termetrix')) {
 				callback();
 			}

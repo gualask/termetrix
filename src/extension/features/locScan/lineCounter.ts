@@ -1,6 +1,7 @@
 /**
  * Count non-empty lines in file content.
  * Uses character code comparison for performance.
+ * HOT PATH: called for many files during LOC scans; keep it branch-light and allocation-free.
  */
 export function countNonEmptyLines(content: string): number {
 	let count = 0;
@@ -19,6 +20,7 @@ export function countNonEmptyLines(content: string): number {
 	};
 
 	for (let i = 0; i <= content.length; i++) {
+		// Use a sentinel newline at EOF so the last line is handled uniformly.
 		const code = i < content.length ? content.charCodeAt(i) : NEWLINE;
 
 		if (code === NEWLINE || i === content.length) {

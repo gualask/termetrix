@@ -4,9 +4,11 @@ import * as vscode from 'vscode';
  * Single responsibility: generate the webview HTML shell for the metrics panel.
  */
 export function getMetricsPanelHtml(webview: vscode.Webview, webviewUri: vscode.Uri): string {
+	// Map extension-local resources into webview-safe URIs.
 	const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(webviewUri, 'webview.js'));
 	const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(webviewUri, 'webview.css'));
 
+	// CSP is intentionally strict: only allow our bundled JS/CSS.
 	return `<!DOCTYPE html>
 <html lang="en">
 <head>

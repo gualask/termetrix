@@ -35,4 +35,3 @@ export interface SizeScanParams {
 }
 
 export type TopFile = { absolutePath: string; name: string; bytes: number };
-

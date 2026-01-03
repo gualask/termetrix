@@ -32,12 +32,14 @@ export class ScannerEventSubscription {
 	}
 
 	private subscribe(): void {
+		// Subscribe once, then rely on `dispose()` for cleanup to avoid leaking listeners.
 		this.scanner.on('scanStart', this.onScanStart);
 		this.scanner.on('progress', this.onProgress);
 		this.scanner.on('scanEnd', this.onScanEnd);
 	}
 
 	dispose(): void {
+		// Remove the exact same handler references that were registered.
 		this.scanner.off('scanStart', this.onScanStart);
 		this.scanner.off('progress', this.onProgress);
 		this.scanner.off('scanEnd', this.onScanEnd);

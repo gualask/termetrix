@@ -41,6 +41,8 @@ export interface ScanProgress {
 
 /**
  * Extended ScanResult with internal fields (not sent to webview)
+ * These fields are used only inside the extension process (e.g. to build the Size breakdown model).
+ * They are intentionally not part of the shared webview message payload.
  */
 export type ExtendedScanResult = BaseScanResult & {
 	/** Internal: directory sizes by absolute path (not persisted, not sent to webview) */

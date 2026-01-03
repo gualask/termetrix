@@ -18,6 +18,7 @@ export class ProjectRootController {
 	initializeFromActiveEditor(): void {
 		const editor = vscode.window.activeTextEditor;
 		if (!editor) {
+			// Fallback: when no editor is active, default to the first workspace folder.
 			this.currentRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 			return;
 		}
@@ -34,6 +35,7 @@ export class ProjectRootController {
 
 		if (!newRoot || newRoot === this.currentRoot) return;
 
+		// Let callers cancel work early (useful when scans are already in-flight).
 		this.options.onRootChangeScheduled?.();
 
 		if (this.debounceTimer) {
@@ -41,6 +43,7 @@ export class ProjectRootController {
 		}
 
 		this.debounceTimer = setTimeout(() => {
+			// Only commit the new root after the editor settles to avoid thrashing on fast switches.
 			this.currentRoot = newRoot;
 			this.options.onRootChanged(newRoot);
 		}, debounceMs);
