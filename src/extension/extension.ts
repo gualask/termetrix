@@ -5,6 +5,11 @@ import { ProjectSizeScanner } from './features/sizeScan/projectSizeScanner';
 import { ScanCache } from './features/sizeScan/scanCache';
 import { MetricsPanel } from './features/metricsPanel/metricsPanel';
 
+/**
+ * Creates the core, long-lived services used by the extension.
+ * @param context - VS Code extension context.
+ * @returns Core service instances.
+ */
 function createCoreServices(context: vscode.ExtensionContext): {
 	cache: ScanCache;
 	scanner: ProjectSizeScanner;
@@ -23,6 +28,15 @@ function createCoreServices(context: vscode.ExtensionContext): {
 	return { cache, scanner, metricsPanel, terminalItem, metricsItem };
 }
 
+/**
+ * Registers extension commands and returns their disposables.
+ * @param params - Command registration dependencies.
+ * @param params.scanner - Size scanner used by scan-related commands.
+ * @param params.metricsPanel - Panel used by the open command.
+ * @param params.metricsItem - Status bar item to refresh after scans.
+ * @param params.terminalItem - Status bar item to open the terminal.
+ * @returns Command disposables.
+ */
 function registerCommands(params: {
 	scanner: ProjectSizeScanner;
 	metricsPanel: MetricsPanel;
@@ -47,6 +61,13 @@ function registerCommands(params: {
 	return [openScanPanelCmd, refreshScanCmd, openTerminalCmd];
 }
 
+/**
+ * Tracks active editor changes to keep the current scan root and status bar up to date.
+ * @param params - Editor tracking dependencies.
+ * @param params.scanner - Scanner to update when the active editor changes.
+ * @param params.metricsItem - Status bar item to refresh after root changes.
+ * @returns Subscription disposable.
+ */
 function registerEditorTracking(params: {
 	scanner: ProjectSizeScanner;
 	metricsItem: MetricsStatusBarItem;
@@ -60,6 +81,13 @@ function registerEditorTracking(params: {
 	});
 }
 
+/**
+ * Performs the initial scan during activation (runs asynchronously).
+ * @param params - Initial scan dependencies.
+ * @param params.scanner - Scanner used to run a quick summary scan.
+ * @param params.metricsItem - Status bar item to refresh after the scan.
+ * @returns void
+ */
 function runInitialScan(params: { scanner: ProjectSizeScanner; metricsItem: MetricsStatusBarItem }): void {
 	const { scanner, metricsItem } = params;
 	void (async () => {
@@ -69,6 +97,11 @@ function runInitialScan(params: { scanner: ProjectSizeScanner; metricsItem: Metr
 	})();
 }
 
+/**
+ * VS Code entry point called when the extension is activated.
+ * @param context - VS Code extension context.
+ * @returns void
+ */
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Termetrix is now active');
 
@@ -90,6 +123,10 @@ export function activate(context: vscode.ExtensionContext) {
 	runInitialScan({ scanner, metricsItem });
 }
 
+/**
+ * VS Code entry point called when the extension is deactivated.
+ * @returns void
+ */
 export function deactivate() {
 	console.log('Termetrix is now deactivated');
 }
