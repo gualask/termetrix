@@ -6,6 +6,16 @@ type TopFile = { absolutePath: string; name: string; bytes: number };
 type CandidateDirectory = { absolutePath: string; bytes: number; fileCount: number; maxFileBytes: number };
 type TopLevelTotals = { bytes: number; fileCount: number; maxFileBytes: number };
 
+type ResolvedSizeBreakdownOptions = {
+	coverageTarget: number;
+	minItemPercent: number;
+	maxItems: number;
+	fileCoverageTarget: number;
+	minFilePercent: number;
+	maxFilesPerLeaf: number;
+	largeFileThresholdBytes: number;
+};
+
 export interface ComputeSizeBreakdownOptions {
 	coverageTarget?: number;
 	minItemPercent?: number;
@@ -25,10 +35,17 @@ export interface ComputeSizeBreakdownInput {
 	options?: ComputeSizeBreakdownOptions;
 }
 
+/**
+ * Converts a relative path to a display-friendly path using POSIX separators.
+ */
 function toDisplayPath(relativePath: string): string {
 	return relativePath.split(path.sep).join('/');
 }
 
+/**
+ * Returns the first path segment under `rootPath` for an absolute path (or `undefined` if invalid).
+ * Used to group directory metrics by top-level folder in the UI.
+ */
 function getTopLevelSegment(rootPath: string, absolutePath: string): string | undefined {
 	if (absolutePath === rootPath) return undefined;
 	if (!isPathWithinRoot(absolutePath, rootPath)) return undefined;
@@ -38,18 +55,27 @@ function getTopLevelSegment(rootPath: string, absolutePath: string): string | un
 	return seg || undefined;
 }
 
+/**
+ * Adds bytes to the top-level segment accumulator.
+ */
 function bumpTotalsBytes(totalsBySeg: Map<string, TopLevelTotals>, seg: string, bytes: number): void {
 	const current = totalsBySeg.get(seg) ?? { bytes: 0, fileCount: 0, maxFileBytes: 0 };
 	current.bytes += bytes;
 	totalsBySeg.set(seg, current);
 }
 
+/**
+ * Adds file counts to the top-level segment accumulator.
+ */
 function bumpTotalsFileCount(totalsBySeg: Map<string, TopLevelTotals>, seg: string, fileCount: number): void {
 	const current = totalsBySeg.get(seg) ?? { bytes: 0, fileCount: 0, maxFileBytes: 0 };
 	current.fileCount += fileCount;
 	totalsBySeg.set(seg, current);
 }
 
+/**
+ * Updates the top-level segment max-file-bytes accumulator.
+ */
 function bumpTotalsMaxFileBytes(totalsBySeg: Map<string, TopLevelTotals>, seg: string, maxFileBytes: number): void {
 	if (maxFileBytes <= 0) return;
 	const current = totalsBySeg.get(seg) ?? { bytes: 0, fileCount: 0, maxFileBytes: 0 };
@@ -57,6 +83,10 @@ function bumpTotalsMaxFileBytes(totalsBySeg: Map<string, TopLevelTotals>, seg: s
 	totalsBySeg.set(seg, current);
 }
 
+/**
+ * Aggregates totals for each top-level segment under `rootPath`.
+ * Totals are computed from per-directory "direct" values collected during scanning.
+ */
 function computeTopLevelTotals(params: {
 	rootPath: string;
 	directorySizes: Record<string, number>;
@@ -90,6 +120,10 @@ function computeTopLevelTotals(params: {
 	return totalsBySeg;
 }
 
+/**
+ * Builds a flat list of candidate directories for each top-level segment.
+ * Candidates represent directories with non-zero direct bytes (not recursive totals).
+ */
 function computeCandidatesByTopLevel(params: {
 	rootPath: string;
 	directorySizes: Record<string, number>;
@@ -117,6 +151,10 @@ function computeCandidatesByTopLevel(params: {
 	return candidatesBySeg;
 }
 
+/**
+ * Selects a small list of "largest files" to show under a leaf directory entry.
+ * Returns `undefined` when we don't have top-file data or the leaf doesn't contain large files.
+ */
 function computeLeafFiles(params: {
 	leafAbsolutePath: string;
 	leafBytes: number;
@@ -141,8 +179,18 @@ function computeLeafFiles(params: {
 	if (!topFilesByDirectory) return undefined;
 	if (leafMaxFileBytes < largeFileThresholdBytes) return undefined;
 
-	const candidates = topFilesByDirectory[leafAbsolutePath] ?? [];
-	if (candidates.length === 0) return undefined;
+	const rawCandidates = topFilesByDirectory[leafAbsolutePath] ?? [];
+	if (rawCandidates.length === 0) return undefined;
+
+	// `topFilesByDirectory` is expected to be already sorted desc by bytes. Keep this best-effort robust:
+	// if it's not sorted, sort a copy so the early breaks below don't hide large files.
+	let candidates = rawCandidates;
+	for (let i = 1; i < rawCandidates.length; i++) {
+		if (rawCandidates[i].bytes > rawCandidates[i - 1].bytes) {
+			candidates = [...rawCandidates].sort((a, b) => b.bytes - a.bytes);
+			break;
+		}
+	}
 
 	const minFileBytes = leafBytes > 0 ? leafBytes * minFilePercent : 0;
 	let coveredBytes = 0;
@@ -159,6 +207,37 @@ function computeLeafFiles(params: {
 	return files.length > 0 ? files : undefined;
 }
 
+/**
+ * Resolves defaults for size breakdown thresholds derived from percentages.
+ */
+function resolveSizeBreakdownOptions(options: ComputeSizeBreakdownOptions | undefined): ResolvedSizeBreakdownOptions {
+	const coverageTarget = options?.coverageTarget ?? 0.8;
+	const minItemPercent = options?.minItemPercent ?? 0.03;
+	const maxItems = options?.maxItems ?? Math.max(1, Math.floor(1 / minItemPercent));
+
+	const fileCoverageTarget = options?.fileCoverageTarget ?? 0.8;
+	const minFilePercent = options?.minFilePercent ?? 0.05;
+	const maxFilesPerLeaf = options?.maxFilesPerLeaf ?? Math.max(3, Math.floor(1 / minFilePercent));
+
+	const largeFileThresholdBytes = options?.largeFileThresholdBytes ?? 10 * 1024 * 1024;
+
+	return {
+		coverageTarget,
+		minItemPercent,
+		maxItems,
+		fileCoverageTarget,
+		minFilePercent,
+		maxFilesPerLeaf,
+		largeFileThresholdBytes,
+	};
+}
+
+/**
+ * Selects the most relevant leaf directories for a parent segment based on:
+ * - descending bytes order
+ * - a minimum per-item threshold (relative to the parent)
+ * - a coverage target (stop once enough bytes are covered)
+ */
 function selectLeafDirectories(params: {
 	parentAbsolutePath: string;
 	parentBytes: number;
@@ -243,6 +322,9 @@ function selectLeafDirectories(params: {
 	return { selected, selectedBytes, selectedFileCount, selectedLeafDirSet };
 }
 
+/**
+ * Builds the "Others" row for a parent segment, summarizing what was not selected.
+ */
 function computeOthersRow(params: {
 	parentBytes: number;
 	parentFileCount: number;
@@ -276,6 +358,67 @@ function computeOthersRow(params: {
 	};
 }
 
+/**
+ * Constructs a parent segment entry and its children (selected leaf dirs + optional others row).
+ * Returns `undefined` when the segment has no meaningful data.
+ */
+function buildParentForSegment(params: {
+	rootPath: string;
+	seg: string;
+	totals: TopLevelTotals;
+	leafEntries: CandidateDirectory[];
+	topFilesByDirectory?: Record<string, TopFile[]>;
+	options: ResolvedSizeBreakdownOptions;
+}): SizeBreakdownParent | undefined {
+	const { rootPath, seg, totals, leafEntries, topFilesByDirectory, options } = params;
+
+	const bytes = totals.bytes;
+	const fileCount = totals.fileCount;
+	const maxFileBytes = totals.maxFileBytes;
+	if (bytes <= 0 && fileCount <= 0) return undefined;
+
+	const absolutePath = path.join(rootPath, seg);
+	const { selected, selectedBytes, selectedFileCount, selectedLeafDirSet } = selectLeafDirectories({
+		parentAbsolutePath: absolutePath,
+		parentBytes: bytes,
+		leafEntries,
+		coverageTarget: options.coverageTarget,
+		minItemPercent: options.minItemPercent,
+		maxItems: options.maxItems,
+		topFilesByDirectory,
+		fileCoverageTarget: options.fileCoverageTarget,
+		minFilePercent: options.minFilePercent,
+		maxFilesPerLeaf: options.maxFilesPerLeaf,
+		largeFileThresholdBytes: options.largeFileThresholdBytes,
+	});
+
+	const entries: Array<SizeBreakdownLeafDirectory | SizeBreakdownOthers> = [...selected];
+	const others = computeOthersRow({
+		parentBytes: bytes,
+		parentFileCount: fileCount,
+		selectedBytes,
+		selectedFileCount,
+		leafEntries,
+		selectedLeafDirSet,
+	});
+	if (others) entries.push(others);
+
+	return {
+		kind: 'parent',
+		path: seg,
+		absolutePath,
+		bytes,
+		fileCount,
+		maxFileBytes,
+		entries,
+	};
+}
+
+/**
+ * Computes the guided size breakdown model used by the metrics webview:
+ * a list of top-level segments, each showing a short list of the largest directories and files,
+ * plus an "Others" summary to keep the tree shallow.
+ */
 export function computeSizeBreakdown(input: ComputeSizeBreakdownInput): SizeBreakdownResult {
 	const {
 		rootPath,
@@ -286,13 +429,7 @@ export function computeSizeBreakdown(input: ComputeSizeBreakdownInput): SizeBrea
 		options,
 	} = input;
 
-	const coverageTarget = options?.coverageTarget ?? 0.8;
-	const minItemPercent = options?.minItemPercent ?? 0.03;
-	const maxItems = options?.maxItems ?? Math.max(1, Math.floor(1 / minItemPercent));
-	const fileCoverageTarget = options?.fileCoverageTarget ?? 0.8;
-	const minFilePercent = options?.minFilePercent ?? 0.05;
-	const maxFilesPerLeaf = options?.maxFilesPerLeaf ?? Math.max(3, Math.floor(1 / minFilePercent));
-	const largeFileThresholdBytes = options?.largeFileThresholdBytes ?? 10 * 1024 * 1024;
+	const resolvedOptions = resolveSizeBreakdownOptions(options);
 
 	const directoryFileCountsValue = directoryFileCounts ?? {};
 	const directoryMaxFileBytesValue = directoryMaxFileBytes ?? {};
@@ -313,50 +450,19 @@ export function computeSizeBreakdown(input: ComputeSizeBreakdownInput): SizeBrea
 
 	const parents: SizeBreakdownParent[] = [];
 	for (const seg of segments) {
-		const absolutePath = path.join(rootPath, seg);
 		const totals = totalsBySeg.get(seg) ?? { bytes: 0, fileCount: 0, maxFileBytes: 0 };
-		const bytes = totals.bytes;
-		const fileCount = totals.fileCount;
-		const maxFileBytes = totals.maxFileBytes;
-
-		if (bytes <= 0 && fileCount <= 0) continue;
 
 		// Candidates are direct-bytes directories under this top-level segment.
 		const leafEntries = candidatesBySeg.get(seg) ?? [];
-		const { selected, selectedBytes, selectedFileCount, selectedLeafDirSet } = selectLeafDirectories({
-			parentAbsolutePath: absolutePath,
-			parentBytes: bytes,
+		const parent = buildParentForSegment({
+			rootPath,
+			seg,
+			totals,
 			leafEntries,
-			coverageTarget,
-			minItemPercent,
-			maxItems,
 			topFilesByDirectory,
-			fileCoverageTarget,
-			minFilePercent,
-			maxFilesPerLeaf,
-			largeFileThresholdBytes,
+			options: resolvedOptions,
 		});
-
-		const entries: Array<SizeBreakdownLeafDirectory | SizeBreakdownOthers> = [...selected];
-		const others = computeOthersRow({
-			parentBytes: bytes,
-			parentFileCount: fileCount,
-			selectedBytes,
-			selectedFileCount,
-			leafEntries,
-			selectedLeafDirSet,
-		});
-		if (others) entries.push(others);
-
-		parents.push({
-			kind: 'parent',
-			path: seg,
-			absolutePath,
-			bytes,
-			fileCount,
-			maxFileBytes,
-			entries,
-		});
+		if (parent) parents.push(parent);
 	}
 
 	parents.sort((a, b) => b.bytes - a.bytes);
