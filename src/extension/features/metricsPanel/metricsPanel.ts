@@ -15,7 +15,7 @@ import { getMetricsPanelHtml } from './metricsPanelHtml';
 import type { SizeScanInternals } from '../sizeScan/sizeScanInternals';
 
 /**
- * Webview panel orchestrator for project metrics visualization
+ * Webview panel orchestrator for project metrics visualization.
  */
 export class MetricsPanel implements vscode.Disposable {
 	private panel: vscode.WebviewPanel | undefined;
@@ -28,6 +28,12 @@ export class MetricsPanel implements vscode.Disposable {
 	/** Last known editor column used by the user (non-webview), for opening files outside the webview column */
 	private preferredEditorColumn: vscode.ViewColumn | undefined;
 
+	/**
+	 * Creates a metrics panel controller.
+	 * @param scanner - Scanner used for size scans and breakdown computation.
+	 * @param cache - Cache providing the latest scan result for panel rendering.
+	 * @param extensionUri - Extension URI used to resolve webview asset paths.
+	 */
 	constructor(
 		private scanner: ProjectSizeScanner,
 		private cache: ScanCache,
@@ -36,6 +42,11 @@ export class MetricsPanel implements vscode.Disposable {
 		this.commandHandlers = createMetricsPanelCommandHandlers(this.createCommandDeps());
 	}
 
+	/**
+	 * Remembers the user's editor column so that opening files from the webview doesn't steal focus.
+	 * @param editor - Active editor (if any).
+	 * @returns void
+	 */
 	private updatePreferredEditorColumnFrom(editor: vscode.TextEditor | undefined): void {
 		if (!editor) return;
 		const scheme = editor.document.uri.scheme;
@@ -44,6 +55,10 @@ export class MetricsPanel implements vscode.Disposable {
 		this.preferredEditorColumn = editor.viewColumn;
 	}
 
+	/**
+	 * Builds the dependency object consumed by metrics panel command handlers.
+	 * @returns Command handler dependencies bound to this panel instance.
+	 */
 	private createCommandDeps(): MetricsPanelCommandDeps {
 		return {
 			scanner: this.scanner,
@@ -57,9 +72,13 @@ export class MetricsPanel implements vscode.Disposable {
 				this.currentSizeScanInternalsRootPath = value ? rootPath : null;
 			},
 			sendMessage: (message) => this.sendMessage(message),
-		};
+			};
 	}
 
+	/**
+	 * Disposes per-panel resources and clears memory-heavy cached scan internals.
+	 * @returns void
+	 */
 	private disposePanelResources(): void {
 		// Internals can be large on big projects; always clear when the panel is disposed.
 		this.currentSizeScanInternals = null; // Free memory
@@ -67,13 +86,18 @@ export class MetricsPanel implements vscode.Disposable {
 		this.panelDisposables.clear();
 	}
 
+	/**
+	 * Handles panel disposal by clearing references and releasing resources.
+	 * @returns void
+	 */
 	private handlePanelDisposed(): void {
 		this.panel = undefined;
 		this.disposePanelResources();
 	}
 
 	/**
-	 * Show or focus the panel
+	 * Shows the panel if it is not open; otherwise focuses it.
+	 * @returns void
 	 */
 	show(): void {
 		// Capture the current user editor column before focusing/creating the webview.
@@ -92,6 +116,7 @@ export class MetricsPanel implements vscode.Disposable {
 
 	/**
 	 * Create webview panel (no subscriptions).
+	 * @returns Webview panel instance.
 	 */
 	private createPanel(): vscode.WebviewPanel {
 		this.disposePanelResources();
@@ -115,6 +140,11 @@ export class MetricsPanel implements vscode.Disposable {
 		return panel;
 	}
 
+	/**
+	 * Registers all panel-lifetime subscriptions and disposes them when the panel closes.
+	 * @param panel - Webview panel instance.
+	 * @returns void
+	 */
 	private registerPanelSubscriptions(panel: vscode.WebviewPanel): void {
 		// Scanner progress events can be frequent; keep handlers minimal.
 		const scanEvents = new ScannerEventSubscription(this.scanner, {
@@ -141,7 +171,9 @@ export class MetricsPanel implements vscode.Disposable {
 	}
 
 	/**
-	 * Handle scan start event
+	 * Handles scan start events.
+	 * @param progress - Scan progress payload.
+	 * @returns void
 	 */
 	private handleScanStart(progress: ScanProgress): void {
 		// If the scan root changes, invalidate scan internals from the previous root.
@@ -154,7 +186,9 @@ export class MetricsPanel implements vscode.Disposable {
 	}
 
 	/**
-	 * Handle progress event
+	 * Handles scan progress events and forwards a minimal progress payload to the webview.
+	 * @param progress - Scan progress payload.
+	 * @returns void
 	 */
 	private handleProgress(progress: ScanProgress): void {
 		const progressData: ProgressData = {
@@ -165,7 +199,8 @@ export class MetricsPanel implements vscode.Disposable {
 	}
 
 	/**
-	 * Update panel with current scan data
+	 * Sends the latest cached scan state to the webview.
+	 * @returns void
 	 */
 	private updatePanel(): void {
 		sendMetricsPanelState({
@@ -176,7 +211,9 @@ export class MetricsPanel implements vscode.Disposable {
 	}
 
 	/**
-	 * Send message to webview
+	 * Sends a message to the webview if the panel is open.
+	 * @param message - Message payload for the webview.
+	 * @returns void
 	 */
 	private sendMessage(message: MessageFromExtension): void {
 		const panel = this.panel;
@@ -184,6 +221,10 @@ export class MetricsPanel implements vscode.Disposable {
 		void panel.webview.postMessage(message);
 	}
 
+	/**
+	 * Disposes the panel and all subscriptions.
+	 * @returns void
+	 */
 	dispose(): void {
 		const panel = this.panel;
 		this.panel = undefined;

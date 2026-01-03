@@ -2,6 +2,9 @@ import * as vscode from 'vscode';
 
 /**
  * Single responsibility: generate the webview HTML shell for the metrics panel.
+ * @param webview - Webview instance used to generate webview-safe URIs.
+ * @param webviewUri - Base URI where the built webview assets are located.
+ * @returns HTML markup for the webview.
  */
 export function getMetricsPanelHtml(webview: vscode.Webview, webviewUri: vscode.Uri): string {
 	// Map extension-local resources into webview-safe URIs.
