@@ -14,11 +14,14 @@ import {
 import { countNonEmptyLines } from './lineCounter';
 
 /**
- * Scanner for counting lines of code in source files
+ * Scanner for counting lines of code in source files.
  */
 export class LOCScanner {
 	private readonly excludePatterns: RegExp[];
 
+	/**
+	 * Creates a LOC scanner with default exclusion patterns.
+	 */
 	constructor() {
 		// Default exclusions - matches common build/dependency directories
 		this.excludePatterns = DEFAULT_EXCLUDES.map(
@@ -27,9 +30,10 @@ export class LOCScanner {
 	}
 
 	/**
-	 * Scan a directory tree and count lines of code
-	 * @param rootPath - Root directory to scan
-	 * @param token - Optional cancellation token
+	 * Scans a directory tree and counts lines of code in supported source files.
+	 * @param rootPath - Root directory to scan.
+	 * @param token - Optional cancellation token.
+	 * @returns LOC scan result.
 	 */
 	async scan(rootPath: string, token?: vscode.CancellationToken): Promise<LOCResult> {
 		const result: LOCResult = {
@@ -52,7 +56,14 @@ export class LOCScanner {
 	}
 
 	/**
-	 * Recursively scan a directory
+	 * Recursively scans a directory and updates the aggregate result.
+	 * @param params - Scan parameters.
+	 * @param params.rootPath - Root directory used for relative paths.
+	 * @param params.dirPath - Current directory to scan.
+	 * @param params.result - Aggregate LOC result (mutated).
+	 * @param params.gitignoreRules - Gitignore rules loaded from the root.
+	 * @param params.token - Optional cancellation token.
+	 * @returns Promise resolving when the directory is processed.
 	 */
 	private async scanDirectory(params: {
 		rootPath: string;
@@ -92,12 +103,21 @@ export class LOCScanner {
 	}
 
 	/**
-	 * Check if a path matches exclusion patterns
+	 * Returns true if a path matches default exclusion patterns.
+	 * @param relativePath - Path relative to the scan root.
+	 * @returns True when excluded by default patterns.
 	 */
 	private isExcluded(relativePath: string): boolean {
 		return this.excludePatterns.some((pattern) => pattern.test(relativePath));
 	}
 
+	/**
+	 * Returns true if the path should be skipped and updates `skippedFiles` accordingly.
+	 * @param relativePath - Path relative to the scan root.
+	 * @param rules - Loaded gitignore rules.
+	 * @param result - Aggregate LOC result (mutated).
+	 * @returns True when the path should be skipped.
+	 */
 	private shouldSkip(relativePath: string, rules: GitIgnoreRule[], result: LOCResult): boolean {
 		if (!this.isExcluded(relativePath) && !isGitIgnored(relativePath, rules)) return false;
 		result.skippedFiles++;
@@ -105,7 +125,11 @@ export class LOCScanner {
 	}
 
 	/**
-	 * Process a single file and count its lines
+	 * Processes a single file and counts its non-empty lines when eligible.
+	 * @param fullPath - Absolute path to the file.
+	 * @param relativePath - Path relative to the scan root.
+	 * @param result - Aggregate LOC result (mutated).
+	 * @returns Promise resolving when the file is processed.
 	 */
 	private async processFile(fullPath: string, relativePath: string, result: LOCResult): Promise<void> {
 		// HOT PATH: called for many files; keep changes minimal and avoid expensive work for skipped files.
@@ -144,6 +168,11 @@ export class LOCScanner {
 		result.scannedFiles++;
 	}
 
+	/**
+	 * Stats a file and returns undefined on error.
+	 * @param fullPath - Absolute path to the file.
+	 * @returns File stats when available.
+	 */
 	private async tryStat(fullPath: string): Promise<Stats | undefined> {
 		try {
 			return await fs.stat(fullPath);
@@ -152,6 +181,11 @@ export class LOCScanner {
 		}
 	}
 
+	/**
+	 * Reads a UTF-8 text file and returns undefined on error.
+	 * @param fullPath - Absolute path to the file.
+	 * @returns File contents when available.
+	 */
 	private async tryReadTextFile(fullPath: string): Promise<string | undefined> {
 		try {
 			return await fs.readFile(fullPath, 'utf8');

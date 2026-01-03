@@ -12,10 +12,21 @@ const LINE_SPLIT_REGEX = /\r?\n/;
 const REGEX_SPECIAL_CHARS = /[.*+?^${}()|[\]\\]/;
 const REGEX_SPECIAL_CHARS_GLOBAL = /[.*+?^${}()|[\]\\]/g;
 
+/**
+ * Normalizes a path to POSIX separators for gitignore matching.
+ * @param value - Path using platform separators.
+ * @returns POSIX-normalized path.
+ */
 function toPosixPath(value: string): string {
 	return value.replace(BACKSLASH_REGEX, '/');
 }
 
+/**
+ * Advances the index over a run of consecutive `*` characters.
+ * @param pattern - Glob pattern.
+ * @param startIndex - Index of the first `*` in the run.
+ * @returns Index of the last `*` in the run.
+ */
 function consumeDoubleStar(pattern: string, startIndex: number): number {
 	let i = startIndex;
 	while (pattern[i + 1] === '*') i++;
@@ -30,6 +41,8 @@ function consumeDoubleStar(pattern: string, startIndex: number): number {
  * - `**` matches across path segments
  * - `?` matches a single character within a segment
  * - `\\` escapes the next character
+ * @param pattern - Gitignore-style glob pattern.
+ * @returns Regex fragment (without anchors) implementing the glob semantics.
  */
 function globToRegex(pattern: string): string {
 	let out = '';
@@ -76,6 +89,12 @@ type ParsedGitIgnoreLine = {
 	pattern: string;
 };
 
+/**
+ * Parses a single `.gitignore` line into a simplified rule representation.
+ * Returns `null` for empty/comment lines.
+ * @param rawLine - Raw line from `.gitignore`.
+ * @returns Parsed rule fields, or null when the line should be ignored.
+ */
 function parseGitIgnoreLine(rawLine: string): ParsedGitIgnoreLine | null {
 	// Best-effort gitignore parsing; correctness is "good enough" for LOC scanning filters.
 	let line = rawLine.replace(TRAILING_WHITESPACE_REGEX, '');
@@ -106,9 +125,14 @@ function parseGitIgnoreLine(rawLine: string): ParsedGitIgnoreLine | null {
 	return { negated, anchored, directoryOnly, pattern: line };
 }
 
+/**
+ * Compiles a parsed gitignore rule into a RegExp for matching POSIX paths.
+ * @param parsed - Parsed gitignore line (excluding negation).
+ * @returns Compiled RegExp.
+ */
 function compileRuleRegex(parsed: Omit<ParsedGitIgnoreLine, 'negated'>): RegExp {
 	// Prefix semantics are intentionally simplified: non-anchored patterns can match at any depth.
-	const prefix = parsed.anchored ? '^' : '(^|.*/)';
+	const prefix = parsed.anchored ? '^' : '(^|.*/)'; 
 	const suffix = parsed.directoryOnly ? '(/.*)?$' : '$';
 	return new RegExp(prefix + globToRegex(parsed.pattern) + suffix);
 }
@@ -116,6 +140,8 @@ function compileRuleRegex(parsed: Omit<ParsedGitIgnoreLine, 'negated'>): RegExp 
 /**
  * Loads `.gitignore` rules from the repo root (best-effort).
  * When no `.gitignore` exists, returns an empty rule set.
+ * @param rootPath - Root directory path containing `.gitignore`.
+ * @returns List of compiled rules, in file order.
  */
 export async function loadGitIgnoreRules(rootPath: string): Promise<GitIgnoreRule[]> {
 	const gitignorePath = path.join(rootPath, '.gitignore');
@@ -146,6 +172,9 @@ export async function loadGitIgnoreRules(rootPath: string): Promise<GitIgnoreRul
  * Returns true if `relativePath` should be ignored by the provided gitignore rules.
  *
  * Rules are applied in order; later matches override earlier ones (including negation).
+ * @param relativePath - Path relative to the scan root.
+ * @param rules - Compiled rules from `.gitignore`.
+ * @returns True when the path should be ignored.
  */
 export function isGitIgnored(relativePath: string, rules: GitIgnoreRule[]): boolean {
 	if (rules.length === 0) return false;

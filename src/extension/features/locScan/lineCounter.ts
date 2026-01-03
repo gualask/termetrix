@@ -2,6 +2,8 @@
  * Count non-empty lines in file content.
  * Uses character code comparison for performance.
  * HOT PATH: called for many files during LOC scans; keep it branch-light and allocation-free.
+ * @param content - File contents as a UTF-8 string.
+ * @returns Number of non-empty (non-whitespace) lines.
  */
 export function countNonEmptyLines(content: string): number {
 	let count = 0;
