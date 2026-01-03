@@ -51,7 +51,7 @@ body {
 }
 
 .content.size-view,
-.content.loc-view { gap: 16px; }
+.content.loc-view { gap: 12px; }
 
 /* Tabs */
 .tabs {
@@ -100,10 +100,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 14px 14px 12px;
+  padding: 12px 12px 10px;
   background: var(--tmx-surface-2);
-  border: 1px solid var(--tmx-border);
-  border-radius: 6px;
+  border: none;
+  border-radius: 0;
 }
 
 .tmx-panel-card {
@@ -111,21 +111,21 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
-  background: var(--tmx-surface-1);
-  border: 1px solid var(--tmx-border);
-  border-radius: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
   min-height: 0;
 }
 
 .tmx-panel-fixed {
   gap: 8px;
-  padding: 8px;
+  padding: 8px 0 0 0;
   overflow: hidden;
 }
 
 .tmx-panel-scroll {
   gap: 8px;
-  padding: 8px;
+  padding: 8px 0 0 0;
   overflow-y: auto;
 }
 
@@ -138,8 +138,8 @@ body {
   justify-content: center;
   gap: 10px;
   color: var(--vscode-foreground);
-  background: rgba(0, 0, 0, 0.08);
-  opacity: 0.9;
+  background: rgba(0, 0, 0, 0.02);
+  opacity: 1;
 }
 
 .tmx-hero { display: flex; flex-direction: column; gap: 10px; }
