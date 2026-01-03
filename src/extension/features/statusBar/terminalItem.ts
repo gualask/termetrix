@@ -6,6 +6,10 @@ import * as vscode from 'vscode';
 export class TerminalStatusBarItem implements vscode.Disposable {
 	private statusBarItem: vscode.StatusBarItem;
 
+	/**
+	 * Creates the terminal status bar item.
+	 * @param getProjectRoot - Callback returning the preferred cwd (typically the active project root).
+	 */
 	constructor(private getProjectRoot?: () => string | undefined) {
 		// Create status bar item (left-aligned)
 		this.statusBarItem = vscode.window.createStatusBarItem(
@@ -22,6 +26,11 @@ export class TerminalStatusBarItem implements vscode.Disposable {
 		this.statusBarItem.show();
 	}
 
+	/**
+	 * Creates and shows an integrated terminal, optionally setting the working directory.
+	 * @param cwd - Terminal working directory.
+	 * @returns void
+	 */
 	private showTerminal(cwd?: string): void {
 		// Prefer setting `cwd` so the user lands in the same context used by scans.
 		const terminal = cwd
@@ -32,6 +41,7 @@ export class TerminalStatusBarItem implements vscode.Disposable {
 
 	/**
 	 * Open integrated terminal
+	 * @returns void
 	 */
 	openTerminal(): void {
 		// Prefer the current project root (same context used by the scanner).
@@ -47,6 +57,10 @@ export class TerminalStatusBarItem implements vscode.Disposable {
 		this.showTerminal();
 	}
 
+	/**
+	 * Disposes the status bar item.
+	 * @returns void
+	 */
 	dispose(): void {
 		this.statusBarItem.dispose();
 	}

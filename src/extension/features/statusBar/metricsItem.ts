@@ -16,6 +16,11 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 	private currentProgress: ScanProgress | undefined;
 	private readonly disposables = new DisposableStore();
 
+	/**
+	 * Creates the metrics status bar item and wires event subscriptions.
+	 * @param scanner - Scanner providing root/progress information.
+	 * @param cache - Cache used to display the last completed scan result.
+	 */
 	constructor(
 		private readonly scanner: ProjectSizeScanner,
 		private readonly cache: ScanCache
@@ -39,10 +44,14 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 		// Keep selected line count in sync with editor state.
 		this.selectedLines = getSelectedLineCount(vscode.window.activeTextEditor);
 
-		this.render();
-		this.statusBarItem.show();
-	}
+			this.render();
+			this.statusBarItem.show();
+		}
 
+	/**
+	 * Creates a subscription that maps scan events into status bar updates.
+	 * @returns A disposable subscription.
+	 */
 	private createScannerSubscription(): vscode.Disposable {
 		return new ScannerEventSubscription(this.scanner, {
 			onScanStart: (progress) => this.setProgress(progress),
@@ -51,6 +60,10 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 		});
 	}
 
+	/**
+	 * Creates a subscription to keep selection line counts updated.
+	 * @returns A disposable subscription.
+	 */
 	private createSelectionListener(): vscode.Disposable {
 		return vscode.window.onDidChangeTextEditorSelection((e) => {
 			if (!this.updateSelectedLinesFromSelections(e.selections)) return;
@@ -58,6 +71,10 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 		});
 	}
 
+	/**
+	 * Creates a subscription to keep selection line counts updated when the active editor changes.
+	 * @returns A disposable subscription.
+	 */
 	private createActiveEditorListener(): vscode.Disposable {
 		return vscode.window.onDidChangeActiveTextEditor((editor) => {
 			if (!this.updateSelectedLinesFromEditor(editor)) return;
@@ -65,16 +82,30 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 		});
 	}
 
+	/**
+	 * Renders the current status bar state.
+	 * @returns void
+	 */
 	private render(): void {
 		if (this.currentProgress) return this.renderWithProgress();
 		this.renderIdle();
 	}
 
+	/**
+	 * Stores scan progress and triggers a render.
+	 * @param progress - Current scan progress (or undefined when a scan ends).
+	 * @returns void
+	 */
 	private setProgress(progress: ScanProgress | undefined): void {
 		this.currentProgress = progress;
 		this.render();
 	}
 
+	/**
+	 * Updates the selected line count based on the active editor.
+	 * @param editor - Active editor (if any).
+	 * @returns True when the value changed and a re-render is needed.
+	 */
 	private updateSelectedLinesFromEditor(editor: vscode.TextEditor | undefined): boolean {
 		const next = getSelectedLineCount(editor);
 		if (next === this.selectedLines) return false;
@@ -82,6 +113,11 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 		return true;
 	}
 
+	/**
+	 * Updates the selected line count based on current selections.
+	 * @param selections - Editor selections.
+	 * @returns True when the value changed and a re-render is needed.
+	 */
 	private updateSelectedLinesFromSelections(selections: readonly vscode.Selection[]): boolean {
 		const next = getSelectedLineCountFromSelections(selections);
 		if (next === this.selectedLines) return false;
@@ -89,12 +125,17 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 		return true;
 	}
 
+	/**
+	 * Returns the status bar suffix representing the current selection count.
+	 * @returns A formatted suffix string (or empty string when no lines are selected).
+	 */
 	private getSelectedLinesSuffix(): string {
 		return this.selectedLines > 0 ? `   $(list-selection) ${this.selectedLines}` : '';
 	}
 
 	/**
-	 * Update with progress (during scanning)
+	 * Renders the status bar when a scan is in progress.
+	 * @returns void
 	 */
 	private renderWithProgress(): void {
 		if (!this.currentProgress) return this.renderIdle();
@@ -111,7 +152,8 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 	}
 
 	/**
-	 * Update project size display (idle)
+	 * Renders the idle status bar using the cached scan result.
+	 * @returns void
 	 */
 	private renderIdle(): void {
 		const rootPath = this.scanner.getCurrentRoot();
@@ -148,11 +190,16 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 
 	/**
 	 * Force a refresh of the current display.
+	 * @returns void
 	 */
 	update(): void {
 		this.render();
 	}
 
+	/**
+	 * Disposes event subscriptions and the underlying status bar item.
+	 * @returns void
+	 */
 	dispose(): void {
 		this.disposables.dispose();
 	}
