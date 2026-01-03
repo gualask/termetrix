@@ -1,5 +1,5 @@
-import type { ExtendedScanResult } from '../../types';
-import { createConcurrencyLimiter } from '../../common/concurrencyLimiter';
+import type { ExtendedScanResult } from '../../../types';
+import { createConcurrencyLimiter } from '../../../common/concurrencyLimiter';
 import type { ScanRuntimeState, SizeScanParams, TopFile } from './scanEngineTypes';
 import { computeScanLimits, runDirectoryQueue } from './scanEngineCore';
 import { processDirectory } from './scanEngineFs';
@@ -10,7 +10,14 @@ export type { SizeScanConfig, SizeScanProgress, SizeScanCancellationToken, SizeS
  * File-system size scan engine (no VS Code dependencies).
  * Single responsibility: compute directory sizes + metadata.
  * HOT PATH: entry point for scanning; keep overhead minimal and avoid extra IO.
- */ 
+ * @param params - Scan parameters.
+ * @param params.rootPath - Root directory to scan.
+ * @param params.config - Scan configuration (limits and concurrency).
+ * @param params.cancellationToken - Cancellation token.
+ * @param params.onProgress - Optional progress callback.
+ * @param params.options - Optional scan behavior flags.
+ * @returns Scan result with totals and optional metadata.
+ */
 export async function scanProjectSize({
 	rootPath,
 	config,

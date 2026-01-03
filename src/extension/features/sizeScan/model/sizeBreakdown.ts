@@ -1,6 +1,12 @@
 import * as path from 'path';
-import type { SizeBreakdownFile, SizeBreakdownLeafDirectory, SizeBreakdownOthers, SizeBreakdownParent, SizeBreakdownResult } from '../../types';
-import { isPathWithinRoot } from '../../common/pathUtils';
+import type {
+	SizeBreakdownFile,
+	SizeBreakdownLeafDirectory,
+	SizeBreakdownOthers,
+	SizeBreakdownParent,
+	SizeBreakdownResult,
+} from '../../../types';
+import { isPathWithinRoot } from '../../../common/pathUtils';
 
 type TopFile = { absolutePath: string; name: string; bytes: number };
 type CandidateDirectory = { absolutePath: string; bytes: number; fileCount: number; maxFileBytes: number };
@@ -37,6 +43,8 @@ export interface ComputeSizeBreakdownInput {
 
 /**
  * Converts a relative path to a display-friendly path using POSIX separators.
+ * @param relativePath - Path relative to a parent directory.
+ * @returns Display path using `/` separators.
  */
 function toDisplayPath(relativePath: string): string {
 	return relativePath.split(path.sep).join('/');
@@ -45,6 +53,9 @@ function toDisplayPath(relativePath: string): string {
 /**
  * Returns the first path segment under `rootPath` for an absolute path (or `undefined` if invalid).
  * Used to group directory metrics by top-level folder in the UI.
+ * @param rootPath - Scan root path.
+ * @param absolutePath - Directory absolute path.
+ * @returns Top-level segment name.
  */
 function getTopLevelSegment(rootPath: string, absolutePath: string): string | undefined {
 	if (absolutePath === rootPath) return undefined;
@@ -57,6 +68,10 @@ function getTopLevelSegment(rootPath: string, absolutePath: string): string | un
 
 /**
  * Adds bytes to the top-level segment accumulator.
+ * @param totalsBySeg - Map of totals by segment (mutated).
+ * @param seg - Top-level segment name.
+ * @param bytes - Bytes to add.
+ * @returns void
  */
 function bumpTotalsBytes(totalsBySeg: Map<string, TopLevelTotals>, seg: string, bytes: number): void {
 	const current = totalsBySeg.get(seg) ?? { bytes: 0, fileCount: 0, maxFileBytes: 0 };
@@ -66,6 +81,10 @@ function bumpTotalsBytes(totalsBySeg: Map<string, TopLevelTotals>, seg: string, 
 
 /**
  * Adds file counts to the top-level segment accumulator.
+ * @param totalsBySeg - Map of totals by segment (mutated).
+ * @param seg - Top-level segment name.
+ * @param fileCount - File count to add.
+ * @returns void
  */
 function bumpTotalsFileCount(totalsBySeg: Map<string, TopLevelTotals>, seg: string, fileCount: number): void {
 	const current = totalsBySeg.get(seg) ?? { bytes: 0, fileCount: 0, maxFileBytes: 0 };
@@ -75,6 +94,10 @@ function bumpTotalsFileCount(totalsBySeg: Map<string, TopLevelTotals>, seg: stri
 
 /**
  * Updates the top-level segment max-file-bytes accumulator.
+ * @param totalsBySeg - Map of totals by segment (mutated).
+ * @param seg - Top-level segment name.
+ * @param maxFileBytes - Candidate max file size.
+ * @returns void
  */
 function bumpTotalsMaxFileBytes(totalsBySeg: Map<string, TopLevelTotals>, seg: string, maxFileBytes: number): void {
 	if (maxFileBytes <= 0) return;
@@ -86,6 +109,12 @@ function bumpTotalsMaxFileBytes(totalsBySeg: Map<string, TopLevelTotals>, seg: s
 /**
  * Aggregates totals for each top-level segment under `rootPath`.
  * Totals are computed from per-directory "direct" values collected during scanning.
+ * @param params - Input values.
+ * @param params.rootPath - Scan root path.
+ * @param params.directorySizes - Direct bytes by directory absolute path.
+ * @param params.directoryFileCounts - Direct file counts by directory absolute path.
+ * @param params.directoryMaxFileBytes - Max direct file bytes by directory absolute path.
+ * @returns Map of totals by top-level segment name.
  */
 function computeTopLevelTotals(params: {
 	rootPath: string;
@@ -123,6 +152,12 @@ function computeTopLevelTotals(params: {
 /**
  * Builds a flat list of candidate directories for each top-level segment.
  * Candidates represent directories with non-zero direct bytes (not recursive totals).
+ * @param params - Input values.
+ * @param params.rootPath - Scan root path.
+ * @param params.directorySizes - Direct bytes by directory absolute path.
+ * @param params.directoryFileCounts - Direct file counts by directory absolute path.
+ * @param params.directoryMaxFileBytes - Max direct file bytes by directory absolute path.
+ * @returns Map of candidate directories by top-level segment name.
  */
 function computeCandidatesByTopLevel(params: {
 	rootPath: string;
@@ -154,6 +189,16 @@ function computeCandidatesByTopLevel(params: {
 /**
  * Selects a small list of "largest files" to show under a leaf directory entry.
  * Returns `undefined` when we don't have top-file data or the leaf doesn't contain large files.
+ * @param params - Input values.
+ * @param params.leafAbsolutePath - Leaf directory absolute path.
+ * @param params.leafBytes - Leaf direct bytes.
+ * @param params.leafMaxFileBytes - Max direct file size in the leaf.
+ * @param params.topFilesByDirectory - Top files map from the scan engine.
+ * @param params.fileCoverageTarget - Target coverage ratio of leaf bytes.
+ * @param params.minFilePercent - Minimum per-file share of leaf bytes after the first selection.
+ * @param params.maxFilesPerLeaf - Max number of files to include.
+ * @param params.largeFileThresholdBytes - Minimum max-file-bytes threshold to show files.
+ * @returns Selected files, or undefined when no file list should be shown.
  */
 function computeLeafFiles(params: {
 	leafAbsolutePath: string;
@@ -209,6 +254,8 @@ function computeLeafFiles(params: {
 
 /**
  * Resolves defaults for size breakdown thresholds derived from percentages.
+ * @param options - Optional override values.
+ * @returns Resolved options with computed defaults.
  */
 function resolveSizeBreakdownOptions(options: ComputeSizeBreakdownOptions | undefined): ResolvedSizeBreakdownOptions {
 	const coverageTarget = options?.coverageTarget ?? 0.8;
@@ -237,6 +284,8 @@ function resolveSizeBreakdownOptions(options: ComputeSizeBreakdownOptions | unde
  * - descending bytes order
  * - a minimum per-item threshold (relative to the parent)
  * - a coverage target (stop once enough bytes are covered)
+ * @param params - Input values.
+ * @returns Selection results including selected entries and their totals.
  */
 function selectLeafDirectories(params: {
 	parentAbsolutePath: string;
@@ -324,6 +373,8 @@ function selectLeafDirectories(params: {
 
 /**
  * Builds the "Others" row for a parent segment, summarizing what was not selected.
+ * @param params - Input values.
+ * @returns "Others" entry, or undefined when there is nothing to summarize.
  */
 function computeOthersRow(params: {
 	parentBytes: number;
@@ -361,6 +412,8 @@ function computeOthersRow(params: {
 /**
  * Constructs a parent segment entry and its children (selected leaf dirs + optional others row).
  * Returns `undefined` when the segment has no meaningful data.
+ * @param params - Input values.
+ * @returns Parent entry, or undefined when the segment has no data.
  */
 function buildParentForSegment(params: {
 	rootPath: string;
@@ -418,6 +471,8 @@ function buildParentForSegment(params: {
  * Computes the guided size breakdown model used by the metrics webview:
  * a list of top-level segments, each showing a short list of the largest directories and files,
  * plus an "Others" summary to keep the tree shallow.
+ * @param input - Breakdown input built from scan internals.
+ * @returns Size breakdown result.
  */
 export function computeSizeBreakdown(input: ComputeSizeBreakdownInput): SizeBreakdownResult {
 	const {

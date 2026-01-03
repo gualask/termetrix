@@ -2,9 +2,9 @@ import * as vscode from 'vscode';
 import type { MessageFromExtension, MessageToExtension } from '../../types';
 import { resolvePathIfWithinRoot } from '../../common/pathUtils';
 import type { ProjectSizeScanner } from '../sizeScan/projectSizeScanner';
-import type { ScanCache } from '../sizeScan/scanCache';
+import type { ScanCache } from '../sizeScan/state/scanCache';
 import { LOCScanner } from '../locScan/locScanner';
-import type { SizeScanInternals } from '../sizeScan/sizeScanInternals';
+import type { SizeScanInternals } from '../sizeScan/state/sizeScanInternals';
 
 /**
  * Metrics panel command handler signature.

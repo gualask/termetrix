@@ -1,22 +1,28 @@
-import { ExtendedScanResult } from '../../types';
+import { ExtendedScanResult } from '../../../types';
 
 const MAX_CACHE_ENTRIES = 10;
 
 /**
- * Manages in-memory cache for scan results
+ * Manages an in-memory cache for scan results.
  */
 export class ScanCache {
 	private memoryCache: Map<string, ExtendedScanResult> = new Map();
 
 	/**
-	 * Get cached scan result for a root path
+	 * Returns the cached scan result for a root path (if any).
+	 * @param rootPath - Root path key.
+	 * @returns Cached scan result.
 	 */
 	get(rootPath: string): ExtendedScanResult | undefined {
 		return this.memoryCache.get(rootPath);
 	}
 
 	/**
-	 * Store scan result in memory cache (without directorySizes to save memory)
+	 * Stores a scan result in the cache.
+	 * Heavyweight internal fields are stripped to keep memory usage bounded.
+	 * @param rootPath - Root path key.
+	 * @param result - Scan result to cache.
+	 * @returns void
 	 */
 	set(rootPath: string, result: ExtendedScanResult): void {
 		// Remove internal, heavyweight fields before caching (only needed temporarily for deep scan)

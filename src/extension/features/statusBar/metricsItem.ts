@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ProjectSizeScanner } from '../sizeScan/projectSizeScanner';
-import { ScanCache } from '../sizeScan/scanCache';
+import { ScanCache } from '../sizeScan/state/scanCache';
 import { ScanProgress } from '../../types';
 import { formatBytes } from '../../common/formatters';
 import { ScannerEventSubscription } from '../../common/scannerEvents';

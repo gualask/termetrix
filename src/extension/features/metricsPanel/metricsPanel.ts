@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ProjectSizeScanner } from '../sizeScan/projectSizeScanner';
-import { ScanCache } from '../sizeScan/scanCache';
+import { ScanCache } from '../sizeScan/state/scanCache';
 import type { MessageFromExtension, ProgressData, ScanProgress } from '../../types';
 import { LOCScanner } from '../locScan/locScanner';
 import { ScannerEventSubscription } from '../../common/scannerEvents';
@@ -12,7 +12,7 @@ import {
 	type MetricsPanelCommandDeps,
 } from './metricsPanelCommands';
 import { getMetricsPanelHtml } from './metricsPanelHtml';
-import type { SizeScanInternals } from '../sizeScan/sizeScanInternals';
+import type { SizeScanInternals } from '../sizeScan/state/sizeScanInternals';
 
 /**
  * Webview panel orchestrator for project metrics visualization.

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { TerminalStatusBarItem } from './features/statusBar/terminalItem';
 import { MetricsStatusBarItem } from './features/statusBar/metricsItem';
 import { ProjectSizeScanner } from './features/sizeScan/projectSizeScanner';
-import { ScanCache } from './features/sizeScan/scanCache';
+import { ScanCache } from './features/sizeScan/state/scanCache';
 import { MetricsPanel } from './features/metricsPanel/metricsPanel';
 
 /**

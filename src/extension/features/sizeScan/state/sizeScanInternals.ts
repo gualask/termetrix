@@ -1,5 +1,8 @@
+/**
+ * Scan internals retained only for the lifetime of an open webview session.
+ * These fields are not persisted in `ScanCache`.
+ */
 export type SizeScanInternals = {
-	// Kept in-memory only during an open webview session; not persisted in `ScanCache`.
 	directorySizes: Record<string, number>;
 	directoryFileCounts?: Record<string, number>;
 	directoryMaxFileBytes?: Record<string, number>;

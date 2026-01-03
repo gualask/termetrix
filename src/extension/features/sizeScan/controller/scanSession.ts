@@ -13,6 +13,13 @@ export interface CancellableProgressSession<T> {
 
 type CancellableTask<T> = (cancellationToken: vscode.CancellationToken) => Promise<T>;
 
+/**
+ * Runs a task under VS Code window progress, wiring UI cancellation to the provided token source.
+ * @param title - Progress title shown in VS Code.
+ * @param cancellationSource - Token source used by the task implementation.
+ * @param task - Task to run.
+ * @returns Thenable resolving to the task result.
+ */
 function runWithCancellableWindowProgress<T>(
 	title: string,
 	cancellationSource: vscode.CancellationTokenSource,
@@ -44,6 +51,10 @@ function runWithCancellableWindowProgress<T>(
  * to an internal CancellationTokenSource.
  *
  * Single responsibility: withProgress + cancellation wiring.
+ * @param options - Session options.
+ * @param options.title - Progress title shown in VS Code.
+ * @param options.task - Task to execute with the internal cancellation token.
+ * @returns Session handle with run/dispose.
  */
 export function createCancellableWindowProgressSession<T>({
 	title,
@@ -63,6 +74,9 @@ export function createCancellableWindowProgressSession<T>({
  *
  * Useful for background refreshes where we still want cancellation support,
  * but want to avoid the overhead and noise of window progress notifications.
+ * @param options - Session options.
+ * @param options.task - Task to execute with the internal cancellation token.
+ * @returns Session handle with run/dispose.
  */
 export function createCancellableSilentSession<T>({
 	task,

@@ -1,14 +1,18 @@
 import * as vscode from 'vscode';
 import { EventEmitter } from 'events';
 import type { ScanProgress, ExtendedScanResult } from '../../types';
-import { ScanCache } from './scanCache';
+import { ScanCache } from './state/scanCache';
 import { configManager } from '../../common/configManager';
-import { computeSizeBreakdown } from './sizeBreakdown';
-import { scanProjectSize } from './scanEngine';
-import { AutoRefreshController } from './autoRefreshController';
-import { ProjectRootController } from './projectRootController';
-import { createCancellableSilentSession, createCancellableWindowProgressSession, type CancellableProgressSession } from './scanSession';
-import type { SizeScanInternals } from './sizeScanInternals';
+import { computeSizeBreakdown } from './model/sizeBreakdown';
+import { scanProjectSize } from './engine/scanEngine';
+import { AutoRefreshController } from './controller/autoRefreshController';
+import { ProjectRootController } from './controller/projectRootController';
+import {
+	createCancellableSilentSession,
+	createCancellableWindowProgressSession,
+	type CancellableProgressSession,
+} from './controller/scanSession';
+import type { SizeScanInternals } from './state/sizeScanInternals';
 
 type RunScanOptions = {
 	collectDirectorySizes: boolean;
@@ -18,7 +22,8 @@ type RunScanOptions = {
 };
 
 /**
- * Project size scanner with soft limits and controlled concurrency
+ * High-level project size scanner (VS Code-facing orchestrator).
+ * Wraps the pure scan engine with root tracking, cancellation, caching, and progress events.
  */
 export class ProjectSizeScanner extends EventEmitter {
 	private currentScanCancellation: vscode.CancellationTokenSource | undefined;
@@ -28,6 +33,10 @@ export class ProjectSizeScanner extends EventEmitter {
 	private lastProgressUpdate = 0;
 	private readonly progressThrottleMs = 500;
 
+	/**
+	 * Creates a project size scanner.
+	 * @param cache - In-memory cache for completed scan results.
+	 */
 	constructor(private cache: ScanCache) {
 		super();
 		this.rootController = new ProjectRootController({
@@ -49,7 +58,8 @@ export class ProjectSizeScanner extends EventEmitter {
 	}
 
 	/**
-	 * Dispose and cleanup
+	 * Disposes timers, cancels any in-flight scans, and clears listeners.
+	 * @returns void
 	 */
 	dispose(): void {
 		this.autoRefreshController.dispose();
@@ -59,7 +69,11 @@ export class ProjectSizeScanner extends EventEmitter {
 	}
 
 	/**
-	 * Emit progress update (throttled)
+	 * Emits a throttled progress update.
+	 * @param rootPath - Root path being scanned.
+	 * @param currentBytes - Current total bytes scanned.
+	 * @param directoriesScanned - Number of directories scanned so far.
+	 * @returns void
 	 */
 	private emitProgress(rootPath: string, currentBytes: number, directoriesScanned: number): void {
 		const now = Date.now();
@@ -70,6 +84,12 @@ export class ProjectSizeScanner extends EventEmitter {
 		this.lastProgressUpdate = now;
 	}
 
+	/**
+	 * Emits scan start/end state events.
+	 * @param rootPath - Root path being scanned.
+	 * @param isScanning - Whether scanning is starting or ending.
+	 * @returns void
+	 */
 	private emitScanState(rootPath: string, isScanning: boolean): void {
 		const progress: ScanProgress = { rootPath, currentBytes: 0, directoriesScanned: 0, isScanning };
 		this.emit(isScanning ? 'scanStart' : 'scanEnd', progress);
@@ -78,21 +98,25 @@ export class ProjectSizeScanner extends EventEmitter {
 	}
 
 	/**
-	 * Get current project root
+	 * Returns the current project root.
+	 * @returns Root path or undefined.
 	 */
 	getCurrentRoot(): string | undefined {
 		return this.rootController.getCurrentRoot();
 	}
 
 	/**
-	 * Check if a scan is currently in progress
+	 * Returns true when a scan is currently in progress.
+	 * @returns True when scanning.
 	 */
 	isScanInProgress(): boolean {
 		return this.isScanning;
 	}
 
 	/**
-	 * Handle editor change (multi-root projects)
+	 * Handles active editor changes (used for multi-root workspaces).
+	 * @param editor - Active editor.
+	 * @returns void
 	 */
 	handleEditorChange(editor: vscode.TextEditor): void {
 		const { rootSwitchDebounceMs } = configManager.getScanConfig();
@@ -100,7 +124,9 @@ export class ProjectSizeScanner extends EventEmitter {
 	}
 
 	/**
-	 * Perform project scan
+	 * Runs a full scan intended for the metrics panel.
+	 * @param rootOverride - Optional root override.
+	 * @returns Scan result (or undefined when there is no root or on failure).
 	 */
 	async scan(rootOverride?: string): Promise<ExtendedScanResult | undefined> {
 		return this.runScan(rootOverride, {
@@ -113,6 +139,8 @@ export class ProjectSizeScanner extends EventEmitter {
 
 	/**
 	 * Perform a fast scan intended for the status bar (total size only).
+	 * @param rootOverride - Optional root override.
+	 * @returns Scan result (or undefined when there is no root or on failure).
 	 */
 	async scanSummary(rootOverride?: string): Promise<ExtendedScanResult | undefined> {
 		return this.runScan(rootOverride, {
@@ -123,12 +151,23 @@ export class ProjectSizeScanner extends EventEmitter {
 		});
 	}
 
+	/**
+	 * Marks the scan as started and emits state events.
+	 * @param rootPath - Root path being scanned.
+	 * @returns void
+	 */
 	private beginScan(rootPath: string): void {
 		this.cancelCurrentScan();
 		this.isScanning = true;
 		this.emitScanState(rootPath, true);
 	}
 
+	/**
+	 * Finalizes a scan session and emits state events.
+	 * @param rootPath - Root path that was scanned.
+	 * @param session - Cancellable session handle.
+	 * @returns void
+	 */
 	private endScan(rootPath: string, session: CancellableProgressSession<ExtendedScanResult>): void {
 		if (this.currentScanCancellation === session.cancellationSource) {
 			this.currentScanCancellation = undefined;
@@ -139,6 +178,12 @@ export class ProjectSizeScanner extends EventEmitter {
 		this.emitScanState(rootPath, false);
 	}
 
+	/**
+	 * Runs a scan for the current root with the given options.
+	 * @param rootOverride - Optional root override.
+	 * @param options - Scan options.
+	 * @returns Scan result (or undefined when there is no root or on failure).
+	 */
 	private async runScan(
 		rootOverride: string | undefined,
 		options: RunScanOptions
@@ -168,6 +213,13 @@ export class ProjectSizeScanner extends EventEmitter {
 		}
 	}
 
+	/**
+	 * Creates a cancellable scan session (with or without VS Code window progress UI).
+	 * @param rootPath - Root path to scan.
+	 * @param showWindowProgress - Whether to show VS Code window progress.
+	 * @param options - Scan options.
+	 * @returns Cancellable progress session.
+	 */
 	private createScanSession(
 		rootPath: string,
 		showWindowProgress: boolean,
@@ -186,6 +238,13 @@ export class ProjectSizeScanner extends EventEmitter {
 		return createCancellableSilentSession({ task });
 	}
 
+	/**
+	 * Stores scan results in the cache, optionally preserving previous top directories for summary scans.
+	 * @param rootPath - Root path key.
+	 * @param result - Scan result.
+	 * @param collectTopDirectories - Whether this scan collected top directories.
+	 * @returns void
+	 */
 	private cacheScanResult(
 		rootPath: string,
 		result: ExtendedScanResult,
@@ -207,7 +266,11 @@ export class ProjectSizeScanner extends EventEmitter {
 	}
 
 	/**
-	 * Perform the actual scan
+	 * Performs the actual scan by invoking the pure scan engine.
+	 * @param rootPath - Root path to scan.
+	 * @param cancellationToken - VS Code cancellation token.
+	 * @param options - Engine options.
+	 * @returns Extended scan result.
 	 */
 	private async performScan(
 		rootPath: string,
@@ -238,7 +301,8 @@ export class ProjectSizeScanner extends EventEmitter {
 	}
 
 	/**
-	 * Cancel current scan
+	 * Cancels the current scan (best-effort).
+	 * @returns void
 	 */
 	cancelCurrentScan(): void {
 		const cancellationSource = this.currentScanCancellation;
@@ -250,6 +314,8 @@ export class ProjectSizeScanner extends EventEmitter {
 
 	/**
 	 * Compute the size breakdown view model from cached scan internals.
+	 * @param params - Breakdown input (root + internals).
+	 * @returns Size breakdown view model.
 	 */
 	computeSizeBreakdown(params: { rootPath: string } & SizeScanInternals) {
 		return computeSizeBreakdown(params);

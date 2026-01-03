@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import type { ConcurrencyLimiter } from '../../common/concurrencyLimiter';
+import type { ConcurrencyLimiter } from '../../../common/concurrencyLimiter';
 import type { ScanRuntimeState, SizeScanCancellationToken, TopFile } from './scanEngineTypes';
 import { isPermissionDeniedError, markIncomplete, shouldStop } from './scanEngineCore';
 
@@ -9,6 +9,13 @@ import { isPermissionDeniedError, markIncomplete, shouldStop } from './scanEngin
 const TOP_FILE_CANDIDATES_PER_DIRECTORY = 20;
 
 // HOT PATH: called for many files during scans; keep changes minimal and avoid extra allocations/syscalls.
+/**
+ * Inserts a file candidate into a descending "top files" list, keeping it capped to `limit`.
+ * @param topFiles - Mutable descending list of top files.
+ * @param candidate - Candidate file.
+ * @param limit - Maximum number of items to keep.
+ * @returns void
+ */
 function pushTopFile(topFiles: TopFile[], candidate: TopFile, limit: number): void {
 	if (limit <= 0 || candidate.bytes <= 0) return;
 
@@ -42,6 +49,12 @@ function pushTopFile(topFiles: TopFile[], candidate: TopFile, limit: number): vo
 	if (topFiles.length > limit) topFiles.length = limit;
 }
 
+/**
+ * Stats a file and returns its size (0 on error).
+ * @param runLimited - Concurrency limiter for filesystem operations.
+ * @param fullPath - Absolute file path.
+ * @returns File size in bytes, or 0 on error.
+ */
 async function statFileSize(runLimited: ConcurrencyLimiter, fullPath: string): Promise<number> {
 	try {
 		const stats = await runLimited(() => fs.stat(fullPath));
@@ -51,6 +64,12 @@ async function statFileSize(runLimited: ConcurrencyLimiter, fullPath: string): P
 	}
 }
 
+/**
+ * Reads directory entries using `readdir({ withFileTypes: true })`.
+ * @param runLimited - Concurrency limiter for filesystem operations.
+ * @param currentPath - Directory path.
+ * @returns Directory entries.
+ */
 async function readDirEntries(
 	runLimited: ConcurrencyLimiter,
 	currentPath: string
@@ -58,6 +77,13 @@ async function readDirEntries(
 	return await runLimited(() => fs.readdir(currentPath, { withFileTypes: true }));
 }
 
+/**
+ * Reads directory entries and returns undefined on error (counting permission errors as skipped).
+ * @param runLimited - Concurrency limiter for filesystem operations.
+ * @param currentPath - Directory path.
+ * @param state - Runtime scan state (mutated when permissions are denied).
+ * @returns Directory entries, or undefined when the directory cannot be read.
+ */
 async function tryReadDirEntries(
 	runLimited: ConcurrencyLimiter,
 	currentPath: string,
@@ -71,6 +97,15 @@ async function tryReadDirEntries(
 	}
 }
 
+/**
+ * Updates the "top directories" list with the current directory's direct bytes.
+ * @param topDirectories - Mutable list of top directories.
+ * @param rootPath - Scan root.
+ * @param currentPath - Current directory.
+ * @param directBytes - Direct bytes under the directory (non-recursive).
+ * @param topDirectoriesLimit - Max number of top directories to keep.
+ * @returns void
+ */
 function updateTopDirectories(
 	topDirectories: Array<{ path: string; absolutePath: string; bytes: number }>,
 	rootPath: string,
@@ -87,6 +122,12 @@ function updateTopDirectories(
 }
 
 // HOT PATH: runs for every stat batch in summary mode; keep it tight.
+/**
+ * Computes bytes for a batch of file paths in summary mode.
+ * @param runLimited - Concurrency limiter for filesystem operations.
+ * @param paths - File paths to stat.
+ * @returns Batch delta for total bytes.
+ */
 async function sumFileBatchSummary(
 	runLimited: ConcurrencyLimiter,
 	paths: ReadonlyArray<string>
@@ -103,6 +144,13 @@ async function sumFileBatchSummary(
 }
 
 // HOT PATH: runs for every stat batch in UI mode; keep it tight and allocation-light.
+/**
+ * Computes bytes and metadata for a batch of file paths in full (UI) mode.
+ * @param runLimited - Concurrency limiter for filesystem operations.
+ * @param paths - File paths to stat.
+ * @param topFilesLimit - Max number of top files to keep for this directory.
+ * @returns Batch deltas for total bytes and direct per-directory metadata.
+ */
 async function sumFileBatchFull(
 	runLimited: ConcurrencyLimiter,
 	paths: ReadonlyArray<string>,
@@ -138,6 +186,11 @@ async function sumFileBatchFull(
 }
 
 // HOT PATH: per-directory traversal loop; changes here directly impact scan performance and cancellation responsiveness.
+/**
+ * Scans directory entries, updating the directory queue and producing direct metrics for the directory.
+ * @param params - Scan parameters.
+ * @returns Direct metrics for the directory (bytes/count/max/top files).
+ */
 async function scanDirectoryEntries(params: {
 	entries: ReadonlyArray<import('fs').Dirent>;
 	currentPath: string;
@@ -171,6 +224,10 @@ async function scanDirectoryEntries(params: {
 	const topFiles: TopFile[] = [];
 	let fileBatch: string[] = [];
 
+	/**
+	 * Flushes the current file stat batch and updates totals/metadata.
+	 * @returns Promise resolving once the batch is processed.
+	 */
 	const flushBatch = async (): Promise<void> => {
 		// Nothing to flush
 		if (fileBatch.length === 0) return;
@@ -238,6 +295,11 @@ async function scanDirectoryEntries(params: {
 }
 
 // HOT PATH (per-directory): keep it focused, avoid extra IO and expensive path operations.
+/**
+ * Processes a single directory: reads entries, queues subdirectories, and records direct metrics.
+ * @param params - Directory processing parameters.
+ * @returns Promise resolving once the directory is processed.
+ */
 export async function processDirectory(params: {
 	currentPath: string;
 	rootPath: string;
