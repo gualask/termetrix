@@ -1,0 +1,734 @@
+/**
+ * Termetrix Webview Styles (Optimized)
+ */
+
+/* Reset & Base */
+* { box-sizing: border-box; }
+
+html {
+  font-size: var(--vscode-font-size);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--vscode-font-family);
+  font-size: 1rem;
+  color: var(--vscode-foreground);
+  background-color: var(--tmx-canvas, var(--vscode-editor-background));
+}
+
+/* Theme-derived surfaces */
+:root {
+  --tmx-canvas: var(--vscode-editor-background);
+  --tmx-surface-1: var(--vscode-editorWidget-background, var(--vscode-sideBar-background));
+  --tmx-surface-2: var(--vscode-editorWidget-background, var(--vscode-sideBar-background));
+  --tmx-border: var(--vscode-panel-border);
+  --tmx-row-hover: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.12));
+  --tmx-row-hover-border: var(--vscode-focusBorder, var(--tmx-border));
+  --tmx-overlay: rgba(0, 0, 0, 0.02);
+  --tmx-hover-bg: var(--vscode-toolbar-hoverBackground, var(--tmx-row-hover));
+  --tmx-radius-sm: 4px;
+  --tmx-radius-md: 6px;
+  --tmx-radius-lg: 8px;
+  --tmx-radius-xl: 10px;
+  --tmx-font-caption: 0.9rem;
+  --tmx-font-small: 0.92rem;
+  --tmx-font-ui: 1rem;
+  --tmx-font-title: 1.4rem;
+  --tmx-font-sectionTitle: 1.1rem;
+  --tmx-font-errorTitle: 1.5rem;
+  --tmx-font-metric: 1.65rem;
+  --tmx-font-metric-sm: 1.5rem;
+  --tmx-sizeMetric-col-width: 112px;
+  --tmx-sizeMetric-total-fill: var(--vscode-progressBar-background);
+  --tmx-sizeMetric-total-track: var(--tmx-surface-1);
+  --tmx-sizeMetric-parent-fill: var(--vscode-foreground);
+  --tmx-sizeMetric-parent-track: var(--tmx-surface-1);
+}
+
+@supports (color: color-mix(in srgb, white 50%, black)) {
+  :root {
+    --tmx-surface-1: color-mix(in srgb, var(--vscode-editor-background) 96%, var(--vscode-foreground) 4%);
+    --tmx-surface-2: color-mix(in srgb, var(--vscode-editor-background) 92%, var(--vscode-foreground) 8%);
+    --tmx-border: color-mix(in srgb, var(--vscode-panel-border) 85%, var(--vscode-foreground) 15%);
+    --tmx-row-hover: var(--vscode-list-hoverBackground);
+    --tmx-row-hover-border: var(--vscode-panel-border);
+    --tmx-overlay: color-mix(in srgb, var(--tmx-canvas) 94%, var(--vscode-foreground) 6%);
+    --tmx-sizeMetric-total-track: color-mix(in srgb, var(--tmx-sizeMetric-total-fill) 14%, var(--tmx-surface-1) 86%);
+    --tmx-sizeMetric-parent-fill: color-mix(in srgb, var(--vscode-foreground) 88%, var(--vscode-charts-blue, var(--vscode-progressBar-background)) 12%);
+    --tmx-sizeMetric-parent-track: color-mix(in srgb, var(--tmx-sizeMetric-parent-fill) 12%, var(--tmx-surface-1) 88%);
+  }
+}
+
+
+/* App Layout */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.content,
+.tmx-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 12px;
+  min-height: 0;
+}
+
+.content { padding: 16px; }
+
+.tmx-view {
+  padding: 0;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--tmx-border);
+  background: var(--tmx-canvas);
+}
+
+.tabs button {
+  flex: 1;
+  background: var(--tmx-surface-1);
+  border: 1px solid var(--tmx-border);
+  border-radius: var(--tmx-radius-md);
+  padding: 10px 12px;
+  cursor: pointer;
+  color: var(--vscode-foreground);
+  opacity: 0.85;
+  transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+  font-size: var(--tmx-font-ui);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.tabs button:hover { opacity: 1; background: var(--tmx-surface-2); }
+
+.tabs button.active {
+  opacity: 1;
+  background: var(--tmx-surface-2);
+  border-color: var(--vscode-focusBorder);
+  font-weight: 600;
+}
+
+.tabs button:focus-visible,
+.tmx-icon-button:focus-visible,
+.tmx-row:focus-visible,
+.error-details summary:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+
+/* Card primitives */
+.tmx-header-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 12px 10px;
+  background: var(--tmx-surface-2);
+  border: none;
+  border-radius: 0;
+}
+
+.tmx-panel-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  min-height: 0;
+}
+
+.tmx-panel-fixed,
+.tmx-panel-scroll {
+  gap: 8px;
+  padding: 8px 0 0;
+}
+
+.tmx-panel-fixed {
+  overflow: hidden;
+}
+
+.tmx-panel-scroll {
+  overflow-y: auto;
+}
+
+.tmx-panel-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--vscode-foreground);
+  background: var(--tmx-overlay);
+  opacity: 1;
+}
+
+.tmx-hero { display: flex; flex-direction: column; gap: 10px; }
+
+.tmx-hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tmx-metrics-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+
+.tmx-metric-primary {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tmx-metric-primaryIcon { transform: translateY(2px); }
+
+.tmx-metric-primaryValue {
+  font-size: var(--tmx-font-metric);
+  line-height: 1.1;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tmx-metric-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.8;
+  font-size: var(--tmx-font-caption);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tmx-metric-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tmx-caption {
+  display: block;
+  opacity: 0.75;
+  font-size: var(--tmx-font-caption);
+}
+
+.tmx-metric-sep {
+  opacity: 0.5;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tmx-icon-button {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: 1px solid var(--vscode-button-border, var(--tmx-border));
+  border-radius: var(--tmx-radius-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s, border-color 0.1s, transform 0.06s ease;
+}
+
+.tmx-icon-button:hover:not(:disabled) { background: var(--vscode-button-hoverBackground); }
+.tmx-icon-button:active:not(:disabled) { transform: translateY(1px); }
+.tmx-icon-button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Interactive rows */
+.tmx-row {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tmx-row:hover { background: transparent; border-color: transparent; }
+
+.tmx-row:disabled { cursor: default; }
+
+.tmx-row:focus-visible { border-color: transparent; }
+
+/* Tooltip bubble (custom, multiline) */
+.tmx-tooltip {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  padding: 8px 10px;
+  background: var(--vscode-editorHoverWidget-background, var(--tmx-surface-2));
+  color: var(--vscode-editorHoverWidget-foreground, var(--vscode-foreground));
+  border: 1px solid var(--vscode-editorHoverWidget-border, var(--tmx-border));
+  box-shadow: 0 4px 14px var(--vscode-widget-shadow, transparent);
+  border-radius: var(--tmx-radius-md);
+  font-size: var(--tmx-font-caption);
+  line-height: 1.25;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-2px);
+  transition: opacity 0.12s ease, transform 0.12s ease, visibility 0.12s ease;
+  white-space: nowrap;
+}
+
+.tmx-tooltipLine + .tmx-tooltipLine { margin-top: 2px; }
+
+.size-groupHeader { position: relative; }
+
+.size-groupHeader:hover .tmx-tooltip,
+.size-groupHeader:focus-visible .tmx-tooltip,
+.tmx-row.size-table-row:hover .tmx-tooltip,
+.tmx-row.size-table-row:focus-visible .tmx-tooltip,
+.size-table-row--static:hover .tmx-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Size metric (value + micro progress bar, metadata via tooltip) */
+.tmx-sizeMetric {
+  display: grid;
+  grid-template-columns: 1fr 10px;
+  column-gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.tmx-sizeMetricValue {
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  width: 100%;
+  text-align: right;
+}
+
+.tmx-sizeMetricVBar {
+  width: 10px;
+  height: 24px;
+  background: var(--tmx-sizeMetric-track);
+  border: 1px solid var(--tmx-border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.tmx-sizeMetricVFill {
+  width: 100%;
+  height: 0;
+  background: var(--tmx-sizeMetric-fill);
+  transition: height 0.18s ease;
+}
+
+.tmx-sizeMetric--total { --tmx-sizeMetric-fill: var(--tmx-sizeMetric-total-fill); --tmx-sizeMetric-track: var(--tmx-sizeMetric-total-track); }
+.tmx-sizeMetric--parent { --tmx-sizeMetric-fill: var(--tmx-sizeMetric-parent-fill); --tmx-sizeMetric-track: var(--tmx-sizeMetric-parent-track); }
+
+
+/* Banners */
+.warning-banner,
+.error-banner {
+  margin: 0 0 8px;
+  padding: 10px 14px;
+  border-left: 3px solid;
+  font-size: var(--tmx-font-small);
+  border-radius: var(--tmx-radius-sm);
+}
+
+.warning-banner {
+  background: var(--vscode-inputValidation-warningBackground);
+  border-color: var(--vscode-inputValidation-warningBorder);
+  color: var(--vscode-inputValidation-warningForeground);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.error-banner {
+  padding: 12px 14px;
+  background: var(--vscode-inputValidation-errorBackground);
+  border-color: var(--vscode-inputValidation-errorBorder);
+  color: var(--vscode-inputValidation-errorForeground);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.error-banner-icon { flex-shrink: 0; margin-top: 1px; }
+
+.error-banner-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.error-banner-message { font-weight: 500; }
+.error-banner-details { font-size: var(--tmx-font-small); opacity: 0.9; }
+
+.error-banner-dismiss {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+  border-radius: var(--tmx-radius-sm);
+}
+
+.error-banner-dismiss:hover { opacity: 1; background: var(--tmx-hover-bg); }
+
+/* Size Chart */
+.size-chart {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.size-chart.empty { align-items: center; justify-content: center; }
+
+.size-chart-hidden-note {
+  font-size: var(--tmx-font-caption);
+  color: var(--vscode-descriptionForeground, var(--vscode-foreground));
+  opacity: 0.7;
+  padding: 6px 4px 2px;
+}
+
+.file-path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--vscode-editor-font-family);
+  min-width: 0;
+  font-size: var(--tmx-font-small);
+}
+
+/* Size Table (3-level grouped view) */
+.size-table-card {
+  margin-bottom: 14px;
+  padding: 10px;
+  border-radius: var(--tmx-radius-xl);
+  border: 1px solid var(--tmx-border);
+  background: var(--tmx-surface-2);
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow, transparent);
+  --tmx-row-hover: rgba(127, 127, 127, 0.14);
+  --tmx-row-hover-border: var(--vscode-focusBorder, var(--tmx-border));
+}
+
+.size-table-card:last-child { margin-bottom: 0; }
+
+@supports (color: color-mix(in srgb, white 50%, black)) {
+  .size-table-card {
+    --tmx-row-hover: color-mix(in srgb, var(--vscode-foreground) 7%, var(--tmx-surface-2) 93%);
+    --tmx-row-hover-border: color-mix(in srgb, var(--vscode-foreground) 22%, var(--tmx-border) 78%);
+  }
+}
+
+.size-groupHeader {
+  width: 100%;
+  border-radius: var(--tmx-radius-lg);
+  padding: 8px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: background 0.12s, border-color 0.12s, transform 0.06s ease;
+}
+
+.size-groupHeader:hover:not(:disabled) {
+  background: var(--tmx-row-hover, var(--tmx-surface-1));
+  border-color: var(--tmx-row-hover-border, var(--tmx-border));
+}
+
+.size-groupHeader:active:not(:disabled) { transform: translateY(1px); }
+
+.size-groupHeaderGrid,
+.size-table-grid {
+  display: grid;
+  grid-template-columns: 1fr var(--tmx-sizeMetric-col-width);
+  align-items: center;
+  width: 100%;
+}
+
+.size-groupHeaderGrid { gap: 12px; }
+.size-table-grid { gap: 10px; }
+
+.size-groupHeaderName,
+.size-table-nameTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.size-groupHeaderIcon,
+.size-table-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.size-groupHeaderText,
+.size-table-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--vscode-editor-font-family);
+}
+
+.size-groupHeaderText {
+  font-weight: 600;
+  font-size: var(--tmx-font-ui);
+}
+
+.size-groupHeaderMetrics,
+.size-table-metricsCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: stretch;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.size-table-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 1px solid var(--tmx-border);
+}
+
+.size-table-row {
+  position: relative;
+  width: 100%;
+  border-radius: var(--tmx-radius-md);
+  padding: 8px 10px;
+}
+
+.tmx-row.size-table-row:hover:not(:disabled) {
+  background: var(--tmx-row-hover, var(--tmx-surface-1));
+  border-color: var(--tmx-row-hover-border, var(--tmx-border));
+}
+
+.size-table-row--leaf { padding-left: 22px; }
+.size-table-row--others {
+  padding-left: 22px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  font-size: var(--tmx-font-caption);
+  color: var(--vscode-descriptionForeground, var(--vscode-foreground));
+}
+
+.size-table-row--static { cursor: default; }
+
+.size-table-nameCell {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.size-table-subtitle {
+  font-size: var(--tmx-font-caption);
+  color: var(--vscode-descriptionForeground, var(--vscode-foreground));
+  opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.size-table-footer {
+  padding-top: 4px;
+  border-top: 1px solid var(--tmx-border);
+}
+
+
+
+/* LOC View */
+.loc-primary-suffix { opacity: 0.75; font-size: var(--tmx-font-caption); }
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.empty-state.variant-page { padding: 48px 24px; min-height: 400px; flex: 1; }
+.empty-state.variant-panel { min-height: 240px; padding: 36px 24px; }
+.empty-state.variant-inline { padding: 18px 16px; opacity: 0.8; }
+
+.empty-state h2 { margin: 16px 0 8px; font-size: var(--tmx-font-title); }
+.empty-state p { margin: 8px 0; opacity: 0.8; }
+.empty-state .hint { margin-top: 16px; font-size: var(--tmx-font-small); opacity: 0.7; }
+
+.section { margin-bottom: 32px; }
+.section h4 { margin: 0 0 12px; font-size: var(--tmx-font-sectionTitle); opacity: 0.9; }
+
+.language-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.bar-container {
+  height: 20px;
+  background: var(--tmx-surface-1);
+  border: 1px solid var(--tmx-border);
+  border-radius: var(--tmx-radius-sm);
+  overflow: hidden;
+}
+
+.bar { height: 100%; background: var(--vscode-charts-blue, var(--vscode-progressBar-background)); transition: width 0.3s ease; }
+
+.lang-name { min-width: 100px; font-weight: 500; }
+.lang-count { min-width: 80px; }
+.lang-percent { min-width: 50px; opacity: 0.7; font-size: var(--tmx-font-small); }
+
+.file-row {
+  appearance: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--tmx-radius-sm);
+  width: 100%;
+}
+
+.file-row:not(:disabled):hover {
+  background: var(--tmx-row-hover, var(--vscode-list-hoverBackground));
+  border-color: var(--tmx-row-hover-border, var(--tmx-border));
+}
+
+.file-lines { margin-left: 16px; opacity: 0.7; font-variant-numeric: tabular-nums; }
+
+/* Spinner */
+.spinner { display: inline-block; animation: spin 1s linear infinite; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error Boundary */
+.error-boundary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.error-boundary-content {
+  display: flex;
+  flex-direction: column;
+  max-width: 500px;
+  text-align: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.error-icon { color: var(--vscode-errorForeground); opacity: 0.9; }
+.error-boundary h2 { margin: 0; font-size: var(--tmx-font-errorTitle); font-weight: 600; }
+.error-message { margin: 0; opacity: 0.85; font-size: var(--tmx-font-small); }
+
+.error-reset-button {
+  margin-top: 8px;
+  padding: 10px 20px;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  border-radius: var(--tmx-radius-md);
+  cursor: pointer;
+  font-size: var(--tmx-font-ui);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+}
+
+.error-reset-button:hover { background: var(--vscode-button-hoverBackground); }
+
+.error-details { margin-top: 16px; text-align: left; width: 100%; }
+
+.error-details summary {
+  cursor: pointer;
+  padding: 8px;
+  background: var(--tmx-surface-1);
+  border-radius: var(--tmx-radius-sm);
+  font-size: var(--tmx-font-small);
+  opacity: 0.8;
+}
+
+.error-details summary:hover { opacity: 1; }
+
+.error-details pre {
+  margin: 8px 0 0;
+  padding: 12px;
+  background: var(--tmx-surface-2);
+  border: 1px solid var(--tmx-border);
+  border-radius: var(--tmx-radius-sm);
+  overflow-x: auto;
+  font-size: var(--tmx-font-caption);
+  opacity: 0.9;
+}
+
+/* Responsive */
+@media (max-width: 520px) {
+  .tmx-hero-row { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .tmx-metric-actions { align-self: flex-end; }
+  .tmx-metric-primaryValue { font-size: var(--tmx-font-metric-sm); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation: none; }
+  .tabs button,
+  .tmx-icon-button,
+  .tmx-tooltip,
+  .tmx-sizeMetricVFill,
+  .size-groupHeader,
+  .bar { transition: none; }
+}

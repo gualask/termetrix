@@ -1,0 +1,155 @@
+{
+  "name": "termetrix",
+  "displayName": "Termetrix",
+  "description": "Minimal VS Code productivity extension for project awareness",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "publisher": "gualask",
+  "author": {
+    "name": "Gualask"
+  },
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gualask/termetrix"
+  },
+  "keywords": [
+    "project",
+    "disk usage",
+    "directory size",
+    "LOC",
+    "lines of code",
+    "productivity",
+    "terminal",
+    "status bar",
+    "file explorer",
+    "developer tools"
+  ],
+  "engines": {
+    "vscode": "^1.109.0",
+    "node": ">=22.0.0"
+  },
+  "categories": [
+    "Visualization"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "files": [
+    "out/**",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "media/**"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "termetrix.openScanPanel",
+        "title": "Termetrix: Open Metrics Panel"
+      },
+      {
+        "command": "termetrix.refreshScan",
+        "title": "Termetrix: Refresh Project Scan"
+      },
+      {
+        "command": "termetrix.cancelScan",
+        "title": "Termetrix: Cancel Scan"
+      },
+      {
+        "command": "termetrix.openTerminal",
+        "title": "Termetrix: Open Terminal"
+      }
+    ],
+    "configuration": {
+      "title": "Termetrix",
+      "properties": {
+        "termetrix.autoRefresh.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable automatic project scan refresh"
+        },
+        "termetrix.autoRefresh.minutes": {
+          "type": "number",
+          "default": 10,
+          "description": "Refresh interval in minutes"
+        },
+        "termetrix.scan.maxDurationSeconds": {
+          "type": "number",
+          "default": 10,
+          "description": "Maximum scan duration in seconds (partial results are shown if the limit is reached)"
+        },
+        "termetrix.scan.autoScanMode": {
+          "type": "string",
+          "enum": [
+            "startup+rootChange",
+            "rootChange",
+            "off"
+          ],
+          "default": "startup+rootChange",
+          "description": "Controls when Termetrix automatically runs scans (startup and/or root changes)"
+        },
+        "termetrix.scan.maxDirectories": {
+          "type": "number",
+          "default": 50000,
+          "description": "Maximum number of directories to scan (partial results are shown if the limit is reached)"
+        },
+        "termetrix.scan.concurrentOperations": {
+          "type": "number",
+          "default": 32,
+          "description": "Number of parallel filesystem operations (increase for faster scans on SSDs)"
+        },
+        "termetrix.scan.rootSwitchDebounceMs": {
+          "type": "number",
+          "default": 200,
+          "description": "Debounce delay for multi-root project switching in milliseconds"
+        },
+        "termetrix.statusBar.showTerminalButton": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the one-click terminal button in the status bar"
+        },
+        "termetrix.statusBar.showSelectionLineCount": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the selected lines counter in the status bar"
+        },
+        "termetrix.logging.verbose": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable verbose logging for performance metrics and debugging (logs to 'Termetrix' output channel)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run build:prod && pnpm run typecheck && pnpm run lint",
+    "build": "node -e \"require('fs').rmSync('out', { recursive: true, force: true })\" && node esbuild.mjs",
+    "build:prod": "node -e \"require('fs').rmSync('out', { recursive: true, force: true })\" && node esbuild.mjs --production",
+    "build:tests": "node esbuild.tests.mjs",
+    "typecheck": "tsc -p tsconfig.extension.json --noEmit && tsc -p src/ui/tsconfig.json --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "test:unit": "pnpm run build:tests && node --test out-test/tests/*.test.js",
+    "test": "pnpm run build && pnpm run lint && pnpm run typecheck && pnpm run test:unit"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "22.19.11",
+    "@types/vscode": "^1.109.0",
+    "esbuild": "^0.27.3",
+    "eslint": "^9.39.2",
+    "preact": "^10.28.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.55.0"
+  },
+  "dependencies": {
+    "lucide-preact": "^0.564.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}
