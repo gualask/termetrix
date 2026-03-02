@@ -37,6 +37,10 @@ export interface StatusBarConfig {
 	showSelectionLineCount: boolean;
 }
 
+export interface PanelConfig {
+	autoScanLoc: boolean;
+}
+
 /**
  * Centralized configuration manager
  * Single responsibility: reading and caching extension settings
@@ -160,6 +164,17 @@ export class ConfigManager {
 				CONFIG_KEYS.statusBar.showSelectionLineCount,
 				TERMETRIX_SETTINGS_DEFAULTS.statusBar.showSelectionLineCount
 			),
+		};
+	}
+
+	/**
+	 * Reads and returns panel-related configuration.
+	 * @returns Panel configuration.
+	 */
+	getPanelConfig(): PanelConfig {
+		const config = vscode.workspace.getConfiguration(CONFIG_SECTION_IDS.panel);
+		return {
+			autoScanLoc: this.readBoolean(config, CONFIG_KEYS.panel.autoScanLoc, TERMETRIX_SETTINGS_DEFAULTS.panel.autoScanLoc),
 		};
 	}
 

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as path from 'node:path';
 
-import { computeSizeBreakdown } from '../../src/core/sizeScan/model/sizeBreakdown';
+import { computeSizeBreakdown } from '../../src/core/sizeScan/model/sizeBreakdown/computeSizeBreakdown';
 import {
 	BoundedRatio,
 	BreakdownPolicy,
@@ -10,7 +10,7 @@ import {
 	PositiveInt,
 } from '../../src/core/sizeScan/model/sizeBreakdown/options';
 import { DirectoryAggregate } from '../../src/core/sizeScan/model/sizeBreakdown/directoryAggregate';
-import { formatBreakdownParentPath } from '../../src/ui/utils';
+import { formatBreakdownParentPath } from '../../src/ui/views/size/sizeFormatters';
 import { SIZE_BREAKDOWN_ROOT_SEGMENT } from '../../src/shared/contracts/sizeBreakdown';
 
 test('sizeBreakdown: groups by top-level segment and sorts parents by bytes', () => {
@@ -144,31 +144,18 @@ test('sizeBreakdown policy: clamps invalid ratios and keeps positive thresholds'
 });
 
 test('directoryAggregate: merges totals with domain-safe invariants', () => {
-	const aggregate = DirectoryAggregate.empty().addBytes(120).addFileCount(3).mergeMaxFileBytes(80).mergeMaxFileBytes(20);
-	const merged = aggregate.addBytes(-1).addFileCount(0);
+	const aggregate = DirectoryAggregate.fromTotals({ bytes: 120, fileCount: 3, maxFileBytes: 80 });
 	const remainder = aggregate.subtractSaturating(
-		DirectoryAggregate.fromTotals({
-			bytes: 200,
-			fileCount: 20,
-			maxFileBytes: 0,
-		})
+		DirectoryAggregate.fromTotals({ bytes: 200, fileCount: 20, maxFileBytes: 0 })
 	);
 
-	assert.deepEqual(aggregate.toTopLevelTotals(), {
-		bytes: 120,
-		fileCount: 3,
-		maxFileBytes: 80,
-	});
-	assert.deepEqual(merged.toTopLevelTotals(), {
-		bytes: 120,
-		fileCount: 3,
-		maxFileBytes: 80,
-	});
-	assert.deepEqual(remainder.toTopLevelTotals(), {
-		bytes: 0,
-		fileCount: 0,
-		maxFileBytes: 80,
-	});
+	assert.equal(aggregate.bytes, 120);
+	assert.equal(aggregate.fileCount, 3);
+	assert.equal(aggregate.maxFileBytes, 80);
+
+	assert.equal(remainder.bytes, 0);
+	assert.equal(remainder.fileCount, 0);
+	assert.equal(remainder.maxFileBytes, 80);
 	assert.equal(remainder.isEmpty(), true);
 });
 

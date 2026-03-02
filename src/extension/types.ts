@@ -12,3 +12,5 @@ export type { ExtendedScanResult } from '../core/sizeScan/types.js';
 // ============================================================================
 // Extension-only Types
 // ============================================================================
+
+export type ScanKind = 'size' | 'loc';

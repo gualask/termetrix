@@ -1,4 +1,5 @@
-import { formatBytes, validateShare } from '../utils';
+import { formatBytes } from '../../utils';
+import { validateShare } from './sizeFormatters';
 
 export type SizeMetricVariant = 'total' | 'parent';
 

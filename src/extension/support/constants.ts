@@ -26,6 +26,7 @@ export const CONFIG_SECTION_IDS = {
 	autoRefresh: 'termetrix.autoRefresh',
 	statusBar: 'termetrix.statusBar',
 	logging: 'termetrix.logging',
+	panel: 'termetrix.panel',
 } as const;
 
 /**
@@ -50,6 +51,9 @@ export const CONFIG_KEYS = {
 	},
 	logging: {
 		verbose: 'verbose',
+	},
+	panel: {
+		autoScanLoc: 'autoScanLoc',
 	},
 } as const;
 

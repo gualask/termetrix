@@ -1,26 +1,23 @@
 import type { ComponentChildren } from 'preact';
 
-type PanelVariant = 'fixed' | 'scroll';
-
 interface Props {
 	viewClass: string;
 	header: ComponentChildren;
-	panelVariant: PanelVariant;
-	panelAriaLabel: string;
+	bodyAriaLabel: string;
+	isCollapsed: boolean;
+	scrollable?: boolean;
 	children: ComponentChildren;
 }
 
-function panelVariantClass(variant: PanelVariant): string {
-	return variant === 'scroll' ? 'tmx-panel-scroll' : 'tmx-panel-fixed';
-}
-
-export function ViewLayout({ viewClass, header, panelVariant, panelAriaLabel, children }: Props) {
+export function ViewLayout({ viewClass, header, bodyAriaLabel, isCollapsed, scrollable, children }: Props) {
 	return (
-		<div class={`tmx-view ${viewClass}`}>
+		<div class={`tmx-section ${viewClass}`}>
 			{header}
-			<section class={`tmx-panel-card ${panelVariantClass(panelVariant)}`} aria-label={panelAriaLabel}>
-				{children}
-			</section>
+			{!isCollapsed && (
+				<div class={`tmx-section-body${scrollable ? ' tmx-section-body--scroll' : ''}`} aria-label={bodyAriaLabel}>
+					{children}
+				</div>
+			)}
 		</div>
 	);
 }

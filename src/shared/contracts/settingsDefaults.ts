@@ -23,6 +23,7 @@ export const TERMETRIX_SETTINGS_DEFAULTS: {
 	};
 	statusBar: { showTerminalButton: boolean; showSelectionLineCount: boolean };
 	logging: { verbose: boolean };
+	panel: { autoScanLoc: boolean };
 } = {
 	autoRefresh: {
 		enabled: false,
@@ -41,5 +42,8 @@ export const TERMETRIX_SETTINGS_DEFAULTS: {
 	},
 	logging: {
 		verbose: false,
+	},
+	panel: {
+		autoScanLoc: true,
 	},
 };

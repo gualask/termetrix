@@ -1,43 +1,65 @@
 import { useMemo } from 'preact/hooks';
-import { FileText, FileX, Files, Loader2, Play, RefreshCw } from 'lucide-preact';
+import { ChevronDown, ChevronRight, FileText, FileX, Files, RefreshCw, Square } from 'lucide-preact';
 import type { LOCResult } from '../../types';
 import { IconButton } from '../../components/IconButton';
+import { InfoTooltip } from '../../components/InfoTooltip';
 import { PanelOverlay } from '../../components/PanelOverlay';
 import { EmptyState } from '../../components/EmptyState';
-import { ViewLayout } from '../../components/ViewLayout';
 import { RowButton } from '../../components/RowButton';
 import { MetricsHeader } from '../../components/MetricsHeader';
+import { ViewLayout } from '../../components/ViewLayout';
 
-interface Props {
-	locResult: LOCResult | null;
-	isCalculating: boolean;
-	hasRoot: boolean;
-	onCalculate: () => void;
-	onOpenFile: (path: string) => void;
+const LOC_VISIBLE_LANGUAGES = 3;
+const LOC_VISIBLE_FILES = 3;
+
+interface ShowMoreButtonProps {
+	total: number;
+	visible: number;
+	showAll: boolean;
+	onToggle: () => void;
+}
+
+function ShowMoreButton({ total, visible, showAll, onToggle }: ShowMoreButtonProps) {
+	if (total <= visible) return null;
+	return (
+		<button type="button" class="tmx-show-more" onClick={onToggle}>
+			{showAll ? 'Show less' : `Show ${total - visible} more`}
+		</button>
+	);
 }
 
 interface LocByLanguageSectionProps {
 	sortedLanguages: Array<[string, number]>;
 	totalLines: number;
+	showAll: boolean;
+	onToggleShowAll: () => void;
 }
 
-function LocByLanguageSection({ sortedLanguages, totalLines }: LocByLanguageSectionProps) {
+function LocByLanguageSection({ sortedLanguages, totalLines, showAll, onToggleShowAll }: LocByLanguageSectionProps) {
+	const visible = showAll ? sortedLanguages : sortedLanguages.slice(0, LOC_VISIBLE_LANGUAGES);
+
 	return (
 		<section class="section">
 			<h4>By Language</h4>
-			{sortedLanguages.map(([lang, lines]) => {
+			{visible.map(([lang, lines]) => {
 				const percent = (lines / totalLines) * 100;
 				return (
 					<div key={lang} class="language-row">
+						<span class="lang-name">{lang}</span>
 						<div class="bar-container">
 							<div class="bar" style={{ width: `${percent}%` }} />
 						</div>
-						<span class="lang-name">{lang}</span>
 						<span class="lang-count">{lines.toLocaleString()}</span>
 						<span class="lang-percent">{percent.toFixed(1)}%</span>
 					</div>
 				);
 			})}
+			<ShowMoreButton
+				total={sortedLanguages.length}
+				visible={LOC_VISIBLE_LANGUAGES}
+				showAll={showAll}
+				onToggle={onToggleShowAll}
+			/>
 		</section>
 	);
 }
@@ -45,13 +67,17 @@ function LocByLanguageSection({ sortedLanguages, totalLines }: LocByLanguageSect
 interface LocTopFilesSectionProps {
 	topFiles: LOCResult['topFiles'];
 	onOpenFile: (path: string) => void;
+	showAll: boolean;
+	onToggleShowAll: () => void;
 }
 
-function LocTopFilesSection({ topFiles, onOpenFile }: LocTopFilesSectionProps) {
+function LocTopFilesSection({ topFiles, onOpenFile, showAll, onToggleShowAll }: LocTopFilesSectionProps) {
+	const visible = showAll ? topFiles : topFiles.slice(0, LOC_VISIBLE_FILES);
+
 	return (
 		<section class="section">
 			<h4>Top Files</h4>
-			{topFiles.map(file => (
+			{visible.map(file => (
 				<RowButton
 					key={file.path}
 					class="file-row"
@@ -63,22 +89,55 @@ function LocTopFilesSection({ topFiles, onOpenFile }: LocTopFilesSectionProps) {
 					<span class="file-lines">{file.lines} lines</span>
 				</RowButton>
 			))}
+			<ShowMoreButton
+				total={topFiles.length}
+				visible={LOC_VISIBLE_FILES}
+				showAll={showAll}
+				onToggle={onToggleShowAll}
+			/>
 		</section>
 	);
 }
 
-export function LocView({ locResult, isCalculating, hasRoot, onCalculate, onOpenFile }: Props) {
+interface Props {
+	locResult: LOCResult | null;
+	isCalculating: boolean;
+	hasRoot: boolean;
+	onRefreshOrCancel: () => void;
+	onOpenFile: (path: string) => void;
+	isCollapsed: boolean;
+	onToggleCollapse: () => void;
+	showAllFiles: boolean;
+	onToggleShowAllFiles: () => void;
+	showAllLanguages: boolean;
+	onToggleShowAllLanguages: () => void;
+}
+
+export function LocView({
+	locResult,
+	isCalculating,
+	hasRoot,
+	onRefreshOrCancel,
+	onOpenFile,
+	isCollapsed,
+	onToggleCollapse,
+	showAllFiles,
+	onToggleShowAllFiles,
+	showAllLanguages,
+	onToggleShowAllLanguages,
+}: Props) {
 	const hasData = Boolean(locResult);
 
-	const totalLines = hasData ? locResult!.totalLines.toLocaleString() : '—';
-	const scannedFiles = hasData ? locResult!.scannedFiles.toLocaleString() : '—';
-	const skippedFiles = hasData ? locResult!.skippedFiles.toLocaleString() : '—';
+	const totalLines = locResult?.totalLines.toLocaleString() ?? '—';
+	const scannedFiles = locResult?.scannedFiles.toLocaleString() ?? '—';
+	const skippedFiles = locResult?.skippedFiles.toLocaleString() ?? '—';
 
-	// Memoize language sorting to avoid recalculation on every render
 	const sortedLanguages = useMemo(
 		() => Object.entries(locResult?.byLanguage ?? {}).sort((a, b) => b[1] - a[1]),
 		[locResult]
 	);
+
+	const CollapseIcon = isCollapsed ? ChevronRight : ChevronDown;
 
 	const header = (
 		<MetricsHeader
@@ -103,47 +162,56 @@ export function LocView({ locResult, isCalculating, hasRoot, onCalculate, onOpen
 				}
 			]}
 			actions={
-				<IconButton
-					onClick={onCalculate}
-					disabled={isCalculating}
-					title={hasData ? 'Recalculate LOC' : 'Calculate LOC'}
-					ariaLabel={hasData ? 'Recalculate LOC' : 'Calculate LOC'}
-				>
-					{isCalculating ? (
-						<Loader2 size={16} class="spinner" />
-					) : hasData ? (
-						<RefreshCw size={16} />
-					) : (
-						<Play size={16} />
+				<>
+					<InfoTooltip lines={['Scans source files only', 'Respects .gitignore, skips common build/deps folders']} />
+					{hasRoot && (
+						<IconButton
+							onClick={onRefreshOrCancel}
+							title={isCalculating ? 'Cancel LOC scan' : 'Recalculate LOC'}
+							ariaLabel={isCalculating ? 'Cancel LOC scan' : 'Recalculate LOC'}
+						>
+							{isCalculating ? <Square size={16} /> : <RefreshCw size={16} />}
+						</IconButton>
 					)}
-				</IconButton>
+					<IconButton
+						onClick={onToggleCollapse}
+						title={isCollapsed ? 'Expand LOC section' : 'Collapse LOC section'}
+						ariaLabel={isCollapsed ? 'Expand LOC section' : 'Collapse LOC section'}
+					>
+						<CollapseIcon size={16} />
+					</IconButton>
+				</>
 			}
-			caption="Scans source files only (respects .gitignore and skips common build/deps folders)"
 		/>
 	);
 
-		return (
-			<ViewLayout viewClass="loc-view" header={header} panelVariant="scroll" panelAriaLabel="LOC details">
-				{hasData ? (
-					<>
+	return (
+		<ViewLayout viewClass="loc-view" header={header} bodyAriaLabel="LOC details" isCollapsed={isCollapsed} scrollable>
+			{isCalculating && <PanelOverlay label="Calculating…" />}
+			{hasData ? (
+				<>
 					<LocByLanguageSection
 						sortedLanguages={sortedLanguages}
 						totalLines={locResult!.totalLines}
+						showAll={showAllLanguages}
+						onToggleShowAll={onToggleShowAllLanguages}
 					/>
-
-					<LocTopFilesSection topFiles={locResult!.topFiles} onOpenFile={onOpenFile} />
+					<LocTopFilesSection
+						topFiles={locResult!.topFiles}
+						onOpenFile={onOpenFile}
+						showAll={showAllFiles}
+						onToggleShowAll={onToggleShowAllFiles}
+					/>
 				</>
-				) : (
-					<EmptyState
-						variant="panel"
-						message={hasRoot ? 'No data yet.' : 'No workspace folder open.'}
-						hint={hasRoot
-							? 'LOC is calculated automatically the first time you open this tab (use the run button to recalculate).'
-							: 'Open a folder or workspace to get started.'}
-					/>
-				)}
-
-				{isCalculating && <PanelOverlay label="Calculating…" />}
-			</ViewLayout>
-		);
-	}
+			) : !isCalculating && (
+				<EmptyState
+					variant="panel"
+					message={hasRoot ? 'No LOC data available.' : 'No workspace folder open.'}
+					hint={hasRoot
+						? 'Use the recalculate button to scan.'
+						: 'Open a folder or workspace to get started.'}
+				/>
+			)}
+		</ViewLayout>
+	);
+}

@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact';
+import { TooltipBubble } from '../../components/TooltipBubble';
 import { buildSizeMetricTooltipLines, SizeMetric } from './SizeMetric';
-import { TooltipBubble } from './TooltipBubble';
 
 type SizeTableRowKind = 'leaf' | 'others';
 

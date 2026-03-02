@@ -4,7 +4,6 @@ import { MetricsStatusBarItem } from './vscode/statusBar/metricsItem';
 import { ScanRefreshStatusBarItem } from './vscode/statusBar/scanRefreshItem';
 import { SelectionLinesStatusBarItem } from './vscode/statusBar/selectionLinesItem';
 import { ProjectSizeScanner } from './vscode/sizeScan/projectSizeScanner';
-import { ScanCache } from './vscode/sizeScan/state/scanCache';
 import { MetricsPanel } from './vscode/metricsPanel/metricsPanel';
 import { configManager, shouldAutoScanOnStartup } from './support/configManager';
 import { COMMAND_IDS } from './support/constants';
@@ -24,12 +23,11 @@ function createCoreServices(context: vscode.ExtensionContext): {
 	selectionLinesItem: SelectionLinesStatusBarItem;
 } {
 	// Core services are created once per activation and disposed via `context.subscriptions`.
-	const cache = new ScanCache();
-	const scanner = new ProjectSizeScanner(cache);
+	const scanner = new ProjectSizeScanner();
 	const metricsPanel = new MetricsPanel(scanner, context.extensionUri);
 
 	const terminalItem = new TerminalStatusBarItem();
-	const metricsItem = new MetricsStatusBarItem(scanner, cache);
+	const metricsItem = new MetricsStatusBarItem(scanner);
 	const scanRefreshItem = new ScanRefreshStatusBarItem(scanner);
 	const selectionLinesItem = new SelectionLinesStatusBarItem();
 
@@ -55,8 +53,7 @@ function registerCommands(params: {
 	const openMetricsPanelCmd = vscode.commands.registerCommand(COMMAND_IDS.openMetricsPanel, () => metricsPanel.show());
 
 	const refreshScanCmd = vscode.commands.registerCommand(COMMAND_IDS.refreshScan, async () => {
-		// Full scan when the panel is open (breakdown needs directory metrics); summary otherwise.
-		await (metricsPanel.isOpen() ? scanner.scan() : scanner.scanSummary());
+		await scanner.scan();
 	});
 
 	const cancelScanCmd = vscode.commands.registerCommand(COMMAND_IDS.cancelScan, () => {
@@ -100,10 +97,7 @@ function runInitialScan(params: { scanner: ProjectSizeScanner }): void {
 		return;
 	}
 
-	void (async () => {
-		// Keep activation snappy: start with the summary scan and let the user trigger deeper views.
-		await scanner.scanSummary();
-	})();
+	void scanner.scan();
 }
 
 /**

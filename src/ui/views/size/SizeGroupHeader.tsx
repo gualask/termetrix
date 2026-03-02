@@ -1,7 +1,7 @@
-import { RowButton } from './RowButton';
 import type { ComponentChildren } from 'preact';
+import { RowButton } from '../../components/RowButton';
+import { TooltipBubble } from '../../components/TooltipBubble';
 import { buildSizeMetricTooltipLines, SizeMetric } from './SizeMetric';
-import { TooltipBubble } from './TooltipBubble';
 
 interface SizeGroupHeaderProps {
 	icon: ComponentChildren;

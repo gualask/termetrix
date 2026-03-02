@@ -1,38 +1,34 @@
-import type { MessageToExtension, MetricsTab } from '../../../../types';
+import type { MessageToExtension } from '../../../../types';
 import type { MetricsPanelCommandDeps, MetricsPanelCommandHandler } from '../types';
-import { getMessageTab } from './common';
 import { getSyncedPanelRootOrSendNoRoot } from '../metricsPanelCommandUtils';
-import { createUpdateMessage } from '../../messages';
+import { createUpdateMessage, createBreakdownMessage } from '../../messages';
+import { configManager } from '../../../../support/configManager';
 import { startLocScanForPanel } from './loc';
-import { startSizeScanForPanel } from './size';
 
 function onReady(deps: MetricsPanelCommandDeps): void {
-	// Bootstrap: treat each panel open as a new session ("start from zero").
-	// Do not hydrate from cache; the first tab activation will trigger a new scan.
-	if (!getSyncedPanelRootOrSendNoRoot(deps)) return;
+	const root = getSyncedPanelRootOrSendNoRoot(deps);
+	if (!root) return;
 
-	deps.sendMessage(createUpdateMessage({ scanResult: undefined, isScanning: false }));
-}
+	const cached = deps.scanner.getCachedResult(root);
+	// Reflect any in-progress scan (e.g. startup scan still running when the panel opens).
+	deps.sendMessage(createUpdateMessage({ scanResult: cached, isScanning: deps.scanner.isScanInProgress() }));
 
-function onTabActivated(deps: MetricsPanelCommandDeps, tab: MetricsTab | undefined): void {
-	if (!deps.isPanelOpen()) return;
-	if (!tab) return;
-	if (!getSyncedPanelRootOrSendNoRoot(deps)) return;
+	// Send cached breakdown immediately if available (full scan ran before panel opened).
+	const directoryMetrics = deps.scanner.getCachedDirectoryMetrics(root);
+	if (directoryMetrics) deps.sendMessage(createBreakdownMessage(root, directoryMetrics));
 
-	if (tab === 'size') {
-		void startSizeScanForPanel(deps);
-		return;
-	}
-
-	void startLocScanForPanel(deps);
+	const panelConfig = configManager.getPanelConfig();
+	// force: true ensures the LOC scan always runs for a fresh webview, even if a stale
+	// scan from the previous panel session completed and set the state to 'success' before
+	// this 'ready' message arrived (race on rapid panel close + reopen).
+	if (panelConfig.autoScanLoc) void startLocScanForPanel(deps, { force: true });
 }
 
 export function createBootstrapHandlers(deps: MetricsPanelCommandDeps): Pick<
 	Record<MessageToExtension['command'], MetricsPanelCommandHandler>,
-	'ready' | 'tabActivated'
+	'ready'
 > {
 	return {
 		ready: () => onReady(deps),
-		tabActivated: (message) => onTabActivated(deps, getMessageTab(message)),
 	};
 }

@@ -1,9 +1,10 @@
 import { Folder, MoreHorizontal } from 'lucide-preact';
 import type { SizeBreakdownLeafDirectory, SizeBreakdownOthers, SizeBreakdownParent, SizeBreakdownResult } from '../../types';
+import { formatBytes } from '../../utils';
 import { EmptyState } from '../../components/EmptyState';
-import { SizeTableRow } from '../../components/SizeTableRow';
-import { SizeGroupHeader } from '../../components/SizeGroupHeader';
-import { formatBreakdownParentPath, formatBytes } from '../../utils';
+import { SizeTableRow } from './SizeTableRow';
+import { SizeGroupHeader } from './SizeGroupHeader';
+import { formatBreakdownParentPath } from './sizeFormatters';
 
 interface Props {
 	breakdown: SizeBreakdownResult;

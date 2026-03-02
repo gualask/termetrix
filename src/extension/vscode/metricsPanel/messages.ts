@@ -6,6 +6,8 @@ import type {
 	ScanResult,
 	SizeBreakdownResult,
 } from '../../types';
+import { computeSizeBreakdown } from '../../../core/sizeScan/model/sizeBreakdown/computeSizeBreakdown';
+import type { DirectoryMetricsSnapshot } from '../../../core/sizeScan/types';
 
 export function createScanStartMessage(): MessageFromExtension {
 	return { type: 'scanStart' };
@@ -15,12 +17,16 @@ export function createProgressMessage(progress: ProgressData): MessageFromExtens
 	return { type: 'progress', data: progress };
 }
 
-export function createLocCalculatingMessage(): MessageFromExtension {
-	return { type: 'locCalculating' };
+export function createLocScanStartMessage(): MessageFromExtension {
+	return { type: 'locScanStart' };
 }
 
 export function createLocResultMessage(result: LOCResult): MessageFromExtension {
 	return { type: 'locResult', data: result };
+}
+
+export function createLocScanCancelledMessage(): MessageFromExtension {
+	return { type: 'locScanCancelled' };
 }
 
 export function createErrorMessage(data: ErrorData): MessageFromExtension {
@@ -31,12 +37,12 @@ export function createNoRootMessage(): MessageFromExtension {
 	return { type: 'noRoot' };
 }
 
-export function createDeepScanResultMessage(breakdown: SizeBreakdownResult): MessageFromExtension {
+function createDeepScanResultMessage(breakdown: SizeBreakdownResult): MessageFromExtension {
 	return { type: 'deepScanResult', data: breakdown };
 }
 
-export function createEmptyDeepScanResultMessage(rootPath = ''): MessageFromExtension {
-	return createDeepScanResultMessage({ rootPath, parents: [] });
+export function createBreakdownMessage(rootPath: string, directoryMetrics: DirectoryMetricsSnapshot): MessageFromExtension {
+	return createDeepScanResultMessage(computeSizeBreakdown({ rootPath, directoryMetrics }));
 }
 
 export function createUpdateMessage(params: {

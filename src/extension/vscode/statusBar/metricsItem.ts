@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import { ProjectSizeScanner } from '../sizeScan/projectSizeScanner';
-import { ScanCache } from '../sizeScan/state/scanCache';
 import type { ProgressData } from '../../types';
 import { formatBytes } from '../../../shared/formatters';
 import { ScannerEventSubscription } from '../../support/scannerEvents';
@@ -18,15 +17,7 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 	private readonly disposables = new DisposableStore();
 	private readonly renderer = new MetricsStatusBarRenderer(formatBytes);
 
-	/**
-	 * Creates the metrics status bar item and wires event subscriptions.
-	 * @param scanner - Scanner providing root/progress information.
-	 * @param cache - Cache used to display the last completed scan result.
-	 */
-	constructor(
-		private readonly scanner: ProjectSizeScanner,
-		private readonly cache: ScanCache
-	) {
+	constructor(private readonly scanner: ProjectSizeScanner) {
 		this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 999);
 		this.statusBarItem.command = COMMAND_IDS.openMetricsPanel;
 
@@ -63,7 +54,7 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 	 */
 	private render(): void {
 		const rootPath = this.scanner.getCurrentRoot();
-		const scanResult = rootPath ? this.cache.get(rootPath) : undefined;
+		const scanResult = rootPath ? this.scanner.getCachedResult(rootPath) : undefined;
 
 		const { text, tooltip } = this.renderer.render({
 			rootPath,

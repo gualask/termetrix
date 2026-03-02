@@ -5,6 +5,7 @@ import type { SizeScanMode } from '../../../../core/sizeScan/engine/scanEngineTy
 import { ScanEventEmitter } from '../controller/scanEventEmitter';
 import { ScanRunner } from '../controller/scanRunner';
 import type { ScanCache } from '../state/scanCache';
+import type { DirectoryMetricsSnapshot } from '../../../../core/sizeScan/types';
 export interface ScanLifecycleServiceOptions {
 	cache: ScanCache;
 	scanEvents: ScanEventEmitter;
@@ -14,6 +15,8 @@ export interface ScanLifecycleServiceOptions {
 		mode: SizeScanMode;
 		emitProgressEvents: boolean;
 	}) => Promise<ExtendedScanResult>;
+	/** Called with directory metrics before "scanEnd" fires, so consumers see fresh data on that event. */
+	onDirectoryMetrics?: (rootPath: string, metrics: DirectoryMetricsSnapshot) => void;
 }
 
 /**
@@ -33,6 +36,16 @@ export class ScanLifecycleService {
 		this.runner.cancel();
 	}
 
+	private handleResult(rootPath: string, result: ExtendedScanResult): void {
+		// Do not cache cancelled scans (keep the last completed values).
+		if (result.incompleteReason === 'cancelled') return;
+		// Cache results before emitting "scanEnd" so downstream consumers see fresh data on that event.
+		this.options.cache.set(rootPath, result);
+		if (result.directoryMetrics) {
+			this.options.onDirectoryMetrics?.(rootPath, result.directoryMetrics);
+		}
+	}
+
 	async runScan(params: {
 		rootPath: string;
 		mode: SizeScanMode;
@@ -50,12 +63,7 @@ export class ScanLifecycleService {
 						mode,
 						emitProgressEvents,
 					}),
-				onResult: (result) => {
-					// Cache the result before emitting "scanEnd" so downstream consumers can render fresh data.
-					// Do not cache cancelled scans (keep the last completed values).
-					if (result.incompleteReason === 'cancelled') return;
-					this.options.cache.set(rootPath, result);
-				},
+				onResult: (result) => this.handleResult(rootPath, result),
 			});
 		} catch (error) {
 			logger.error(`Scan error: ${error instanceof Error ? error.message : String(error)}`);

@@ -1,4 +1,4 @@
-import type { MessageFromExtension, MetricsTab } from '../../../types';
+import type { MessageFromExtension, ScanKind } from '../../../types';
 import { logger } from '../../../support/logger';
 import { resolvePanelTargetPath } from './panelTargetPath';
 import type { PanelCommandErrorSpec } from './errors';
@@ -9,11 +9,11 @@ type PanelStateDeps = {
 	scanner: { getCurrentRoot: () => string | undefined };
 };
 
-type PanelTabDeps = PanelStateDeps & {
+type PanelScanDeps = PanelStateDeps & {
 	sendMessage: (message: MessageFromExtension) => void;
 	sessionState: {
 		syncPanelRootPath: (rootPath: string) => void;
-		beginTabRun: (tab: MetricsTab, force?: boolean) => boolean;
+		beginRun: (kind: ScanKind, force?: boolean) => boolean;
 	};
 };
 
@@ -41,7 +41,7 @@ export function resolvePanelPath(deps: PanelStateDeps, targetPath: string | unde
 	return resolvePanelTargetPath(rootPath, targetPath);
 }
 
-export function getSyncedPanelRootOrSendNoRoot(deps: PanelTabDeps): string | undefined {
+export function getSyncedPanelRootOrSendNoRoot(deps: PanelScanDeps): string | undefined {
 	const rootPath = getPanelRootPath(deps);
 	if (!rootPath) {
 		deps.sendMessage(createNoRootMessage());
@@ -82,13 +82,11 @@ interface RunPanelParams<TResult> {
 	onBeforeRun?: () => void;
 	onSuccess?: (result: TResult) => void;
 	onError?: (error: unknown) => void;
-	tab?: undefined;
-	force?: undefined;
 }
 
-interface RunPanelTabParams<TResult> {
-	deps: PanelTabDeps;
-	tab: MetricsTab;
+interface RunPanelScanParams<TResult> {
+	deps: PanelScanDeps;
+	scanKind: ScanKind;
 	force?: boolean;
 	error: PanelCommandErrorSpec;
 	run: (rootPath: string) => Promise<TResult>;
@@ -98,37 +96,12 @@ interface RunPanelTabParams<TResult> {
 }
 
 /**
- * Executes a command handler and reports failures back to the webview.
- * Supports both plain commands and tab-scoped commands (root + tab lifecycle checks).
+ * Executes a plain command handler and reports failures back to the webview.
  * @returns Promise resolving once the handler completes.
  */
-export async function runPanelCommand<TResult>(
-	params: RunPanelParams<TResult> | RunPanelTabParams<TResult>
-): Promise<void> {
+export async function runPanelCommand<TResult>(params: RunPanelParams<TResult>): Promise<void> {
 	if (!params.deps.isPanelOpen()) return;
-
-	if (params.tab) {
-		const rootPath = getSyncedPanelRootOrSendNoRoot(params.deps);
-		if (!rootPath) return;
-		if (!params.deps.sessionState.beginTabRun(params.tab, params.force)) return;
-
-		params.onBeforeRun?.(rootPath);
-
-		try {
-			const result = await params.run(rootPath);
-			if (!params.deps.isPanelOpen()) return;
-			params.onSuccess?.(result, rootPath);
-		} catch (error) {
-			if (!params.deps.isPanelOpen()) return;
-			logger.error(`${params.error.logLabel}: ${error instanceof Error ? error.message : String(error)}`);
-			sendPanelError(params.deps, params.error.message, params.error.code);
-			params.onError?.(rootPath, error);
-		}
-		return;
-	}
-
 	params.onBeforeRun?.();
-
 	try {
 		const result = await params.run();
 		if (!params.deps.isPanelOpen()) return;
@@ -138,5 +111,28 @@ export async function runPanelCommand<TResult>(
 		logger.error(`${params.error.logLabel}: ${error instanceof Error ? error.message : String(error)}`);
 		sendPanelError(params.deps, params.error.message, params.error.code);
 		params.onError?.(error);
+	}
+}
+
+/**
+ * Executes a scan-scoped command handler: resolves root, gates on scan lifecycle, and reports
+ * failures back to the webview.
+ * @returns Promise resolving once the handler completes.
+ */
+export async function runPanelScanCommand<TResult>(params: RunPanelScanParams<TResult>): Promise<void> {
+	if (!params.deps.isPanelOpen()) return;
+	const rootPath = getSyncedPanelRootOrSendNoRoot(params.deps);
+	if (!rootPath) return;
+	if (!params.deps.sessionState.beginRun(params.scanKind, params.force)) return;
+	params.onBeforeRun?.(rootPath);
+	try {
+		const result = await params.run(rootPath);
+		if (!params.deps.isPanelOpen()) return;
+		params.onSuccess?.(result, rootPath);
+	} catch (error) {
+		if (!params.deps.isPanelOpen()) return;
+		logger.error(`${params.error.logLabel}: ${error instanceof Error ? error.message : String(error)}`);
+		sendPanelError(params.deps, params.error.message, params.error.code);
+		params.onError?.(rootPath, error);
 	}
 }

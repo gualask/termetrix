@@ -24,12 +24,13 @@ export class MetricsPanel implements vscode.Disposable {
 	 */
 	constructor(
 		private scanner: ProjectSizeScanner,
-		private extensionUri: vscode.Uri
+		extensionUri: vscode.Uri
 	) {
-		this.view = new MetricsPanelView(this.extensionUri);
+		this.view = new MetricsPanelView(extensionUri);
 		this.commandHandlers = createMetricsPanelCommandHandlers(this.createCommandDeps());
 		this.controller = new MetricsPanelController({
 			scanner: this.scanner,
+			locScanner: this.locScanner,
 			view: this.view,
 			sessionState: this.sessionState,
 			commandHandlers: this.commandHandlers,

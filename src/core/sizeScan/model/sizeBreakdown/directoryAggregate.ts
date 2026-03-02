@@ -26,21 +26,6 @@ export class DirectoryAggregate {
 		);
 	}
 
-	addBytes(delta: number): DirectoryAggregate {
-		if (!Number.isFinite(delta) || delta <= 0) return this;
-		return new DirectoryAggregate(this.bytes + delta, this.fileCount, this.maxFileBytes);
-	}
-
-	addFileCount(delta: number): DirectoryAggregate {
-		if (!Number.isFinite(delta) || delta <= 0) return this;
-		return new DirectoryAggregate(this.bytes, this.fileCount + delta, this.maxFileBytes);
-	}
-
-	mergeMaxFileBytes(value: number): DirectoryAggregate {
-		if (!Number.isFinite(value) || value <= this.maxFileBytes) return this;
-		return new DirectoryAggregate(this.bytes, this.fileCount, value);
-	}
-
 	merge(other: DirectoryAggregate): DirectoryAggregate {
 		return new DirectoryAggregate(
 			this.bytes + other.bytes,
@@ -61,9 +46,5 @@ export class DirectoryAggregate {
 
 	isEmpty(): boolean {
 		return this.bytes <= 0 && this.fileCount <= 0;
-	}
-
-	toTopLevelTotals(): DirectoryAggregateSnapshot {
-		return { bytes: this.bytes, fileCount: this.fileCount, maxFileBytes: this.maxFileBytes };
 	}
 }

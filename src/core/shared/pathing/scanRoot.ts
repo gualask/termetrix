@@ -26,10 +26,6 @@ export class ScanRoot {
 		return this.key === other.key;
 	}
 
-	toRelativePathWithinRoot(absolutePath: string): string | undefined {
-		return CanonicalPath.from(absolutePath).relativeTo(this.canonical);
-	}
-
 	resolvePathIfWithinRoot(inputPath: string): string | undefined {
 		const target = path.isAbsolute(inputPath)
 			? CanonicalPath.from(inputPath)

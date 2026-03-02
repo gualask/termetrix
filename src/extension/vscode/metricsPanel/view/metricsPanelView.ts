@@ -31,7 +31,7 @@ export class MetricsPanelView {
 			vscode.ViewColumn.Beside,
 			{
 				enableScripts: true,
-				// Keep UI state across tab switches; we still explicitly refresh data on scan end / user actions.
+				// Keep UI state when the panel is hidden; data is explicitly refreshed on scan end / user actions.
 				retainContextWhenHidden: true,
 				localResourceRoots: [webviewUri],
 			}

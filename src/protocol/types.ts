@@ -23,8 +23,6 @@ export type {
 	SizeBreakdownResult,
 } from '../shared/contracts/sizeBreakdown';
 
-export type MetricsTab = 'size' | 'loc';
-
 export interface ViewData {
 	isScanning: boolean;
 	scanResult?: ScanResult;
@@ -44,14 +42,14 @@ export type MessageFromExtension =
 	| { type: 'progress'; data: ProgressData }
 	| { type: 'update'; data: ViewData }
 	| { type: 'noRoot' }
-	| { type: 'locCalculating' }
+	| { type: 'locScanStart' }
 	| { type: 'locResult'; data: LOCResult }
+	| { type: 'locScanCancelled' }
 	| { type: 'deepScanResult'; data: SizeBreakdownResult }
 	| { type: 'error'; data: ErrorData };
 
 export type MessageToExtension =
 	| { command: 'ready' }
-	| { command: 'tabActivated'; tab: MetricsTab }
 	/**
 	 * `path` can be absolute or root-relative; it is validated to stay within the current project root.
 	 * Do not send display-only paths (e.g. breakdown `leaf.path`).
@@ -65,5 +63,4 @@ export type MessageToExtension =
 	| { command: 'refresh' }
 	| { command: 'cancelScan' }
 	| { command: 'calculateLOC' }
-	| { command: 'deepScan' }
 	| { command: 'reset' };

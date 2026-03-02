@@ -1,28 +1,29 @@
 import type { MessageToExtension } from '../../../../types';
 import type { MetricsPanelCommandDeps, MetricsPanelCommandHandler } from '../types';
 import { PANEL_COMMAND_ERRORS } from '../errors';
-import { runPanelCommand } from '../metricsPanelCommandUtils';
-import { createLocCalculatingMessage, createLocResultMessage } from '../../messages';
+import { runPanelScanCommand } from '../metricsPanelCommandUtils';
+import { createLocScanStartMessage, createLocResultMessage, createLocScanCancelledMessage } from '../../messages';
 
 export async function startLocScanForPanel(deps: MetricsPanelCommandDeps, options?: { force?: boolean }): Promise<void> {
-	await runPanelCommand({
+	await runPanelScanCommand({
 		deps,
-		tab: 'loc',
+		scanKind: 'loc',
 		force: options?.force,
 		error: PANEL_COMMAND_ERRORS.locScan,
-		onBeforeRun: () => deps.sendMessage(createLocCalculatingMessage()),
-		run: async (rootPath) => {
-			const result = await deps.locScanner.scan(rootPath);
-			// Defensive: panel LOC scans don't pass a cancellationToken, so result is always defined.
-			if (!result) throw new Error('LOC scan returned no result');
-			return result;
-		},
+		onBeforeRun: () => deps.sendMessage(createLocScanStartMessage()),
+		run: (rootPath) => deps.locScanner.scan(rootPath),
 		onSuccess: (result) => {
+			if (!result) {
+				// Scan was cancelled. Notify the UI then restore to 'never' so the next recalculation can start.
+				deps.sendMessage(createLocScanCancelledMessage());
+				deps.sessionState.restoreAfterCancel('loc', false);
+				return;
+			}
 			deps.sendMessage(createLocResultMessage(result));
-			deps.sessionState.completeTabRunSuccess('loc');
+			deps.sessionState.completeRunSuccess('loc');
 		},
 		onError: (_rootPath, _error) => {
-			deps.sessionState.completeTabRunError('loc');
+			deps.sessionState.completeRunError('loc');
 		},
 	});
 }

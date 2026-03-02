@@ -20,8 +20,6 @@ interface Props {
 	primary: PrimaryMetric;
 	secondary?: SecondaryMetric[];
 	actions?: ComponentChildren;
-	caption?: ComponentChildren;
-	captionAriaLive?: 'off' | 'polite' | 'assertive';
 }
 
 export function MetricsHeader({
@@ -30,8 +28,6 @@ export function MetricsHeader({
 	primary,
 	secondary = [],
 	actions,
-	caption,
-	captionAriaLive = 'off',
 }: Props) {
 	return (
 		<header class="tmx-header-card" aria-label={ariaLabel}>
@@ -58,12 +54,6 @@ export function MetricsHeader({
 
 					{actions && <div class="tmx-metric-actions">{actions}</div>}
 				</div>
-
-				{caption && (
-					<div class="tmx-caption" aria-live={captionAriaLive}>
-						{caption}
-					</div>
-				)}
 			</div>
 		</header>
 	);

@@ -1,5 +1,8 @@
 # Termetrix
 
+[![CI](https://github.com/gualask/termetrix/actions/workflows/ci.yml/badge.svg)](https://github.com/gualask/termetrix/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/visual-studio-marketplace/v/gualask.termetrix)](https://marketplace.visualstudio.com/items?itemName=gualask.termetrix)
+
 Minimal VS Code extension for project awareness: **project size**, **a guided size breakdown**, **LOC**, **selection line counter**, and a **terminal shortcut** — all from the status bar.
 
 ## Demo

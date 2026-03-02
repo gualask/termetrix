@@ -66,11 +66,11 @@ Record only decisions that are easy to forget and expensive to rediscover during
 - **Revisit if**: we add more metrics (risk: clutter).
 - **Code**: `src/extension/vscode/statusBar/metricsItem.ts`, `src/extension/vscode/statusBar/render/metricsStatusBarRenderer.ts`, `src/extension/vscode/statusBar/scanRefreshItem.ts`
 
-### Refresh button scan depth depends on panel state
-- **Date**: 2026-02-21
-- **Why**: clicking `$(sync)` with the panel closed only needs `totalBytes` for the status bar — a full scan that also collects per-directory metrics would waste CPU/memory. When the panel is open the full scan is required so the breakdown can be refreshed. The `$(sync~spin)` cancel path is unaffected.
-- **Revisit if**: we add persistent breakdown caching (then full scan would always be cheap to reuse).
-- **Code**: `src/extension/extension.ts` (`refreshScanCmd`), `src/extension/vscode/metricsPanel/metricsPanel.ts` (`isOpen()`)
+### Refresh always runs a full scan
+- **Date**: 2026-03-02
+- **Why**: `$(sync)` always runs the full scan (including per-directory metrics). The previous split between `scanSummary()` (panel closed) and `scan()` (panel open) was removed to simplify the lifecycle — the overhead of collecting directory metrics is acceptable and avoids a two-tier scan model. The startup scan also runs full.
+- **Revisit if**: scan becomes expensive enough that a fast summary path is needed again (e.g. very large monorepos); at that point reintroduce `scanSummary()` with persistent breakdown caching.
+- **Code**: `src/extension/extension.ts` (`refreshScanCmd`, `runInitialScan`)
 
 ### Logging is quiet by default; verbose mode gates info/debug
 - **Date**: 2026-02-14

@@ -1,10 +1,9 @@
 import type * as vscode from 'vscode';
-import type { MetricsTab, ScanResult } from '../../../types';
+import type { ScanKind } from '../../../types';
 import { ScanRoot } from '../../../../core/shared/pathing/scanRoot';
-import type { DirectoryMetricsSnapshot } from '../../../../core/sizeScan/types';
 
-export type PanelTabScanState = 'never' | 'running' | 'success' | 'error';
-const INITIAL_TAB_STATE: Record<MetricsTab, PanelTabScanState> = { size: 'never', loc: 'never' };
+export type ScanRunState = 'never' | 'running' | 'success' | 'error';
+const INITIAL_SCAN_STATE: Record<ScanKind, ScanRunState> = { size: 'never', loc: 'never' };
 
 /**
  * Panel session state that should live only for the lifetime of an open webview panel.
@@ -12,11 +11,7 @@ const INITIAL_TAB_STATE: Record<MetricsTab, PanelTabScanState> = { size: 'never'
  */
 export class MetricsPanelSessionState {
 	private root: ScanRoot | null = null;
-	// Memory-heavy internals retained only for the lifetime of an open webview session.
-	// These fields are not persisted in `ScanCache`.
-	private sizeBreakdownSource: DirectoryMetricsSnapshot | null = null;
-	private tabState: Record<MetricsTab, PanelTabScanState> = { ...INITIAL_TAB_STATE };
-	private sizeScanResult: ScanResult | undefined;
+	private scanState: Record<ScanKind, ScanRunState> = { ...INITIAL_SCAN_STATE };
 	/** Last known editor column used by the user (non-webview), for opening files outside the webview column */
 	private preferredEditorColumn: vscode.ViewColumn | undefined;
 
@@ -48,53 +43,33 @@ export class MetricsPanelSessionState {
 		this.resetForRoot(nextRoot);
 	}
 
-	getTabState(tab: MetricsTab): PanelTabScanState {
-		return this.tabState[tab];
+	getScanState(kind: ScanKind): ScanRunState {
+		return this.scanState[kind];
 	}
 
-	canStartTabRun(tab: MetricsTab, force = false): boolean {
-		const state = this.tabState[tab];
+	private canStartRun(kind: ScanKind, force = false): boolean {
+		const state = this.scanState[kind];
 		if (state === 'running') return false;
 		if (force) return true;
 		return state === 'never' || state === 'error';
 	}
 
-	beginTabRun(tab: MetricsTab, force = false): boolean {
-		if (!this.canStartTabRun(tab, force)) return false;
-		this.tabState[tab] = 'running';
+	beginRun(kind: ScanKind, force = false): boolean {
+		if (!this.canStartRun(kind, force)) return false;
+		this.scanState[kind] = 'running';
 		return true;
 	}
 
-	completeTabRunSuccess(tab: MetricsTab): void {
-		this.tabState[tab] = 'success';
+	completeRunSuccess(kind: ScanKind): void {
+		this.scanState[kind] = 'success';
 	}
 
-	completeTabRunError(tab: MetricsTab): void {
-		this.tabState[tab] = 'error';
+	completeRunError(kind: ScanKind): void {
+		this.scanState[kind] = 'error';
 	}
 
-	restoreTabAfterCancel(tab: MetricsTab, hasPreviousData: boolean): void {
-		this.tabState[tab] = hasPreviousData ? 'success' : 'never';
-	}
-
-	hasSuccessfulTabRun(tab: MetricsTab): boolean {
-		return this.tabState[tab] === 'success';
-	}
-
-	getSizeScanResult(): ScanResult | undefined {
-		return this.sizeScanResult;
-	}
-
-	setSizeScanResult(result: ScanResult | undefined): void {
-		this.sizeScanResult = result;
-	}
-
-	getSizeBreakdownSource(): DirectoryMetricsSnapshot | null {
-		return this.sizeBreakdownSource;
-	}
-
-	setSizeBreakdownSource(value: DirectoryMetricsSnapshot | null): void {
-		this.sizeBreakdownSource = value;
+	restoreAfterCancel(kind: ScanKind, hasPreviousData: boolean): void {
+		this.scanState[kind] = hasPreviousData ? 'success' : 'never';
 	}
 
 	/**
@@ -103,25 +78,11 @@ export class MetricsPanelSessionState {
 	 */
 	clearInternals(): void {
 		this.root = null;
-		this.sizeBreakdownSource = null;
-		this.tabState = { ...INITIAL_TAB_STATE };
-		this.sizeScanResult = undefined;
-	}
-
-	/**
-	 * Clears internals when the scan root changes (avoid mixing internals from different roots).
-	 * @param rootPath - Root path reported by the scan event.
-	 * @returns void
-	 */
-	invalidateInternalsIfRootChanged(rootPath: string): void {
-		// Root changes invalidate all panel-derived state (avoid mixing results from different roots).
-		this.syncPanelRootPath(rootPath);
+		this.scanState = { ...INITIAL_SCAN_STATE };
 	}
 
 	private resetForRoot(root: ScanRoot): void {
-		this.sizeBreakdownSource = null;
-		this.tabState = { ...INITIAL_TAB_STATE };
-		this.sizeScanResult = undefined;
+		this.scanState = { ...INITIAL_SCAN_STATE };
 		this.root = root;
 	}
 }

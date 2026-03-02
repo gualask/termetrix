@@ -4,8 +4,9 @@ import { ScannerEventSubscription } from '../../../support/scannerEvents';
 import { DisposableStore } from '../../../support/disposableStore';
 import { type MetricsPanelCommandHandler } from '../commands/metricsPanelCommands';
 import { dispatchMetricsPanelWebviewMessage } from '../commands/metricsPanelMessageRouter';
-import { createProgressMessage, createScanStartMessage, createUpdateMessage } from '../messages';
+import { createProgressMessage, createScanStartMessage, createUpdateMessage, createBreakdownMessage } from '../messages';
 import type { ProjectSizeScanner } from '../../sizeScan/projectSizeScanner';
+import type { LOCScanner } from '../../locScan/locScanner';
 import type { MetricsPanelSessionState } from '../state/metricsPanelSessionState';
 import type { MetricsPanelView } from '../view/metricsPanelView';
 
@@ -19,15 +20,19 @@ export class MetricsPanelController implements vscode.Disposable {
 	constructor(
 		private readonly deps: {
 			scanner: ProjectSizeScanner;
+			locScanner: LOCScanner;
 			view: MetricsPanelView;
 			sessionState: MetricsPanelSessionState;
 			commandHandlers: Record<MessageToExtension['command'], MetricsPanelCommandHandler>;
 		}
 	) {}
 
-	reset(): void {
-		// Panel-lifetime scans should stop when the panel closes to avoid unnecessary IO.
-		this.deps.scanner.cancelCurrentScan();
+	reset({ cancelScans = false }: { cancelScans?: boolean } = {}): void {
+		if (cancelScans) {
+			// Stop in-flight scans when the panel is closing to avoid unnecessary IO.
+			this.deps.scanner.cancelCurrentScan();
+			this.deps.locScanner.cancelCurrentScan();
+		}
 		this.deps.sessionState.clearInternals();
 		this.panelDisposables.clear();
 	}
@@ -52,7 +57,7 @@ export class MetricsPanelController implements vscode.Disposable {
 			void dispatchMetricsPanelWebviewMessage(message, this.deps.commandHandlers)
 		);
 
-		const disposeListener = panel.onDidDispose(() => this.reset());
+		const disposeListener = panel.onDidDispose(() => this.reset({ cancelScans: true }));
 
 		this.panelDisposables.add(
 			vscode.Disposable.from(scanEvents, activeEditorListener, webviewMessageListener, disposeListener)
@@ -61,7 +66,7 @@ export class MetricsPanelController implements vscode.Disposable {
 
 	private handleScanStart(rootPath: string): void {
 		// If the scan root changes, invalidate scan internals from the previous root.
-		this.deps.sessionState.invalidateInternalsIfRootChanged(rootPath);
+		this.deps.sessionState.syncPanelRootPath(rootPath);
 		// UI updates for scan start/progress do not require full cached state.
 		this.deps.view.postMessage(createScanStartMessage());
 	}
@@ -72,19 +77,19 @@ export class MetricsPanelController implements vscode.Disposable {
 
 	private handleScanEnd(): void {
 		// If a panel-initiated size scan is in flight, it will send the authoritative "update" message.
-		if (this.deps.sessionState.getTabState('size') === 'running') return;
+		if (this.deps.sessionState.getScanState('size') === 'running') return;
 
-		// For any other scan (e.g. root-change summary scan), ensure the webview doesn't get stuck in "Scanning…".
-		this.deps.view.postMessage(
-			createUpdateMessage({
-				scanResult: this.deps.sessionState.getSizeScanResult(),
-				isScanning: false,
-			})
-		);
+		// For any other scan (e.g. startup scan, root-change scan), use the scanner cache so
+		// the webview receives the fresh result rather than stale (or absent) session state.
+		const root = this.deps.scanner.getCurrentRoot();
+		const scanResult = root ? this.deps.scanner.getCachedResult(root) : undefined;
+		this.deps.view.postMessage(createUpdateMessage({ scanResult, isScanning: false }));
+
+		const directoryMetrics = root ? this.deps.scanner.getCachedDirectoryMetrics(root) : undefined;
+		if (directoryMetrics && root) this.deps.view.postMessage(createBreakdownMessage(root, directoryMetrics));
 	}
 
 	dispose(): void {
 		this.reset();
-		this.panelDisposables.dispose();
 	}
 }

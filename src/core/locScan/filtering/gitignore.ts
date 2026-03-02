@@ -180,13 +180,12 @@ function parseGitIgnoreContent(content: string, dirPrefix?: string): GitIgnoreRu
  */
 export async function loadGitIgnoreRules(rootPath: string, fs: FsPort): Promise<GitIgnoreRule[]> {
 	const gitignorePath = path.join(rootPath, '.gitignore');
-	let content = '';
 	try {
-		content = await fs.readFile(gitignorePath, 'utf8');
+		const content = await fs.readFile(gitignorePath, 'utf8');
+		return parseGitIgnoreContent(content);
 	} catch {
 		return [];
 	}
-	return parseGitIgnoreContent(content);
 }
 
 /**
@@ -199,13 +198,12 @@ export async function loadGitIgnoreRules(rootPath: string, fs: FsPort): Promise<
  */
 export async function loadNestedGitIgnoreRules(dirPath: string, relativeDir: string, fs: FsPort): Promise<GitIgnoreRule[]> {
 	const gitignorePath = path.join(dirPath, '.gitignore');
-	let content = '';
 	try {
-		content = await fs.readFile(gitignorePath, 'utf8');
+		const content = await fs.readFile(gitignorePath, 'utf8');
+		return parseGitIgnoreContent(content, toPosixPath(relativeDir));
 	} catch {
 		return [];
 	}
-	return parseGitIgnoreContent(content, toPosixPath(relativeDir));
 }
 
 /**

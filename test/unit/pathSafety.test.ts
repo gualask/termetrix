@@ -40,14 +40,6 @@ test('scanRoot: resolvePathIfWithinRoot normalizes absolute paths inside root', 
 	assert.equal(scanRoot.resolvePathIfWithinRoot(path.resolve(root, '..', 'outside')), undefined);
 });
 
-test('scanRoot: toRelativePathWithinRoot returns normalized relative paths only for paths under root', () => {
-	const root = path.resolve('tmp-root');
-	const scanRoot = ScanRoot.fromPath(root);
-	assert.ok(scanRoot);
-	assert.equal(scanRoot.toRelativePathWithinRoot(path.join(root, 'a', 'b')), path.join('a', 'b'));
-	assert.equal(scanRoot.toRelativePathWithinRoot(root), '');
-	assert.equal(scanRoot.toRelativePathWithinRoot(path.resolve(root, '..', 'outside')), undefined);
-});
 
 test(
 	'canonicalPath: isWithin is case-insensitive on Windows',

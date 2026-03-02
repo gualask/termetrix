@@ -1,4 +1,4 @@
-import type { MessageToExtension, MetricsTab } from './types';
+import type { MessageToExtension } from './types';
 
 declare function acquireVsCodeApi(): {
 	postMessage(message: unknown): void;
@@ -28,20 +28,12 @@ export function postReady(): void {
 	postToExtension({ command: 'ready' });
 }
 
-export function postTabActivated(tab: MetricsTab): void {
-	postToExtension({ command: 'tabActivated', tab });
-}
-
 export function postRefresh(): void {
 	postToExtension({ command: 'refresh' });
 }
 
 export function postCancelScan(): void {
 	postToExtension({ command: 'cancelScan' });
-}
-
-export function postDeepScan(): void {
-	postToExtension({ command: 'deepScan' });
 }
 
 export function postCalculateLOC(): void {
