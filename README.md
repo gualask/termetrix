@@ -50,7 +50,7 @@ Available in the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
 ## Notes
 
 - Project size is a **sum of file sizes** and does not filter by `.gitignore`.
-- LOC respects `.gitignore` files at any depth and skips common build/deps folders.
+- LOC respects the root `.gitignore` and skips common build/deps folders (nested `.gitignore` files are not parsed).
 - Symlinks are not followed.
 - No telemetry, no network requests.
 
