@@ -12,7 +12,7 @@ interface Props {
 
 export function EmptyState({ title, message, hint, variant = 'panel', leading }: Props) {
 	return (
-		<div class={`empty-state variant-${variant}`}>
+		<div class={`empty-state variant-${variant}`} role="status">
 			{leading}
 			{title && <h2>{title}</h2>}
 			<p>{message}</p>

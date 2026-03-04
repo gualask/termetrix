@@ -39,8 +39,8 @@ export function MetricsHeader({
 							<span class="tmx-metric-primaryValue">{primary.value}</span>
 							{primary.trailing}
 						</span>
-						{secondary.map((metric, index) => (
-							<Fragment key={`${metric.title}-${index}`}>
+						{secondary.map((metric) => (
+							<Fragment key={metric.title}>
 								<span class="tmx-metric-sep" aria-hidden="true">
 									<Dot size={16} />
 								</span>
