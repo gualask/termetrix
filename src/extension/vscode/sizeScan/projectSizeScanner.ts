@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import type { ExtendedScanResult, ProgressData, ScanResult } from '../../types';
+import { logger } from '../../support/logger';
 import { ScanCache } from './state/scanCache';
 import { PROGRESS_THROTTLE_MS } from '../../support/constants';
 import { AutoRefreshController } from './controller/autoRefreshController';
@@ -67,16 +68,23 @@ export class ProjectSizeScanner {
 			onRootChangeScheduled: () => this.cancelCurrentScan(),
 			// When the root stabilizes, notify consumers and (optionally) refresh totals.
 			onRootChanged: (rootPath) => this._onRootChanged.fire(rootPath),
-			onRootChangedAutoScan: (rootPath) => void this.scan(rootPath),
+			onRootChangedAutoScan: (rootPath) => this.backgroundScan(rootPath),
 		});
 		this.rootLifecycle.initialize();
 
 		this.autoRefreshController = new AutoRefreshController({
 			isScanning: () => this.isScanInProgress(),
 			getCurrentRoot: () => this.getCurrentRoot(),
-				refresh: () => void this.scan(),
+			refresh: () => this.backgroundScan(),
 		});
 		this.autoRefreshController.start();
+	}
+
+	/** Runs a scan in the background, logging any unexpected errors instead of propagating them. */
+	private backgroundScan(rootPath?: string): void {
+		void this.scan(rootPath).catch((err) =>
+			logger.error(`Background scan error: ${err instanceof Error ? err.message : String(err)}`)
+		);
 	}
 
 	/**

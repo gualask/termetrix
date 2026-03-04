@@ -76,7 +76,7 @@ export class ScanLifecycleService {
 			});
 		} catch (error) {
 			logger.error(`Scan error: ${error instanceof Error ? error.message : String(error)}`);
-			return undefined;
+			throw error;
 		}
 	}
 }

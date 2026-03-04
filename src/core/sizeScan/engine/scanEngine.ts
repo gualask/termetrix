@@ -83,6 +83,8 @@ export async function scanProjectSize({
 		context: traversal,
 		maxDirectoryConcurrency: maxDirectoryConcurrency.value,
 		onProgress,
+		onDirectoryError: (err) =>
+			logger.error(`Directory worker error: ${err instanceof Error ? err.message : String(err)}`),
 		runOneDirectory: async (currentPath) => processDirectory(currentPath, traversal),
 	});
 

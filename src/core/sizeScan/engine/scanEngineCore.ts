@@ -70,6 +70,7 @@ interface RunDirectoryQueueParams {
 	context: DirectoryQueueContext;
 	maxDirectoryConcurrency: number;
 	onProgress?: (progress: ProgressData) => void;
+	onDirectoryError?: (error: unknown) => void;
 	runOneDirectory: (currentPath: string) => Promise<void>;
 }
 
@@ -84,7 +85,7 @@ interface RunDirectoryQueueParams {
  * @returns Promise resolving when scanning completes or stops.
  */
 export async function runDirectoryQueue(params: RunDirectoryQueueParams): Promise<void> {
-	const { context, maxDirectoryConcurrency, onProgress, runOneDirectory } = params;
+	const { context, maxDirectoryConcurrency, onProgress, onDirectoryError, runOneDirectory } = params;
 	await runConcurrentQueue<string>({
 		driver: createLifoArrayQueueDriver({
 			queue: context.queue,
@@ -96,6 +97,7 @@ export async function runDirectoryQueue(params: RunDirectoryQueueParams): Promis
 			context.incrementDirectoriesScanned();
 			onProgress?.(context.getProgress());
 		},
+		onItemError: onDirectoryError,
 		runOne: runOneDirectory,
 	});
 }

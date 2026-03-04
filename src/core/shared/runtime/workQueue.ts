@@ -10,6 +10,7 @@ export interface RunConcurrentQueueParams<T> {
 	driver: ConcurrentQueueDriver<T>;
 	maxConcurrency: number;
 	onItemStart?: (item: T) => void;
+	onItemError?: (error: unknown) => void;
 	runOne: (item: T) => Promise<void>;
 }
 
@@ -43,7 +44,7 @@ export function createLifoArrayQueueDriver<T>(
  * Queue items can be appended by workers through shared mutable state owned by the caller.
  */
 export async function runConcurrentQueue<T>(params: RunConcurrentQueueParams<T>): Promise<void> {
-	const { driver, maxConcurrency, onItemStart, runOne } = params;
+	const { driver, maxConcurrency, onItemStart, onItemError, runOne } = params;
 
 	let inFlight = 0;
 	let resolveDone: (() => void) | undefined;
@@ -71,7 +72,7 @@ export async function runConcurrentQueue<T>(params: RunConcurrentQueueParams<T>)
 			onItemStart?.(item);
 
 			inFlight++;
-			void runOne(item).finally(() => {
+			void runOne(item).catch(onItemError).finally(() => {
 				inFlight--;
 				schedule();
 				maybeFinish();

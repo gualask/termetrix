@@ -24,9 +24,9 @@ export function App() {
 
 	return (
 		<div class="app">
-			<div class="content">
-				{error && <ErrorBanner error={error} onDismiss={dismissError} />}
+			{error && <ErrorBanner error={error} onDismiss={dismissError} />}
 
+			<div class="content">
 				<LocView
 					locResult={loc.result}
 					isCalculating={loc.isCalculating}

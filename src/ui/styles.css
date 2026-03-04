@@ -370,7 +370,6 @@ body {
 /* Banners */
 .warning-banner,
 .error-banner {
-  margin: 0 0 8px;
   padding: 10px 14px;
   border-left: 3px solid;
   font-size: var(--tmx-font-small);
@@ -378,6 +377,7 @@ body {
 }
 
 .warning-banner {
+  margin: 0 0 8px;
   background: var(--vscode-inputValidation-warningBackground);
   border-color: var(--vscode-inputValidation-warningBorder);
   color: var(--vscode-inputValidation-warningForeground);
@@ -387,6 +387,11 @@ body {
 }
 
 .error-banner {
+  position: fixed;
+  bottom: 16px;
+  left: 12px;
+  right: 12px;
+  z-index: 100;
   padding: 12px 14px;
   background: var(--vscode-inputValidation-errorBackground);
   border-color: var(--vscode-inputValidation-errorBorder);
@@ -394,6 +399,7 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .error-banner-icon { flex-shrink: 0; margin-top: 1px; }

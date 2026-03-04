@@ -53,7 +53,11 @@ function registerCommands(params: {
 	const openMetricsPanelCmd = vscode.commands.registerCommand(COMMAND_IDS.openMetricsPanel, () => metricsPanel.show());
 
 	const refreshScanCmd = vscode.commands.registerCommand(COMMAND_IDS.refreshScan, async () => {
-		await scanner.scan();
+		try {
+			await scanner.scan();
+		} catch (err) {
+			logger.error(`Refresh scan error: ${err instanceof Error ? err.message : String(err)}`);
+		}
 	});
 
 	const cancelScanCmd = vscode.commands.registerCommand(COMMAND_IDS.cancelScan, () => {
@@ -97,7 +101,9 @@ function runInitialScan(params: { scanner: ProjectSizeScanner }): void {
 		return;
 	}
 
-	void scanner.scan();
+	void scanner.scan().catch((err) =>
+		logger.error(`Initial scan error: ${err instanceof Error ? err.message : String(err)}`)
+	);
 }
 
 /**
