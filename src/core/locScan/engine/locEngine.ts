@@ -11,7 +11,7 @@ import {
 	MAX_LOC_CONCURRENCY,
 	SOURCE_EXTENSIONS,
 } from '../locConfig';
-import { countNonEmptyLines } from '../metrics/lineCounter';
+import { countCodeLines, countNonEmptyLines } from '../metrics/lineCounter';
 import { LocAccumulator } from '../metrics/locAccumulator';
 import { LocPathFilter } from '../filtering/locPathFilter';
 import { LocTraversalContext } from './locTraversalContext';
@@ -178,11 +178,14 @@ async function processFile(context: LocTraversalContext, fullPath: string, relat
 		return;
 	}
 
-	const lines = countNonEmptyLines(content);
+	const langDef = LANGUAGE_MAP[ext];
+	const lines = langDef?.comments
+		? countCodeLines(content, langDef.comments)
+		: countNonEmptyLines(content);
 	if (lines <= 0) return;
 
 	// Stable language key for aggregation.
-	const language = LANGUAGE_MAP[ext] ?? ext.slice(1).toUpperCase();
+	const language = langDef?.name ?? ext.slice(1).toUpperCase();
 	const countedFile = createLocTopFile({ relativePath, lines, language });
 	if (!countedFile) return;
 	context.accumulator.addCountedFile(countedFile);
