@@ -3,6 +3,7 @@ import { TERMETRIX_SETTINGS_DEFAULTS } from '../../shared/contracts/settingsDefa
 import type { AutoScanMode as SettingsAutoScanMode } from '../../shared/contracts/settingsDefaults';
 import type { SizeScanConfig } from '../../core/sizeScan/engine/scanEngineTypes';
 import { CONFIG_KEYS, CONFIG_SECTION_IDS } from './constants';
+import { SIZE_SCAN_DEFAULTS } from '../../shared/contracts/sizeScanDefaults';
 
 export type AutoScanMode = SettingsAutoScanMode;
 
@@ -23,8 +24,6 @@ export interface ScanSettings {
 	autoScanMode: AutoScanMode;
 	maxDurationSeconds: number;
 	maxDirectories: number;
-	fsConcurrency: number;
-	rootSwitchDebounceMs: number;
 }
 
 export interface AutoRefreshConfig {
@@ -108,17 +107,6 @@ export class ConfigManager {
 				CONFIG_KEYS.scan.maxDirectories,
 				TERMETRIX_SETTINGS_DEFAULTS.scan.maxDirectories
 			),
-			// VS Code setting key is `concurrentOperations`; internally we call this `fsConcurrency`.
-			fsConcurrency: this.readNumber(
-				config,
-				CONFIG_KEYS.scan.concurrentOperations,
-				TERMETRIX_SETTINGS_DEFAULTS.scan.concurrentOperations
-			),
-			rootSwitchDebounceMs: this.readNumber(
-				config,
-				CONFIG_KEYS.scan.rootSwitchDebounceMs,
-				TERMETRIX_SETTINGS_DEFAULTS.scan.rootSwitchDebounceMs
-			),
 		};
 	}
 
@@ -131,7 +119,7 @@ export class ConfigManager {
 		return {
 			maxDurationSeconds: settings.maxDurationSeconds,
 			maxDirectories: settings.maxDirectories,
-			fsConcurrency: settings.fsConcurrency,
+			fsConcurrency: SIZE_SCAN_DEFAULTS.fsConcurrency,
 		};
 	}
 

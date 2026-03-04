@@ -18,8 +18,6 @@ export const TERMETRIX_SETTINGS_DEFAULTS: {
 		autoScanMode: AutoScanMode;
 		maxDurationSeconds: number;
 		maxDirectories: number;
-		concurrentOperations: number;
-		rootSwitchDebounceMs: number;
 	};
 	statusBar: { showTerminalButton: boolean; showSelectionLineCount: boolean };
 	logging: { verbose: boolean };
@@ -33,8 +31,6 @@ export const TERMETRIX_SETTINGS_DEFAULTS: {
 		autoScanMode: 'startup+rootChange',
 		maxDurationSeconds: SIZE_SCAN_DEFAULTS.maxDurationSeconds,
 		maxDirectories: SIZE_SCAN_DEFAULTS.maxDirectories,
-		concurrentOperations: SIZE_SCAN_DEFAULTS.fsConcurrency,
-		rootSwitchDebounceMs: 200,
 	},
 	statusBar: {
 		showTerminalButton: true,

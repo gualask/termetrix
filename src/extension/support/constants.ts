@@ -38,8 +38,6 @@ export const CONFIG_KEYS = {
 		autoScanMode: 'autoScanMode',
 		maxDurationSeconds: 'maxDurationSeconds',
 		maxDirectories: 'maxDirectories',
-		concurrentOperations: 'concurrentOperations',
-		rootSwitchDebounceMs: 'rootSwitchDebounceMs',
 	},
 	autoRefresh: {
 		enabled: 'enabled',
@@ -56,12 +54,6 @@ export const CONFIG_KEYS = {
 		autoScanLoc: 'autoScanLoc',
 	},
 } as const;
-
-/**
- * LOC scans intentionally run with lower concurrency than size scans.
- * This divisor defines how LOC concurrency is derived from `scan.concurrentOperations`.
- */
-export const LOC_CONCURRENCY_DIVISOR = 4;
 
 /**
  * Throttle interval for progress events (in milliseconds).

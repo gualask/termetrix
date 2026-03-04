@@ -35,8 +35,7 @@ export class RootLifecycleService {
 	}
 
 	handleEditorChange(editor: vscode.TextEditor): void {
-		const { rootSwitchDebounceMs } = configManager.getScanSettings();
-		this.rootController.handleEditorChange(editor, rootSwitchDebounceMs);
+		this.rootController.handleEditorChange(editor, 200);
 	}
 
 	private handleRootChanged(rootPath: string): void {

@@ -36,7 +36,6 @@ Notable settings:
 - `termetrix.statusBar.showSelectionLineCount` — show/hide the line counter (default: `true`)
 - `termetrix.autoRefresh.enabled` — enable periodic background rescan (default: `false`)
 - `termetrix.scan.maxDurationSeconds` — max scan duration before stopping (default: `10`)
-- `termetrix.scan.concurrentOperations` — IO concurrency; reduce if the machine feels sluggish during scans (default: `32`)
 
 ## Commands
 

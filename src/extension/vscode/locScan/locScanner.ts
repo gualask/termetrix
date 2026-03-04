@@ -4,8 +4,6 @@ import { NodeFsPort } from '../../platform/nodeFsPort';
 import { scanLOC } from '../../../core/locScan/engine/locEngine';
 import type { LocScanRequest } from '../../../core/locScan/locScanRequest';
 import { LocPathFilter } from '../../../core/locScan/filtering/locPathFilter';
-import { configManager } from '../../support/configManager';
-import { LOC_CONCURRENCY_DIVISOR } from '../../support/constants';
 
 /**
  * Scanner for counting lines of code in source files.
@@ -38,15 +36,11 @@ export class LOCScanner {
 		const cancellationSource = new vscode.CancellationTokenSource();
 		this.currentCancellationSource = cancellationSource;
 
-		const { fsConcurrency } = configManager.getCoreScanConfig();
-		// LOC reads file contents; keep it less aggressive than size traversal to reduce IO pressure.
-		const maxConcurrency = Math.max(1, Math.floor(fsConcurrency / LOC_CONCURRENCY_DIVISOR));
 		const request: LocScanRequest = {
 			rootPath,
 			fs: this.fs,
 			cancellationToken: cancellationSource.token,
 			pathFilter: this.pathFilter,
-			maxConcurrency,
 		};
 
 		try {

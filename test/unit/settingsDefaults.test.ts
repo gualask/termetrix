@@ -32,11 +32,9 @@ test('package.json scan defaults match SIZE_SCAN_DEFAULTS', () => {
 
 	const maxDurationDefault = getDefault(props, 'termetrix.scan.maxDurationSeconds');
 	const maxDirectoriesDefault = getDefault(props, 'termetrix.scan.maxDirectories');
-	const fsConcurrencyDefault = getDefault(props, 'termetrix.scan.concurrentOperations');
 
 	assert.equal(maxDurationDefault, SIZE_SCAN_DEFAULTS.maxDurationSeconds);
 	assert.equal(maxDirectoriesDefault, SIZE_SCAN_DEFAULTS.maxDirectories);
-	assert.equal(fsConcurrencyDefault, SIZE_SCAN_DEFAULTS.fsConcurrency);
 });
 
 test('package.json settings defaults match TERMETRIX_SETTINGS_DEFAULTS', () => {
@@ -54,15 +52,6 @@ test('package.json settings defaults match TERMETRIX_SETTINGS_DEFAULTS', () => {
 		getDefault(props, `${scan}.${CONFIG_KEYS.scan.maxDirectories}`),
 		TERMETRIX_SETTINGS_DEFAULTS.scan.maxDirectories
 	);
-	assert.equal(
-		getDefault(props, `${scan}.${CONFIG_KEYS.scan.concurrentOperations}`),
-		TERMETRIX_SETTINGS_DEFAULTS.scan.concurrentOperations
-	);
-	assert.equal(
-		getDefault(props, `${scan}.${CONFIG_KEYS.scan.rootSwitchDebounceMs}`),
-		TERMETRIX_SETTINGS_DEFAULTS.scan.rootSwitchDebounceMs
-	);
-
 	const autoRefresh = CONFIG_SECTION_IDS.autoRefresh;
 	assert.equal(
 		getDefault(props, `${autoRefresh}.${CONFIG_KEYS.autoRefresh.enabled}`),

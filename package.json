@@ -89,17 +89,7 @@
           "default": 50000,
           "description": "Maximum number of directories to scan (partial results are shown if the limit is reached)"
         },
-        "termetrix.scan.concurrentOperations": {
-          "type": "number",
-          "default": 32,
-          "description": "Number of parallel filesystem operations (increase for faster scans on SSDs)"
-        },
-        "termetrix.scan.rootSwitchDebounceMs": {
-          "type": "number",
-          "default": 200,
-          "description": "Debounce delay for multi-root project switching in milliseconds"
-        },
-        "termetrix.statusBar.showTerminalButton": {
+"termetrix.statusBar.showTerminalButton": {
           "type": "boolean",
           "default": true,
           "description": "Show the one-click terminal button in the status bar"
