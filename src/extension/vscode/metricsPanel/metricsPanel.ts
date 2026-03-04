@@ -23,7 +23,7 @@ export class MetricsPanel implements vscode.Disposable {
 	 * @param extensionUri - Extension URI used to resolve webview asset paths.
 	 */
 	constructor(
-		private scanner: ProjectSizeScanner,
+		private readonly scanner: ProjectSizeScanner,
 		extensionUri: vscode.Uri
 	) {
 		this.view = new MetricsPanelView(extensionUri);

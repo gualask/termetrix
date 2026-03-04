@@ -64,7 +64,7 @@ export function createSizeHandlers(deps: MetricsPanelCommandDeps): Pick<
 	'refresh' | 'cancelScan'
 > {
 	return {
-		refresh: () => void startSizeScanForPanel(deps, { force: true }),
+		refresh: () => startSizeScanForPanel(deps, { force: true }),
 		cancelScan: (message) => {
 			const { target } = message as Extract<MessageToExtension, { command: 'cancelScan' }>;
 			if (target === 'size') deps.scanner.cancelCurrentScan();
