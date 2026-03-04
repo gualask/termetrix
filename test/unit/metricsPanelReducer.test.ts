@@ -170,6 +170,22 @@ test('metricsPanelReducer: noRoot clears breakdown', () => {
 	assert.equal(state.isCalculatingLOC, false);
 });
 
+test('metricsPanelReducer: noRoot clears locResult', () => {
+	const locResult = { totalLines: 1000, scannedFiles: 50, skippedFiles: 2, byLanguage: {}, topFiles: [] };
+
+	let state = metricsPanelReducer(initialMetricsPanelState, {
+		type: 'message',
+		message: { type: 'locResult', data: locResult },
+	});
+	assert.deepEqual(state.locResult, locResult);
+
+	state = metricsPanelReducer(state, {
+		type: 'message',
+		message: { type: 'noRoot' },
+	});
+	assert.equal(state.locResult, null);
+});
+
 test('metricsPanelReducer: locScanCancelled clears isCalculatingLOC and preserves existing locResult', () => {
 	const locResult = { totalLines: 1000, scannedFiles: 50, skippedFiles: 2, byLanguage: {}, topFiles: [] };
 

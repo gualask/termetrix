@@ -106,6 +106,7 @@ export function metricsPanelReducer(
 				breakdown: null,
 				progressData: null,
 				isCalculatingLOC: false,
+				locResult: null,
 			};
 		case 'locScanStart':
 			return { ...state, isCalculatingLOC: true };
@@ -178,12 +179,12 @@ export function useMetricsPanelState(): State {
 	}, []);
 
 	const refreshOrCancelScan = useCallback(() => {
-		if (state.viewData.isScanning) postCancelScan();
+		if (state.viewData.isScanning) postCancelScan('size');
 		else postRefresh();
 	}, [state.viewData.isScanning]);
 
 	const cancelOrRecalculateLoc = useCallback(() => {
-		if (state.isCalculatingLOC) postCancelScan();
+		if (state.isCalculatingLOC) postCancelScan('loc');
 		else postCalculateLOC();
 	}, [state.isCalculatingLOC]);
 

@@ -32,8 +32,8 @@ export function postRefresh(): void {
 	postToExtension({ command: 'refresh' });
 }
 
-export function postCancelScan(): void {
-	postToExtension({ command: 'cancelScan' });
+export function postCancelScan(target: 'size' | 'loc'): void {
+	postToExtension({ command: 'cancelScan', target });
 }
 
 export function postCalculateLOC(): void {

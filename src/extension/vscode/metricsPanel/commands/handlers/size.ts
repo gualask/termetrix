@@ -65,9 +65,10 @@ export function createSizeHandlers(deps: MetricsPanelCommandDeps): Pick<
 > {
 	return {
 		refresh: () => void startSizeScanForPanel(deps, { force: true }),
-		cancelScan: () => {
-			deps.scanner.cancelCurrentScan();
-			deps.locScanner.cancelCurrentScan();
+		cancelScan: (message) => {
+			const { target } = message as Extract<MessageToExtension, { command: 'cancelScan' }>;
+			if (target === 'size') deps.scanner.cancelCurrentScan();
+			else deps.locScanner.cancelCurrentScan();
 		},
 	};
 }

@@ -61,6 +61,6 @@ export type MessageToExtension =
 	 */
 	| { command: 'openFile'; path: string }
 	| { command: 'refresh' }
-	| { command: 'cancelScan' }
+	| { command: 'cancelScan'; target: 'size' | 'loc' }
 	| { command: 'calculateLOC' }
 	| { command: 'reset' };
