@@ -3,7 +3,7 @@
 [![CI](https://github.com/gualask/termetrix/actions/workflows/ci.yml/badge.svg)](https://github.com/gualask/termetrix/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/visual-studio-marketplace/v/gualask.termetrix)](https://marketplace.visualstudio.com/items?itemName=gualask.termetrix)
 
-Minimal VS Code extension for project awareness: **project size**, **a guided size breakdown**, **LOC**, **selection line counter**, and a **terminal shortcut** — all from the status bar.
+Minimal VS Code extension for project awareness: **project size**, **guided size breakdown**, **LOC per language**, **selection line counter**, and a **terminal shortcut** — all from the status bar.
 
 ## Demo
 
@@ -12,8 +12,7 @@ Minimal VS Code extension for project awareness: **project size**, **a guided si
 ## Quickstart
 
 1. Open a folder or workspace.
-2. Click the project size item in the status bar to open the Metrics Panel.
-3. Use `Termetrix: Refresh Project Scan` to rescan on demand.
+2. Click the metrics item in the status bar to open the Metrics Panel.
 
 ## Status Bar
 
@@ -22,20 +21,29 @@ Minimal VS Code extension for project awareness: **project size**, **a guided si
 | Item                 | Behavior                                                                                           |
 | -------------------- | -------------------------------------------------------------------------------------------------- |
 | Terminal button      | Opens the integrated terminal. Can be hidden via settings.                                         |
-| Project size         | Shows total project size. Click to open the Metrics Panel.                                         |
+| Metrics              | Shows total project size. Click to open the Metrics Panel.                                         |
 | Refresh / Cancel     | Refreshes the scan on click. Animates while scanning; click again to cancel.                       |
 | Selection line count | Shows the number of selected lines. Visible only while selecting text. Can be hidden via settings. |
 
+## Metrics Panel
+
+
+- **LOC** — lines of code per language (comments excluded), with top files; auto-scans on panel open
+- **Size** — total project size with a breakdown of the folders that contribute most to disk usage
+
 ## Configuration
 
-All settings are optional. Scan limits and auto-refresh are configurable via `termetrix.*` settings in VS Code.
-
-Notable settings:
+All settings are optional. Configurable via `termetrix.*` in VS Code settings.
 
 - `termetrix.statusBar.showTerminalButton` — show/hide the terminal button (default: `true`)
 - `termetrix.statusBar.showSelectionLineCount` — show/hide the line counter (default: `true`)
 - `termetrix.autoRefresh.enabled` — enable periodic background rescan (default: `false`)
-- `termetrix.scan.maxDurationSeconds` — max scan duration before stopping (default: `10`)
+- `termetrix.autoRefresh.minutes` — refresh interval in minutes (default: `10`)
+- `termetrix.scan.autoScanMode` — when to auto-scan: `startup+rootChange` | `rootChange` | `off` (default: `startup+rootChange`)
+- `termetrix.scan.maxDurationSeconds` — max scan duration before stopping with partial results (default: `10`)
+- `termetrix.scan.maxDirectories` — max directories to scan before stopping with partial results (default: `50000`)
+- `termetrix.panel.autoScanLoc` — auto-run LOC scan when the panel opens (default: `true`)
+- `termetrix.logging.verbose` — verbose logging to output channel (default: `false`)
 
 ## Commands
 
@@ -49,7 +57,7 @@ Available in the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
 ## Notes
 
 - Project size is a **sum of file sizes** and does not filter by `.gitignore`.
-- LOC respects the root `.gitignore` and skips common build/deps folders (nested `.gitignore` files are not parsed).
+- LOC respects `.gitignore` files at every level of the directory tree and skips common build/deps folders.
 - Symlinks are not followed.
 - No telemetry, no network requests.
 

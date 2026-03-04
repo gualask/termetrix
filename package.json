@@ -2,7 +2,7 @@
   "name": "termetrix",
   "displayName": "Termetrix",
   "description": "Minimal VS Code productivity extension for project awareness",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "commonjs",
   "publisher": "gualask",
   "author": {

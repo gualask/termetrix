@@ -28,7 +28,7 @@ Record only decisions that are easy to forget and expensive to rediscover during
 - **Date**: 2026-02-14
 - **Why**: LOC requires reading files; keep it less aggressive than size traversal to reduce IO pressure.
 - **Revisit if**: we add adaptive concurrency or different IO strategy.
-- **Code**: `src/extension/vscode/locScan/locScanner.ts`, `src/extension/support/constants.ts`, `src/core/locScan/locConfig.ts`
+- **Code**: `src/extension/vscode/locScan/locScanner.ts`, `src/core/locScan/locConfig.ts`
 
 ### Cancellation is best-effort; cancelled scans are not cached
 - **Date**: 2026-02-14
@@ -54,11 +54,11 @@ Record only decisions that are easy to forget and expensive to rediscover during
 - **Revisit if**: webview needs external resources (should remain “no” by default).
 - **Code**: `src/extension/vscode/metricsPanel/view/metricsPanelHtml.ts`
 
-### Traversal rules differ: size scan ignores `.gitignore`, LOC respects root `.gitignore`
+### Traversal rules differ: size scan ignores `.gitignore`, LOC respects `.gitignore` at all levels
 - **Date**: 2026-02-14
-- **Why**: size aims to reflect disk usage; LOC aims to reflect code and skip ignored folders/files (known limitation: nested `.gitignore` not parsed).
-- **Revisit if**: we unify traversal policy or add nested `.gitignore` support.
-- **Code**: `src/core/locScan/filtering/gitignore.ts`, `src/core/sizeScan/engine/scanEngine.ts`
+- **Why**: size aims to reflect disk usage; LOC aims to reflect code and skip ignored folders/files. Nested `.gitignore` files are loaded and merged with parent rules at each directory level.
+- **Revisit if**: we unify traversal policy.
+- **Code**: `src/core/locScan/filtering/gitignore.ts`, `src/core/locScan/engine/locEngine.ts`, `src/core/sizeScan/engine/scanEngine.ts`
 
 ### Status bar favors low noise; panel owns “deep” interactions
 - **Date**: 2026-02-14
