@@ -11,6 +11,8 @@ import { EmptyState } from '../../components/EmptyState';
 import { MetricsHeader } from '../../components/MetricsHeader';
 import { ViewLayout } from '../../components/ViewLayout';
 
+const SIZE_TOOLTIP_LINES = ['Top directories by disk usage', 'Only the heaviest are listed'];
+
 interface Props {
 	viewData: ViewData;
 	breakdown: SizeBreakdownResult | null;
@@ -74,7 +76,7 @@ export function SizeView({
 			]}
 			actions={
 				<>
-					<InfoTooltip lines={['Top directories by disk usage', 'Only the heaviest are listed']} />
+					<InfoTooltip lines={SIZE_TOOLTIP_LINES} />
 					{hasRoot && (
 						<IconButton
 							onClick={onRefreshOrCancelScan}

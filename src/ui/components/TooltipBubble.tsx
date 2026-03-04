@@ -7,8 +7,8 @@ export function TooltipBubble({ lines }: TooltipBubbleProps) {
 
 	return (
 		<div class="tmx-tooltip" aria-hidden="true">
-			{lines.map((line, index) => (
-				<div key={`${index}-${line}`} class="tmx-tooltipLine">
+			{lines.map((line) => (
+				<div key={line} class="tmx-tooltipLine">
 					{line}
 				</div>
 			))}

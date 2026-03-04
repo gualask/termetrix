@@ -11,6 +11,7 @@ import { ViewLayout } from '../../components/ViewLayout';
 
 const LOC_VISIBLE_LANGUAGES = 3;
 const LOC_VISIBLE_FILES = 3;
+const LOC_TOOLTIP_LINES = ['Scans source files only', 'Respects .gitignore, skips common build/deps folders'];
 
 interface ShowMoreButtonProps {
 	total: number;
@@ -163,7 +164,7 @@ export function LocView({
 			]}
 			actions={
 				<>
-					<InfoTooltip lines={['Scans source files only', 'Respects .gitignore, skips common build/deps folders']} />
+					<InfoTooltip lines={LOC_TOOLTIP_LINES} />
 					{hasRoot && (
 						<IconButton
 							onClick={onRefreshOrCancel}
