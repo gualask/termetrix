@@ -87,7 +87,7 @@ function registerEditorTracking(params: {
 /**
  * Performs the initial scan during activation (runs asynchronously).
  * @param params - Initial scan dependencies.
- * @param params.scanner - Scanner used to run a quick summary scan.
+ * @param params.scanner - Scanner instance used to run the initial scan.
  * @returns void
  */
 function runInitialScan(params: { scanner: ProjectSizeScanner }): void {

@@ -24,6 +24,10 @@ function onReady(deps: MetricsPanelCommandDeps): void {
 	if (panelConfig.autoScanLoc) void startLocScanForPanel(deps, { force: true });
 }
 
+/**
+ * Creates the handler map for the panel bootstrap phase (the `ready` command).
+ * @param deps - Panel command dependencies.
+ */
 export function createBootstrapHandlers(deps: MetricsPanelCommandDeps): Pick<
 	Record<MessageToExtension['command'], MetricsPanelCommandHandler>,
 	'ready'

@@ -10,16 +10,26 @@ export class ScanRunner<T> {
 	private currentCancellation: vscode.CancellationTokenSource | undefined;
 	private isRunning = false;
 
+	/** Returns `true` when a scan task is currently executing. */
 	isScanInProgress(): boolean {
 		return this.isRunning;
 	}
 
+	/** Cancels the active scan (best-effort). No-op when no scan is running. */
 	cancel(): void {
 		const cancellationSource = this.currentCancellation;
 		if (!cancellationSource) return;
 		cancellationSource.cancel();
 	}
 
+	/**
+	 * Executes a cancellable task, managing scan lifecycle and post-processing.
+	 * Cancels any previously running task before starting.
+	 * @param params.task - Async work to run with a cancellation token.
+	 * @param params.onResult - Optional hook called with the result before the runner transitions to idle.
+	 * @param params.onScanState - Optional callback fired when running state changes.
+	 * @returns The task result, or `undefined` if cancelled or superseded.
+	 */
 	async run(params: {
 		task: (cancellationToken: vscode.CancellationToken) => Promise<T>;
 		/**

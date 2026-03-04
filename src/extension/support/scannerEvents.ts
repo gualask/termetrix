@@ -34,6 +34,7 @@ export class ScannerEventSubscription implements vscode.Disposable {
 		}
 	}
 
+	/** Disposes all active event subscriptions. */
 	dispose(): void {
 		this.disposables.dispose();
 	}

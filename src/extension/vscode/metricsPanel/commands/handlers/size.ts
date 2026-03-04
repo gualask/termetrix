@@ -5,6 +5,11 @@ import { runPanelScanCommand } from '../metricsPanelCommandUtils';
 import { PANEL_COMMAND_ERRORS } from '../errors';
 import { createBreakdownMessage, createUpdateMessage } from '../../messages';
 
+/**
+ * Starts a size scan for the metrics panel, honouring session lifecycle gating.
+ * @param deps - Panel command dependencies.
+ * @param options.force - When `true`, restarts even after a prior successful scan.
+ */
 export async function startSizeScanForPanel(
 	deps: MetricsPanelCommandDeps,
 	options?: { force?: boolean }
@@ -50,6 +55,10 @@ export async function startSizeScanForPanel(
 	});
 }
 
+/**
+ * Creates the handler map for size-scan commands (`refresh` and `cancelScan`).
+ * @param deps - Panel command dependencies.
+ */
 export function createSizeHandlers(deps: MetricsPanelCommandDeps): Pick<
 	Record<MessageToExtension['command'], MetricsPanelCommandHandler>,
 	'refresh' | 'cancelScan'

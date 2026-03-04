@@ -41,6 +41,11 @@ export function resolvePanelPath(deps: PanelStateDeps, targetPath: string | unde
 	return resolvePanelTargetPath(rootPath, targetPath);
 }
 
+/**
+ * Returns the synced root path for the panel, sending a `noRoot` message and returning
+ * `undefined` when no root is available.
+ * @param deps - Panel state and messaging dependencies.
+ */
 export function getSyncedPanelRootOrSendNoRoot(deps: PanelScanDeps): string | undefined {
 	const rootPath = getPanelRootPath(deps);
 	if (!rootPath) {

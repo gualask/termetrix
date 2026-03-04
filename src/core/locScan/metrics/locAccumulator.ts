@@ -16,10 +16,15 @@ export class LocAccumulator {
 	private scannedFiles = 0;
 	private skippedFiles = 0;
 
+	/** Increments the count of files that were skipped (excluded or unreadable). */
 	incrementSkipped(): void {
 		this.skippedFiles++;
 	}
 
+	/**
+	 * Records a counted file: adds its lines to totals and updates the top-files list.
+	 * @param file - File with its line count and detected language.
+	 */
 	addCountedFile(file: LocTopFile): void {
 		this.totalLines += file.lines;
 		this.byLanguage[file.language] = (this.byLanguage[file.language] ?? 0) + file.lines;
@@ -27,6 +32,7 @@ export class LocAccumulator {
 		insertBoundedDescending(this.topFiles, file, TOP_FILES_LIMIT, getLocTopFileLines);
 	}
 
+	/** Finalises accumulation and returns an immutable `LOCResult` snapshot. */
 	finalize(): LOCResult {
 		return {
 			totalLines: this.totalLines,

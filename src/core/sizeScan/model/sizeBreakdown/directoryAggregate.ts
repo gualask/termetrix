@@ -14,10 +14,15 @@ export class DirectoryAggregate {
 		readonly maxFileBytes: number
 	) {}
 
+	/** Returns an empty aggregate with all counters at zero. */
 	static empty(): DirectoryAggregate {
 		return new DirectoryAggregate(0, 0, 0);
 	}
 
+	/**
+	 * Creates an aggregate from a raw snapshot, clamping all fields to zero.
+	 * @param totals - Raw totals snapshot.
+	 */
 	static fromTotals(totals: DirectoryAggregateSnapshot): DirectoryAggregate {
 		return new DirectoryAggregate(
 			Math.max(0, totals.bytes),
@@ -26,6 +31,10 @@ export class DirectoryAggregate {
 		);
 	}
 
+	/**
+	 * Returns a new aggregate combining this and another (bytes/fileCount summed, maxFileBytes maximised).
+	 * @param other - Aggregate to merge with.
+	 */
 	merge(other: DirectoryAggregate): DirectoryAggregate {
 		return new DirectoryAggregate(
 			this.bytes + other.bytes,
@@ -34,6 +43,11 @@ export class DirectoryAggregate {
 		);
 	}
 
+	/**
+	 * Returns a new aggregate with `other` subtracted, clamping bytes and fileCount to zero.
+	 * maxFileBytes is kept from `this` (cannot be subtracted meaningfully).
+	 * @param other - Aggregate to subtract.
+	 */
 	subtractSaturating(other: DirectoryAggregate): DirectoryAggregate {
 		const safeBytes = Math.max(0, other.bytes);
 		const safeFileCount = Math.max(0, other.fileCount);
@@ -44,6 +58,7 @@ export class DirectoryAggregate {
 		);
 	}
 
+	/** Returns `true` when both bytes and fileCount are zero or negative. */
 	isEmpty(): boolean {
 		return this.bytes <= 0 && this.fileCount <= 0;
 	}

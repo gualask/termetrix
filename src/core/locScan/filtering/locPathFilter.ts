@@ -20,6 +20,12 @@ export class LocPathFilter {
 		return this.excludePatterns.some((pattern) => pattern.test(relativePath));
 	}
 
+	/**
+	 * Returns `true` when `relativePath` should be excluded from the LOC scan.
+	 * Default directory exclusions are checked first for a fast common-case skip, then gitignore rules.
+	 * @param relativePath - Path relative to the scan root.
+	 * @param gitignoreRules - Effective gitignore rules for the current directory depth.
+	 */
 	shouldSkip(relativePath: string, gitignoreRules: GitIgnoreRule[]): boolean {
 		// Default excludes are applied before `.gitignore` for a fast common-case skip.
 		return this.isExcluded(relativePath) || isGitIgnored(relativePath, gitignoreRules);

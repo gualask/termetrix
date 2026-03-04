@@ -28,10 +28,12 @@ export class ScanLifecycleService {
 
 	constructor(private readonly options: ScanLifecycleServiceOptions) {}
 
+	/** Returns `true` when a scan is currently running. */
 	isScanInProgress(): boolean {
 		return this.runner.isScanInProgress();
 	}
 
+	/** Cancels the active scan (best-effort). */
 	cancelCurrentScan(): void {
 		this.runner.cancel();
 	}
@@ -46,6 +48,13 @@ export class ScanLifecycleService {
 		}
 	}
 
+	/**
+	 * Runs a scan for the given root path, emitting lifecycle events and caching the result.
+	 * @param params.rootPath - Directory to scan.
+	 * @param params.mode - Scan mode (`'full'` or `'summary'`).
+	 * @param params.emitProgressEvents - Whether to fire progress events during the scan.
+	 * @returns The scan result, or `undefined` on cancellation or error.
+	 */
 	async runScan(params: {
 		rootPath: string;
 		mode: SizeScanMode;

@@ -12,14 +12,20 @@ export class MetricsPanelView {
 
 	constructor(private readonly extensionUri: vscode.Uri) {}
 
+	/** Returns `true` when the webview panel is currently open. */
 	isOpen(): boolean {
 		return Boolean(this.panel);
 	}
 
+	/** Brings the panel into view without stealing focus from the active editor. */
 	reveal(): void {
 		this.panel?.reveal(vscode.ViewColumn.Beside);
 	}
 
+	/**
+	 * Opens the panel if not already open, or returns the existing instance.
+	 * @returns The panel and a flag indicating whether it was newly created.
+	 */
 	ensureOpen(): { panel: vscode.WebviewPanel; created: boolean } {
 		if (this.panel) return { panel: this.panel, created: false };
 
@@ -47,12 +53,17 @@ export class MetricsPanelView {
 		return { panel, created: true };
 	}
 
+	/**
+	 * Sends a message to the webview. No-op when the panel is not open.
+	 * @param message - Message to post.
+	 */
 	postMessage(message: MessageFromExtension): void {
 		const panel = this.panel;
 		if (!panel) return;
 		void panel.webview.postMessage(message);
 	}
 
+	/** Disposes the webview panel and releases internal references. */
 	dispose(): void {
 		const panel = this.panel;
 		this.panel = undefined;
