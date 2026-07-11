@@ -1,9 +1,9 @@
-import * as path from 'path';
+import * as path from 'node:path';
 import type { SizeBreakdownLeafDirectory } from '../../../../shared/contracts/sizeBreakdown';
 import type { DirectoryMetricsSnapshot } from '../../types';
-import type { CandidateDirectory } from './types';
-import type { BreakdownSelectionPolicy } from './options';
 import { DirectoryAggregate } from './directoryAggregate';
+import type { BreakdownSelectionPolicy } from './options';
+import type { CandidateDirectory } from './types';
 
 /**
  * Converts a relative path to a display-friendly path using POSIX separators.
@@ -34,13 +34,7 @@ export function selectLeafDirectories(params: {
 	selectedTotals: DirectoryAggregate;
 	selectedLeafDirSet: Set<string>;
 } {
-	const {
-		parentAbsolutePath,
-		parentBytes,
-		leafEntries,
-		selectionPolicy,
-		directoryMetrics,
-	} = params;
+	const { parentAbsolutePath, parentBytes, leafEntries, selectionPolicy, directoryMetrics } = params;
 
 	// Biggest first, so selection converges quickly.
 	leafEntries.sort((a, b) => b.totals.bytes - a.totals.bytes);

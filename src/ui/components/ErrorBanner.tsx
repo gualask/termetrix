@@ -12,12 +12,11 @@ export function ErrorBanner({ error, onDismiss }: Props) {
 			<AlertTriangle size={18} class="error-banner-icon" aria-hidden="true" />
 			<div class="error-banner-content">
 				<div class="error-banner-message">{error.message}</div>
-				{error.code && (
-					<div class="error-banner-details">Error code: {error.code}</div>
-				)}
+				{error.code && <div class="error-banner-details">Error code: {error.code}</div>}
 			</div>
 			{onDismiss && (
 				<button
+					type="button"
 					class="error-banner-dismiss"
 					onClick={onDismiss}
 					title="Dismiss error"

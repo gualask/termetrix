@@ -1,0 +1,118 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.3/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"ignoreUnknown": true,
+		"includes": ["src/**", "test/**", "*.mjs"]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab",
+		"lineWidth": 120
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "single",
+			"semicolons": "always",
+			"trailingCommas": "all"
+		}
+	},
+	"assist": {
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "recommended",
+			"a11y": {
+				"useSemanticElements": "off"
+			},
+			"style": {
+				"useThrowOnlyError": "error",
+				"noNonNullAssertion": "off",
+				"noDescendingSpecificity": "off"
+			}
+		}
+	},
+	"overrides": [
+		{
+			"includes": ["src/core/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{ "group": ["**/extension/**"], "message": "core must not import extension layer." },
+									{ "group": ["**/ui/**"], "message": "core must not import ui layer." },
+									{ "group": ["**/protocol/**"], "message": "core must not import protocol layer." }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": ["src/extension/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [{ "group": ["**/ui/**"], "message": "extension must not import ui layer." }]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": ["src/protocol/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{ "group": ["**/core/**"], "message": "protocol must not import core layer." },
+									{ "group": ["**/extension/**"], "message": "protocol must not import extension layer." },
+									{ "group": ["**/ui/**"], "message": "protocol must not import ui layer." }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": ["src/ui/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{ "group": ["**/extension/**"], "message": "ui must not import extension layer." },
+									{ "group": ["**/core/**"], "message": "ui must not import core layer." }
+								]
+							}
+						}
+					}
+				}
+			}
+		}
+	]
+}

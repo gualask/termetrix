@@ -1,8 +1,8 @@
-import type { MessageFromExtension, ScanKind } from '../../../types';
 import { logger } from '../../../support/logger';
-import { resolvePanelTargetPath } from './panelTargetPath';
-import type { PanelCommandErrorSpec } from './errors';
+import type { MessageFromExtension, ScanKind } from '../../../types';
 import { createErrorMessage, createNoRootMessage } from '../messages';
+import type { PanelCommandErrorSpec } from './errors';
+import { resolvePanelTargetPath } from './panelTargetPath';
 
 type PanelStateDeps = {
 	isPanelOpen: () => boolean;
@@ -66,14 +66,14 @@ export function getSyncedPanelRootOrSendNoRoot(deps: PanelScanDeps): string | un
 export function sendPanelError(
 	deps: { sendMessage: (message: MessageFromExtension) => void },
 	message: string,
-	code: string
+	code: string,
 ): void {
 	deps.sendMessage(
 		createErrorMessage({
 			message,
 			code,
 			recoverable: true,
-		})
+		}),
 	);
 }
 

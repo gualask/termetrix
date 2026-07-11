@@ -1,7 +1,6 @@
-import type { LOCResult } from '../../../shared/contracts/loc';
-import { TOP_FILES_LIMIT } from '../locConfig';
-import type { LocTopFile } from '../../../shared/contracts/loc';
+import type { LOCResult, LocTopFile } from '../../../shared/contracts/loc';
 import { insertBoundedDescending } from '../../shared/collections/boundedDescendingInsert';
+import { TOP_FILES_LIMIT } from '../locConfig';
 
 const getLocTopFileLines = (f: LocTopFile): number => f.lines;
 

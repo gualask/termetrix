@@ -60,4 +60,3 @@ export function formatIncompleteReason(reason: string | undefined): string {
 			return 'scan did not complete';
 	}
 }
-

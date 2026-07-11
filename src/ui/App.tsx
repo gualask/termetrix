@@ -1,9 +1,9 @@
 import { Loader2 } from 'lucide-preact';
-import { LocView } from './views/loc/LocView';
-import { SizeView } from './views/size/SizeView';
 import { EmptyState } from './components/EmptyState';
 import { ErrorBanner } from './components/ErrorBanner';
 import { useMetricsPanelState } from './hooks/useMetricsPanelState';
+import { LocView } from './views/loc/LocView';
+import { SizeView } from './views/size/SizeView';
 
 export function App() {
 	const { isReady, error, dismissError, size, loc } = useMetricsPanelState();
@@ -12,11 +12,7 @@ export function App() {
 		return (
 			<div class="app">
 				<div class="content">
-					<EmptyState
-						variant="page"
-						message="Loading…"
-						leading={<Loader2 size={32} class="spinner" />}
-					/>
+					<EmptyState variant="page" message="Loading…" leading={<Loader2 size={32} class="spinner" />} />
 				</div>
 			</div>
 		);

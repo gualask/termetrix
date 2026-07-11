@@ -11,7 +11,7 @@ export class DirectoryAggregate {
 	private constructor(
 		readonly bytes: number,
 		readonly fileCount: number,
-		readonly maxFileBytes: number
+		readonly maxFileBytes: number,
 	) {}
 
 	/** Returns an empty aggregate with all counters at zero. */
@@ -27,7 +27,7 @@ export class DirectoryAggregate {
 		return new DirectoryAggregate(
 			Math.max(0, totals.bytes),
 			Math.max(0, totals.fileCount),
-			Math.max(0, totals.maxFileBytes)
+			Math.max(0, totals.maxFileBytes),
 		);
 	}
 
@@ -39,7 +39,7 @@ export class DirectoryAggregate {
 		return new DirectoryAggregate(
 			this.bytes + other.bytes,
 			this.fileCount + other.fileCount,
-			Math.max(this.maxFileBytes, other.maxFileBytes)
+			Math.max(this.maxFileBytes, other.maxFileBytes),
 		);
 	}
 
@@ -54,7 +54,7 @@ export class DirectoryAggregate {
 		return new DirectoryAggregate(
 			Math.max(0, this.bytes - safeBytes),
 			Math.max(0, this.fileCount - safeFileCount),
-			this.maxFileBytes
+			this.maxFileBytes,
 		);
 	}
 

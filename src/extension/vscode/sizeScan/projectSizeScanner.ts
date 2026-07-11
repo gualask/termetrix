@@ -1,16 +1,16 @@
 import * as vscode from 'vscode';
-import type { ExtendedScanResult, ProgressData, ScanResult } from '../../types';
-import { logger } from '../../support/logger';
-import { ScanCache } from './state/scanCache';
-import { PROGRESS_THROTTLE_MS } from '../../support/constants';
-import { AutoRefreshController } from './controller/autoRefreshController';
-import { ScanEventEmitter } from './controller/scanEventEmitter';
 import { ScanRoot } from '../../../core/shared/pathing/scanRoot';
 import type { SizeScanMode } from '../../../core/sizeScan/engine/scanEngineTypes';
+import type { DirectoryMetricsSnapshot } from '../../../core/sizeScan/types';
+import { PROGRESS_THROTTLE_MS } from '../../support/constants';
+import { logger } from '../../support/logger';
+import type { ExtendedScanResult, ProgressData, ScanResult } from '../../types';
+import { AutoRefreshController } from './controller/autoRefreshController';
+import { ScanEventEmitter } from './controller/scanEventEmitter';
+import { RootLifecycleService } from './services/rootLifecycleService';
 import { ScanExecutionService } from './services/scanExecutionService';
 import { ScanLifecycleService } from './services/scanLifecycleService';
-import { RootLifecycleService } from './services/rootLifecycleService';
-import type { DirectoryMetricsSnapshot } from '../../../core/sizeScan/types';
+import { ScanCache } from './state/scanCache';
 
 type RunScanOptions = {
 	mode: SizeScanMode;
@@ -50,7 +50,7 @@ export class ProjectSizeScanner {
 			(rootPath) => this._onScanStart.fire(rootPath),
 			(progress) => this._onProgress.fire(progress),
 			() => this._onScanEnd.fire(),
-			PROGRESS_THROTTLE_MS
+			PROGRESS_THROTTLE_MS,
 		);
 
 		this.scanExecution = new ScanExecutionService((progress) => this.scanEvents.onProgress(progress));
@@ -83,7 +83,7 @@ export class ProjectSizeScanner {
 	/** Runs a scan in the background, logging any unexpected errors instead of propagating them. */
 	private backgroundScan(rootPath?: string): void {
 		void this.scan(rootPath).catch((err) =>
-			logger.error(`Background scan error: ${err instanceof Error ? err.message : String(err)}`)
+			logger.error(`Background scan error: ${err instanceof Error ? err.message : String(err)}`),
 		);
 	}
 
@@ -177,7 +177,7 @@ export class ProjectSizeScanner {
 	 */
 	private async runScan(
 		rootOverride: string | undefined,
-		options: RunScanOptions
+		options: RunScanOptions,
 	): Promise<ExtendedScanResult | undefined> {
 		const root = ScanRoot.fromPath(rootOverride ?? this.getCurrentRoot());
 		if (!root) return undefined;

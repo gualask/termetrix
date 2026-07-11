@@ -1,8 +1,6 @@
 import type { ScanIncompleteReason } from '../../../shared/contracts/scan';
 
-export type ScanCompletion =
-	| { kind: 'complete' }
-	| { kind: 'incomplete'; reason: ScanIncompleteReason };
+export type ScanCompletion = { kind: 'complete' } | { kind: 'incomplete'; reason: ScanIncompleteReason };
 
 /**
  * Creates a completion state for a fully completed scan.

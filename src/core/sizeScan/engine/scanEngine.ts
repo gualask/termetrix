@@ -1,13 +1,13 @@
-import type { ExtendedScanResult } from '../types';
-import { createConcurrencyLimiter } from '../../shared/runtime/concurrencyLimiter';
 import { noopLogger } from '../../ports/loggerPort';
-import type { ScanRuntimeState, SizeScanBudget, SizeScanParams } from './scanEngineTypes';
+import { createConcurrencyLimiter } from '../../shared/runtime/concurrencyLimiter';
+import { DirectoryMetricsStore } from '../model/directoryMetrics';
+import { completeScan, toScanResultCompletion } from '../model/scanCompletion';
+import type { ExtendedScanResult } from '../types';
 import { runDirectoryQueue } from './scanEngineCore';
 import { processDirectory } from './scanEngineFs';
-import { ScanTraversalContext } from './scanTraversalContext';
-import { completeScan, toScanResultCompletion } from '../model/scanCompletion';
+import type { ScanRuntimeState, SizeScanBudget, SizeScanParams } from './scanEngineTypes';
 import { resolveScanLimitsPolicy } from './scanLimits.policy';
-import { DirectoryMetricsStore } from '../model/directoryMetrics';
+import { ScanTraversalContext } from './scanTraversalContext';
 
 export type { SizeScanConfig, SizeScanParams } from './scanEngineTypes';
 
@@ -47,13 +47,8 @@ export async function scanProjectSize({
 	};
 
 	const queue: string[] = [rootPath];
-	const {
-		maxDurationMs,
-		maxDirectories,
-		maxFsConcurrency,
-		statBatchSize,
-		maxDirectoryConcurrency,
-	} = resolveScanLimitsPolicy(config);
+	const { maxDurationMs, maxDirectories, maxFsConcurrency, statBatchSize, maxDirectoryConcurrency } =
+		resolveScanLimitsPolicy(config);
 	const budget: SizeScanBudget = {
 		startTimeMs: startTime,
 		maxDurationMs,
@@ -76,7 +71,7 @@ export async function scanProjectSize({
 		{
 			isSummaryOnly,
 			directoryMetricsStore,
-		}
+		},
 	);
 
 	await runDirectoryQueue({
@@ -112,7 +107,7 @@ export async function scanProjectSize({
 			`${(result.totalBytes / 1024 / 1024).toFixed(1)} MB, ` +
 			`${result.metadata.duration}ms, ` +
 			`skipped: ${state.skippedCount.toLocaleString()} entries` +
-			(directoryMetricsStore ? `, ${directoryMetricsStore.size()} dir entries` : '')
+			(directoryMetricsStore ? `, ${directoryMetricsStore.size()} dir entries` : ''),
 	);
 
 	return result;

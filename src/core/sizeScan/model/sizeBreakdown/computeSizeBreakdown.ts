@@ -1,4 +1,4 @@
-import * as path from 'path';
+import * as path from 'node:path';
 import {
 	SIZE_BREAKDOWN_ROOT_SEGMENT,
 	type SizeBreakdownLeafDirectory,
@@ -9,17 +9,13 @@ import {
 import { CanonicalPath } from '../../../shared/pathing/canonicalPath';
 import type { DirectoryMetricsSnapshot } from '../../types';
 import type { CandidateDirectory } from './types';
+
 export type { ComputeSizeBreakdownOptions } from './options';
-import {
-	BreakdownPolicy,
-	type ComputeSizeBreakdownOptions,
-} from './options';
-import {
-	computeCandidatesByTopLevel,
-	computeTopLevelTotals,
-} from './topLevel';
-import { selectLeafDirectories } from './leafSelection';
+
 import { DirectoryAggregate } from './directoryAggregate';
+import { selectLeafDirectories } from './leafSelection';
+import { BreakdownPolicy, type ComputeSizeBreakdownOptions } from './options';
+import { computeCandidatesByTopLevel, computeTopLevelTotals } from './topLevel';
 
 export interface ComputeSizeBreakdownInput {
 	rootPath: string;
@@ -170,18 +166,22 @@ export function computeSizeBreakdown(input: ComputeSizeBreakdownInput): SizeBrea
 	const totalParentBytes = parents.reduce((sum, p) => sum + p.bytes, 0);
 	const shownParents: SizeBreakdownParent[] = [];
 	for (const [i, p] of parents.entries()) {
-		if (policy.selection.shouldStopBeforeSelecting({
-			selectedCount: i,
-			candidateBytes: p.bytes,
-			parentBytes: totalParentBytes,
-		})) break;
+		if (
+			policy.selection.shouldStopBeforeSelecting({
+				selectedCount: i,
+				candidateBytes: p.bytes,
+				parentBytes: totalParentBytes,
+			})
+		)
+			break;
 		shownParents.push(p);
 	}
 
 	const hiddenCount = parents.length - shownParents.length;
-	const hiddenParents = hiddenCount > 0
-		? { count: hiddenCount, bytes: parents.slice(shownParents.length).reduce((s, p) => s + p.bytes, 0) }
-		: undefined;
+	const hiddenParents =
+		hiddenCount > 0
+			? { count: hiddenCount, bytes: parents.slice(shownParents.length).reduce((s, p) => s + p.bytes, 0) }
+			: undefined;
 
 	return { rootPath, parents: shownParents, ...(hiddenParents && { hiddenParents }) };
 }

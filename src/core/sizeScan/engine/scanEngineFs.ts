@@ -1,10 +1,10 @@
-import * as path from 'path';
-import type { ConcurrencyLimiter } from '../../shared/runtime/concurrencyLimiter';
+import * as path from 'node:path';
 import type { DirEntry, FsPort } from '../../ports/fsPort';
+import type { ConcurrencyLimiter } from '../../shared/runtime/concurrencyLimiter';
+import { DirectoryDirectMetricsDelta } from '../model/directoryMetrics';
 import { CANCELLATION_CHECK_INTERVAL } from './scanEngineConstants';
 import { isPermissionDeniedError } from './scanEngineCore';
-import { ScanTraversalContext } from './scanTraversalContext';
-import { DirectoryDirectMetricsDelta } from '../model/directoryMetrics';
+import type { ScanTraversalContext } from './scanTraversalContext';
 
 /**
  * Stats a file and returns its size (-1 on error).
@@ -16,7 +16,7 @@ async function statFileSize(
 	runLimited: ConcurrencyLimiter,
 	fs: FsPort,
 	fullPath: string,
-	incrementSkipped: (count?: number) => void
+	incrementSkipped: (count?: number) => void,
 ): Promise<number> {
 	try {
 		const stats = await runLimited(() => fs.stat(fullPath));
@@ -39,7 +39,7 @@ async function tryReadDirEntries(
 	runLimited: ConcurrencyLimiter,
 	fs: FsPort,
 	currentPath: string,
-	context: Pick<ScanTraversalContext, 'incrementSkipped'>
+	context: Pick<ScanTraversalContext, 'incrementSkipped'>,
 ): Promise<ReadonlyArray<DirEntry> | undefined> {
 	try {
 		return await runLimited(() => fs.readDir(currentPath));
@@ -62,7 +62,7 @@ async function sumFileBatchSummary(
 	paths: ReadonlyArray<string>,
 	incrementSkipped: (count?: number) => void,
 	chunkSize: number,
-	shouldStop: () => boolean
+	shouldStop: () => boolean,
 ): Promise<number> {
 	// Summary-only: only total bytes (no per-directory metadata).
 	let totalBytesDelta = 0;
@@ -98,7 +98,7 @@ async function sumFileBatchFullInto(
 	directoryDelta: DirectoryDirectMetricsDelta,
 	incrementSkipped: (count?: number) => void,
 	chunkSize: number,
-	shouldStop: () => boolean
+	shouldStop: () => boolean,
 ): Promise<number> {
 	// Full: also compute metadata (counts/max/top files) for the UI.
 	let totalBytesDelta = 0;
@@ -138,8 +138,7 @@ async function scanDirectoryEntries(params: {
 	const incrementSkipped = (count?: number) => context.incrementSkipped(count);
 	const directoryDelta = new DirectoryDirectMetricsDelta();
 	let fileBatch: string[] = [];
-	const basePath =
-		currentPath.endsWith('/') || currentPath.endsWith('\\') ? currentPath : currentPath + path.sep;
+	const basePath = currentPath.endsWith('/') || currentPath.endsWith('\\') ? currentPath : currentPath + path.sep;
 	// Chunk stat scheduling to limit peak Promise/microtask pressure in huge directories.
 	// We still allow up to `maxFsConcurrency` in-flight operations overall via `runLimited`.
 	const statChunkSize = Math.max(1, maxFsConcurrency);
@@ -158,13 +157,8 @@ async function scanDirectoryEntries(params: {
 
 		if (isSummaryOnly) {
 			// Status bar / summary mode: update only the total
-			const totalBytesDelta = await sumFileBatchSummary(
-				runLimited,
-				fs,
-				paths,
-				incrementSkipped,
-				statChunkSize,
-				() => context.shouldStop()
+			const totalBytesDelta = await sumFileBatchSummary(runLimited, fs, paths, incrementSkipped, statChunkSize, () =>
+				context.shouldStop(),
 			);
 			context.addTotalBytes(totalBytesDelta);
 			return;
@@ -178,7 +172,7 @@ async function scanDirectoryEntries(params: {
 			directoryDelta,
 			incrementSkipped,
 			statChunkSize,
-			() => context.shouldStop()
+			() => context.shouldStop(),
 		);
 		context.addTotalBytes(totalBytesDelta);
 	};
@@ -227,13 +221,7 @@ async function scanDirectoryEntries(params: {
  * @returns Promise resolving once the directory is processed.
  */
 export async function processDirectory(currentPath: string, context: ScanTraversalContext): Promise<void> {
-	const {
-		runLimited,
-		fs,
-		isSummaryOnly,
-		directoryMetricsStore,
-	} =
-		context;
+	const { runLimited, fs, isSummaryOnly, directoryMetricsStore } = context;
 
 	if (context.shouldStop()) return;
 

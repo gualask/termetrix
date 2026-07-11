@@ -1,9 +1,14 @@
 import { Folder, MoreHorizontal } from 'lucide-preact';
-import type { SizeBreakdownLeafDirectory, SizeBreakdownOthers, SizeBreakdownParent, SizeBreakdownResult } from '../../types';
-import { formatBytes } from '../../utils';
 import { EmptyState } from '../../components/EmptyState';
-import { SizeTableRow } from './SizeTableRow';
+import type {
+	SizeBreakdownLeafDirectory,
+	SizeBreakdownOthers,
+	SizeBreakdownParent,
+	SizeBreakdownResult,
+} from '../../types';
+import { formatBytes } from '../../utils';
 import { SizeGroupHeader } from './SizeGroupHeader';
+import { SizeTableRow } from './SizeTableRow';
 import { formatBreakdownParentPath } from './sizeFormatters';
 
 interface Props {
@@ -48,7 +53,15 @@ function OthersRow({ others, parentBytes }: { others: SizeBreakdownOthers; paren
 	);
 }
 
-function ParentCard({ parent, shareOfTotal, onReveal }: { parent: SizeBreakdownParent; shareOfTotal: number; onReveal: (path: string) => void }) {
+function ParentCard({
+	parent,
+	shareOfTotal,
+	onReveal,
+}: {
+	parent: SizeBreakdownParent;
+	shareOfTotal: number;
+	onReveal: (path: string) => void;
+}) {
 	const parentDisplayPath = formatBreakdownParentPath(parent.path);
 	const leafEntries = parent.entries.filter((e): e is SizeBreakdownLeafDirectory => !isOthers(e));
 	const others = parent.entries.find(isOthers) as SizeBreakdownOthers | undefined;
@@ -95,9 +108,7 @@ export function SizeChart({ breakdown, totalBytes, onReveal, isLoading }: Props)
 
 	if (parents.length === 0) {
 		return (
-			<div class="size-chart empty">
-				{!isLoading && <EmptyState variant="inline" message="No data available." />}
-			</div>
+			<div class="size-chart empty">{!isLoading && <EmptyState variant="inline" message="No data available." />}</div>
 		);
 	}
 
@@ -113,7 +124,8 @@ export function SizeChart({ breakdown, totalBytes, onReveal, isLoading }: Props)
 			))}
 			{breakdown.hiddenParents && (
 				<div class="size-chart-hidden-note">
-					+{breakdown.hiddenParents.count} small {breakdown.hiddenParents.count === 1 ? 'directory' : 'directories'} not shown · {formatBytes(breakdown.hiddenParents.bytes)} total
+					+{breakdown.hiddenParents.count} small {breakdown.hiddenParents.count === 1 ? 'directory' : 'directories'} not
+					shown · {formatBytes(breakdown.hiddenParents.bytes)} total
 				</div>
 			)}
 		</div>

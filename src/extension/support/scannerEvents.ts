@@ -1,6 +1,6 @@
 import type * as vscode from 'vscode';
-import type { ProjectSizeScanner } from '../vscode/sizeScan/projectSizeScanner';
 import type { ProgressData } from '../types';
+import type { ProjectSizeScanner } from '../vscode/sizeScan/projectSizeScanner';
 import { DisposableStore } from './disposableStore';
 
 export interface ScanEventHandlers {

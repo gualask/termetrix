@@ -20,13 +20,7 @@ export class SelectionLinesStatusBarItem implements vscode.Disposable {
 		const selectionListener = this.createSelectionListener();
 		const activeEditorListener = this.createActiveEditorListener();
 
-		this.disposables.add(
-			vscode.Disposable.from(
-				this.statusBarItem,
-				selectionListener,
-				activeEditorListener
-			)
-		);
+		this.disposables.add(vscode.Disposable.from(this.statusBarItem, selectionListener, activeEditorListener));
 
 		this.render();
 	}

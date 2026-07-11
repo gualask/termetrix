@@ -1,5 +1,5 @@
-import type { ExtendedScanResult, ScanResult } from '../../../types';
 import { ScanRoot } from '../../../../core/shared/pathing/scanRoot';
+import type { ExtendedScanResult, ScanResult } from '../../../types';
 import { toPublicScanResult } from './scanResultSanitizer';
 
 const MAX_CACHE_ENTRIES = 10;

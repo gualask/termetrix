@@ -32,15 +32,19 @@ export function SizeTableRow({
 	onClick,
 	title,
 }: SizeTableRowProps) {
-	const bubbleLines = kind === 'leaf'
-		? []
-		: [...(title ? [title] : []), ...buildSizeMetricTooltipLines({
-			sizeBytes: size,
-			share,
-			variant: 'parent',
-			fileCount,
-			maxFileBytes,
-		})];
+	const bubbleLines =
+		kind === 'leaf'
+			? []
+			: [
+					...(title ? [title] : []),
+					...buildSizeMetricTooltipLines({
+						sizeBytes: size,
+						share,
+						variant: 'parent',
+						fileCount,
+						maxFileBytes,
+					}),
+				];
 
 	const content = (
 		<div class="size-table-grid">
@@ -55,11 +59,7 @@ export function SizeTableRow({
 			</div>
 
 			<div class="size-table-metricsCell">
-				<SizeMetric
-					sizeBytes={size}
-					share={share}
-					variant="parent"
-				/>
+				<SizeMetric sizeBytes={size} share={share} variant="parent" />
 			</div>
 		</div>
 	);

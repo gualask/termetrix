@@ -1,5 +1,5 @@
-import { Fragment, type ComponentChildren } from 'preact';
 import { Dot } from 'lucide-preact';
+import { type ComponentChildren, Fragment } from 'preact';
 
 export interface PrimaryMetric {
 	title: string;
@@ -22,18 +22,12 @@ interface Props {
 	actions?: ComponentChildren;
 }
 
-export function MetricsHeader({
-	ariaLabel,
-	metricsAriaLabel,
-	primary,
-	secondary = [],
-	actions,
-}: Props) {
+export function MetricsHeader({ ariaLabel, metricsAriaLabel, primary, secondary = [], actions }: Props) {
 	return (
-		<header class="tmx-header-card" aria-label={ariaLabel}>
+		<section class="tmx-header-card" aria-label={ariaLabel}>
 			<div class="tmx-hero">
 				<div class="tmx-hero-row">
-					<div class="tmx-metrics-line" aria-label={metricsAriaLabel}>
+					<div class="tmx-metrics-line" role="group" aria-label={metricsAriaLabel}>
 						<span class="tmx-metric-primary" title={primary.title}>
 							{primary.icon}
 							<span class="tmx-metric-primaryValue">{primary.value}</span>
@@ -55,6 +49,6 @@ export function MetricsHeader({
 					{actions && <div class="tmx-metric-actions">{actions}</div>}
 				</div>
 			</div>
-		</header>
+		</section>
 	);
 }

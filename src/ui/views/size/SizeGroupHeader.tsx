@@ -13,7 +13,15 @@ interface SizeGroupHeaderProps {
 	onClick: () => void;
 }
 
-export function SizeGroupHeader({ icon, name, size, fileCount, maxFileBytes, shareOfTotal, onClick }: SizeGroupHeaderProps) {
+export function SizeGroupHeader({
+	icon,
+	name,
+	size,
+	fileCount,
+	maxFileBytes,
+	shareOfTotal,
+	onClick,
+}: SizeGroupHeaderProps) {
 	const tooltipLines = buildSizeMetricTooltipLines({
 		sizeBytes: size,
 		share: shareOfTotal,
@@ -34,11 +42,7 @@ export function SizeGroupHeader({ icon, name, size, fileCount, maxFileBytes, sha
 				</div>
 
 				<div class="size-groupHeaderMetrics">
-					<SizeMetric
-						sizeBytes={size}
-						share={shareOfTotal}
-						variant="total"
-					/>
+					<SizeMetric sizeBytes={size} share={shareOfTotal} variant="total" />
 				</div>
 			</div>
 		</RowButton>

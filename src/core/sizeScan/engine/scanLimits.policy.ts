@@ -1,10 +1,6 @@
-import type { SizeScanConfig } from './scanEngineTypes';
-import {
-	ConcurrencyLimit,
-	DurationMs,
-	PositiveInt,
-} from '../../shared/numericValueObjects';
 import { SIZE_SCAN_DEFAULTS } from '../../../shared/contracts/sizeScanDefaults';
+import { ConcurrencyLimit, DurationMs, PositiveInt } from '../../shared/numericValueObjects';
+import type { SizeScanConfig } from './scanEngineTypes';
 
 export interface ScanLimitsPolicy {
 	maxDurationMs: DurationMs;
@@ -18,10 +14,7 @@ export interface ScanLimitsPolicy {
  * Resolves raw size-scan config into normalized runtime limits.
  */
 export function resolveScanLimitsPolicy(input: SizeScanConfig): ScanLimitsPolicy {
-	const maxDurationMs = DurationMs.fromSeconds(
-		input.maxDurationSeconds,
-		SIZE_SCAN_DEFAULTS.maxDurationSeconds
-	);
+	const maxDurationMs = DurationMs.fromSeconds(input.maxDurationSeconds, SIZE_SCAN_DEFAULTS.maxDurationSeconds);
 	const maxDirectories = PositiveInt.from(input.maxDirectories, SIZE_SCAN_DEFAULTS.maxDirectories);
 	const rawFsConcurrency = PositiveInt.from(input.fsConcurrency, SIZE_SCAN_DEFAULTS.fsConcurrency);
 	const maxFsConcurrency = PositiveInt.from(Math.min(rawFsConcurrency.value, 128), SIZE_SCAN_DEFAULTS.fsConcurrency);

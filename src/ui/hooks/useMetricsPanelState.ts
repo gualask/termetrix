@@ -1,12 +1,5 @@
-import { useEffect, useCallback, useReducer, useMemo, useState } from 'preact/hooks';
-import type {
-	SizeBreakdownResult,
-	LOCResult,
-	MessageFromExtension,
-	ViewData,
-	ProgressData,
-	ErrorData,
-} from '../types';
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'preact/hooks';
+import type { ErrorData, LOCResult, MessageFromExtension, ProgressData, SizeBreakdownResult, ViewData } from '../types';
 import {
 	postCalculateLOC,
 	postCancelScan,
@@ -26,9 +19,7 @@ type MetricsPanelInternalState = {
 	error: ErrorData | null;
 };
 
-type MetricsPanelAction =
-	| { type: 'message'; message: MessageFromExtension }
-	| { type: 'dismissError' };
+type MetricsPanelAction = { type: 'message'; message: MessageFromExtension } | { type: 'dismissError' };
 
 export const initialMetricsPanelState: MetricsPanelInternalState = {
 	isReady: false,
@@ -51,7 +42,7 @@ function clearProgressData(state: MetricsPanelInternalState): MetricsPanelIntern
 
 export function metricsPanelReducer(
 	state: MetricsPanelInternalState,
-	action: MetricsPanelAction
+	action: MetricsPanelAction,
 ): MetricsPanelInternalState {
 	if (action.type === 'dismissError') return { ...state, error: null };
 	if (action.type !== 'message') return state;
@@ -192,10 +183,10 @@ export function useMetricsPanelState(): State {
 		dispatch({ type: 'dismissError' });
 	}, []);
 
-	const toggleLocCollapse = useCallback(() => setIsLocCollapsed(v => !v), []);
-	const toggleLocShowAllFiles = useCallback(() => setLocShowAllFiles(v => !v), []);
-	const toggleLocShowAllLanguages = useCallback(() => setLocShowAllLanguages(v => !v), []);
-	const toggleSizeCollapse = useCallback(() => setIsSizeCollapsed(v => !v), []);
+	const toggleLocCollapse = useCallback(() => setIsLocCollapsed((v) => !v), []);
+	const toggleLocShowAllFiles = useCallback(() => setLocShowAllFiles((v) => !v), []);
+	const toggleLocShowAllLanguages = useCallback(() => setLocShowAllLanguages((v) => !v), []);
+	const toggleSizeCollapse = useCallback(() => setIsSizeCollapsed((v) => !v), []);
 
 	const size = useMemo<SizeSlice>(
 		() => ({
@@ -209,14 +200,7 @@ export function useMetricsPanelState(): State {
 				toggleCollapse: toggleSizeCollapse,
 			},
 		}),
-		[
-			state.viewData,
-			state.breakdown,
-			state.progressData,
-			isSizeCollapsed,
-			refreshOrCancelScan,
-			toggleSizeCollapse,
-		]
+		[state.viewData, state.breakdown, state.progressData, isSizeCollapsed, refreshOrCancelScan, toggleSizeCollapse],
 	);
 
 	const loc = useMemo<LocSlice>(
@@ -244,7 +228,7 @@ export function useMetricsPanelState(): State {
 			toggleLocCollapse,
 			toggleLocShowAllFiles,
 			toggleLocShowAllLanguages,
-		]
+		],
 	);
 
 	return {

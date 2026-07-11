@@ -1,8 +1,4 @@
-import {
-	BoundedRatio,
-	NonNegativeInt,
-	PositiveInt,
-} from '../../../shared/numericValueObjects';
+import { BoundedRatio, NonNegativeInt, PositiveInt } from '../../../shared/numericValueObjects';
 
 export { BoundedRatio, NonNegativeInt, PositiveInt };
 
@@ -21,7 +17,7 @@ export class BreakdownSelectionPolicy {
 	constructor(
 		readonly coverageTarget: BoundedRatio,
 		readonly minItemPercent: BoundedRatio,
-		readonly maxItems: PositiveInt
+		readonly maxItems: PositiveInt,
 	) {}
 
 	/**
@@ -67,9 +63,7 @@ export class BreakdownPolicy {
 		const minItemPercent = BoundedRatio.from(options?.minItemPercent, 0.03);
 		const maxItems = PositiveInt.from(options?.maxItems, deriveDefaultMaxItems(minItemPercent));
 
-		return new BreakdownPolicy(
-			new BreakdownSelectionPolicy(coverageTarget, minItemPercent, maxItems),
-		);
+		return new BreakdownPolicy(new BreakdownSelectionPolicy(coverageTarget, minItemPercent, maxItems));
 	}
 }
 

@@ -1,8 +1,8 @@
-import type { MessageToExtension } from '../../../../types';
-import type { MetricsPanelCommandDeps, MetricsPanelCommandHandler } from '../types';
-import { getSyncedPanelRootOrSendNoRoot } from '../metricsPanelCommandUtils';
-import { createUpdateMessage, createBreakdownMessage } from '../../messages';
 import { configManager } from '../../../../support/configManager';
+import type { MessageToExtension } from '../../../../types';
+import { createBreakdownMessage, createUpdateMessage } from '../../messages';
+import { getSyncedPanelRootOrSendNoRoot } from '../metricsPanelCommandUtils';
+import type { MetricsPanelCommandDeps, MetricsPanelCommandHandler } from '../types';
 import { startLocScanForPanel } from './loc';
 
 function onReady(deps: MetricsPanelCommandDeps): void {
@@ -28,10 +28,9 @@ function onReady(deps: MetricsPanelCommandDeps): void {
  * Creates the handler map for the panel bootstrap phase (the `ready` command).
  * @param deps - Panel command dependencies.
  */
-export function createBootstrapHandlers(deps: MetricsPanelCommandDeps): Pick<
-	Record<MessageToExtension['command'], MetricsPanelCommandHandler>,
-	'ready'
-> {
+export function createBootstrapHandlers(
+	deps: MetricsPanelCommandDeps,
+): Pick<Record<MessageToExtension['command'], MetricsPanelCommandHandler>, 'ready'> {
 	return {
 		ready: () => onReady(deps),
 	};

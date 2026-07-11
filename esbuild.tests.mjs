@@ -2,9 +2,10 @@
  * esbuild configuration for unit tests (Node.js).
  * Bundles TS test entrypoints into `out-test/` so they are easy to run via `node --test`.
  */
-import process from 'node:process';
+
 import console from 'node:console';
 import fs from 'node:fs';
+import process from 'node:process';
 import * as esbuild from 'esbuild';
 
 const watch = process.argv.includes('--watch');

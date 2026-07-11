@@ -1,12 +1,17 @@
 import * as vscode from 'vscode';
-import type { MessageToExtension, ProgressData } from '../../../types';
-import { ScannerEventSubscription } from '../../../support/scannerEvents';
 import { DisposableStore } from '../../../support/disposableStore';
-import { type MetricsPanelCommandHandler } from '../commands/metricsPanelCommands';
-import { dispatchMetricsPanelWebviewMessage } from '../commands/metricsPanelMessageRouter';
-import { createProgressMessage, createScanStartMessage, createUpdateMessage, createBreakdownMessage } from '../messages';
-import type { ProjectSizeScanner } from '../../sizeScan/projectSizeScanner';
+import { ScannerEventSubscription } from '../../../support/scannerEvents';
+import type { MessageToExtension, ProgressData } from '../../../types';
 import type { LOCScanner } from '../../locScan/locScanner';
+import type { ProjectSizeScanner } from '../../sizeScan/projectSizeScanner';
+import type { MetricsPanelCommandHandler } from '../commands/metricsPanelCommands';
+import { dispatchMetricsPanelWebviewMessage } from '../commands/metricsPanelMessageRouter';
+import {
+	createBreakdownMessage,
+	createProgressMessage,
+	createScanStartMessage,
+	createUpdateMessage,
+} from '../messages';
 import type { MetricsPanelSessionState } from '../state/metricsPanelSessionState';
 import type { MetricsPanelView } from '../view/metricsPanelView';
 
@@ -24,7 +29,7 @@ export class MetricsPanelController implements vscode.Disposable {
 			view: MetricsPanelView;
 			sessionState: MetricsPanelSessionState;
 			commandHandlers: Record<MessageToExtension['command'], MetricsPanelCommandHandler>;
-		}
+		},
 	) {}
 
 	reset({ cancelScans = false }: { cancelScans?: boolean } = {}): void {
@@ -53,14 +58,14 @@ export class MetricsPanelController implements vscode.Disposable {
 		});
 
 		// The dispatcher validates message shape; handlers are the only entry points into VS Code APIs.
-		const webviewMessageListener = panel.webview.onDidReceiveMessage((message) =>
-			void dispatchMetricsPanelWebviewMessage(message, this.deps.commandHandlers)
+		const webviewMessageListener = panel.webview.onDidReceiveMessage(
+			(message) => void dispatchMetricsPanelWebviewMessage(message, this.deps.commandHandlers),
 		);
 
 		const disposeListener = panel.onDidDispose(() => this.reset({ cancelScans: true }));
 
 		this.panelDisposables.add(
-			vscode.Disposable.from(scanEvents, activeEditorListener, webviewMessageListener, disposeListener)
+			vscode.Disposable.from(scanEvents, activeEditorListener, webviewMessageListener, disposeListener),
 		);
 	}
 

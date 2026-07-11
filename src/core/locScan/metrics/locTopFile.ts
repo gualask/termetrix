@@ -18,4 +18,3 @@ export function createLocTopFile(params: {
 	const path = relativePath.replace(/\\/g, '/');
 	return { path, lines, language };
 }
-

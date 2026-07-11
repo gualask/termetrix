@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { formatRelativeTime } from '../utils';
 
 export function useRelativeTime(endTime: number | undefined): string | undefined {
-	const [label, setLabel] = useState<string | undefined>(
-		() => endTime !== undefined ? formatRelativeTime(endTime, Date.now()) : undefined
+	const [label, setLabel] = useState<string | undefined>(() =>
+		endTime !== undefined ? formatRelativeTime(endTime, Date.now()) : undefined,
 	);
 
 	useEffect(() => {

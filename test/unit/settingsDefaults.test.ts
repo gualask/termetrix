@@ -1,10 +1,9 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-
-import { SIZE_SCAN_DEFAULTS } from '../../src/shared/contracts/sizeScanDefaults';
-import { TERMETRIX_SETTINGS_DEFAULTS } from '../../src/shared/contracts/settingsDefaults';
+import test from 'node:test';
 import { CONFIG_KEYS, CONFIG_SECTION_IDS } from '../../src/extension/support/constants';
+import { TERMETRIX_SETTINGS_DEFAULTS } from '../../src/shared/contracts/settingsDefaults';
+import { SIZE_SCAN_DEFAULTS } from '../../src/shared/contracts/sizeScanDefaults';
 
 type PackageJson = {
 	contributes?: {
@@ -43,38 +42,41 @@ test('package.json settings defaults match TERMETRIX_SETTINGS_DEFAULTS', () => {
 	assert.ok(props, 'Expected package.json contributes.configuration.properties');
 
 	const scan = CONFIG_SECTION_IDS.scan;
-	assert.equal(getDefault(props, `${scan}.${CONFIG_KEYS.scan.autoScanMode}`), TERMETRIX_SETTINGS_DEFAULTS.scan.autoScanMode);
+	assert.equal(
+		getDefault(props, `${scan}.${CONFIG_KEYS.scan.autoScanMode}`),
+		TERMETRIX_SETTINGS_DEFAULTS.scan.autoScanMode,
+	);
 	assert.equal(
 		getDefault(props, `${scan}.${CONFIG_KEYS.scan.maxDurationSeconds}`),
-		TERMETRIX_SETTINGS_DEFAULTS.scan.maxDurationSeconds
+		TERMETRIX_SETTINGS_DEFAULTS.scan.maxDurationSeconds,
 	);
 	assert.equal(
 		getDefault(props, `${scan}.${CONFIG_KEYS.scan.maxDirectories}`),
-		TERMETRIX_SETTINGS_DEFAULTS.scan.maxDirectories
+		TERMETRIX_SETTINGS_DEFAULTS.scan.maxDirectories,
 	);
 	const autoRefresh = CONFIG_SECTION_IDS.autoRefresh;
 	assert.equal(
 		getDefault(props, `${autoRefresh}.${CONFIG_KEYS.autoRefresh.enabled}`),
-		TERMETRIX_SETTINGS_DEFAULTS.autoRefresh.enabled
+		TERMETRIX_SETTINGS_DEFAULTS.autoRefresh.enabled,
 	);
 	assert.equal(
 		getDefault(props, `${autoRefresh}.${CONFIG_KEYS.autoRefresh.minutes}`),
-		TERMETRIX_SETTINGS_DEFAULTS.autoRefresh.minutes
+		TERMETRIX_SETTINGS_DEFAULTS.autoRefresh.minutes,
 	);
 
 	const statusBar = CONFIG_SECTION_IDS.statusBar;
 	assert.equal(
 		getDefault(props, `${statusBar}.${CONFIG_KEYS.statusBar.showTerminalButton}`),
-		TERMETRIX_SETTINGS_DEFAULTS.statusBar.showTerminalButton
+		TERMETRIX_SETTINGS_DEFAULTS.statusBar.showTerminalButton,
 	);
 	assert.equal(
 		getDefault(props, `${statusBar}.${CONFIG_KEYS.statusBar.showSelectionLineCount}`),
-		TERMETRIX_SETTINGS_DEFAULTS.statusBar.showSelectionLineCount
+		TERMETRIX_SETTINGS_DEFAULTS.statusBar.showSelectionLineCount,
 	);
 
 	const logging = CONFIG_SECTION_IDS.logging;
 	assert.equal(
 		getDefault(props, `${logging}.${CONFIG_KEYS.logging.verbose}`),
-		TERMETRIX_SETTINGS_DEFAULTS.logging.verbose
+		TERMETRIX_SETTINGS_DEFAULTS.logging.verbose,
 	);
 });

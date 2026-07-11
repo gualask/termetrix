@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
 import { configManager } from '../../../support/configManager';
 import { IntervalTimer } from '../../../support/intervalTimer';
 

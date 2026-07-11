@@ -1,5 +1,5 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import test from 'node:test';
 
 import { createConcurrencyLimiter } from '../../src/core/shared/runtime/concurrencyLimiter';
 
@@ -29,7 +29,7 @@ test('createConcurrencyLimiter: never exceeds max concurrency and preserves comp
 			await gate.promise;
 			active--;
 			finished.push(i);
-		})
+		}),
 	);
 
 	// Allow the microtasks to start the first batch.

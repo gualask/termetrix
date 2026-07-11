@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
-import { ProjectSizeScanner } from '../sizeScan/projectSizeScanner';
-import type { ProgressData } from '../../types';
 import { formatBytes } from '../../../shared/formatters';
-import { ScannerEventSubscription } from '../../support/scannerEvents';
-import { DisposableStore } from '../../support/disposableStore';
-import { MetricsStatusBarRenderer } from './render/metricsStatusBarRenderer';
 import { COMMAND_IDS } from '../../support/constants';
+import { DisposableStore } from '../../support/disposableStore';
+import { ScannerEventSubscription } from '../../support/scannerEvents';
+import type { ProgressData } from '../../types';
+import type { ProjectSizeScanner } from '../sizeScan/projectSizeScanner';
+import { MetricsStatusBarRenderer } from './render/metricsStatusBarRenderer';
 
 /**
  * Status bar item showing project size.
@@ -24,13 +24,7 @@ export class MetricsStatusBarItem implements vscode.Disposable {
 		const scannerSubscription = this.createScannerSubscription();
 		const rootChangedListener = this.scanner.onRootChanged(() => this.render());
 
-		this.disposables.add(
-			vscode.Disposable.from(
-				this.statusBarItem,
-				scannerSubscription,
-				rootChangedListener
-			)
-		);
+		this.disposables.add(vscode.Disposable.from(this.statusBarItem, scannerSubscription, rootChangedListener));
 
 		this.render();
 		this.statusBarItem.show();

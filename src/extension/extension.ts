@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
-import { TerminalStatusBarItem } from './vscode/statusBar/terminalItem';
-import { MetricsStatusBarItem } from './vscode/statusBar/metricsItem';
-import { ScanRefreshStatusBarItem } from './vscode/statusBar/scanRefreshItem';
-import { SelectionLinesStatusBarItem } from './vscode/statusBar/selectionLinesItem';
-import { ProjectSizeScanner } from './vscode/sizeScan/projectSizeScanner';
-import { MetricsPanel } from './vscode/metricsPanel/metricsPanel';
 import { configManager, shouldAutoScanOnStartup } from './support/configManager';
 import { COMMAND_IDS } from './support/constants';
 import { logger } from './support/logger';
+import { MetricsPanel } from './vscode/metricsPanel/metricsPanel';
+import { ProjectSizeScanner } from './vscode/sizeScan/projectSizeScanner';
+import { MetricsStatusBarItem } from './vscode/statusBar/metricsItem';
+import { ScanRefreshStatusBarItem } from './vscode/statusBar/scanRefreshItem';
+import { SelectionLinesStatusBarItem } from './vscode/statusBar/selectionLinesItem';
+import { TerminalStatusBarItem } from './vscode/statusBar/terminalItem';
 
 /**
  * Creates the core, long-lived services used by the extension.
@@ -77,9 +77,7 @@ function registerCommands(params: {
  * @param params.scanner - Scanner to update when the active editor changes.
  * @returns Subscription disposable.
  */
-function registerEditorTracking(params: {
-	scanner: ProjectSizeScanner;
-}): vscode.Disposable {
+function registerEditorTracking(params: { scanner: ProjectSizeScanner }): vscode.Disposable {
 	const { scanner } = params;
 	return vscode.window.onDidChangeActiveTextEditor((editor) => {
 		if (!editor) return;
@@ -101,9 +99,9 @@ function runInitialScan(params: { scanner: ProjectSizeScanner }): void {
 		return;
 	}
 
-	void scanner.scan().catch((err) =>
-		logger.error(`Initial scan error: ${err instanceof Error ? err.message : String(err)}`)
-	);
+	void scanner
+		.scan()
+		.catch((err) => logger.error(`Initial scan error: ${err instanceof Error ? err.message : String(err)}`));
 }
 
 /**
@@ -116,7 +114,8 @@ export function activate(context: vscode.ExtensionContext) {
 	logger.initialize();
 	logger.debug('Termetrix is now active');
 
-	const { scanner, metricsPanel, terminalItem, metricsItem, scanRefreshItem, selectionLinesItem } = createCoreServices(context);
+	const { scanner, metricsPanel, terminalItem, metricsItem, scanRefreshItem, selectionLinesItem } =
+		createCoreServices(context);
 	const commands = registerCommands({ scanner, metricsPanel, terminalItem });
 	const editorTracking = registerEditorTracking({ scanner });
 
@@ -140,7 +139,7 @@ export function activate(context: vscode.ExtensionContext) {
 		statusBarConfigSubscription,
 		// Dispose scanner and logger on deactivation
 		{ dispose: () => scanner.dispose() },
-		{ dispose: () => logger.dispose() }
+		{ dispose: () => logger.dispose() },
 	);
 
 	runInitialScan({ scanner });

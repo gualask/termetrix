@@ -13,10 +13,7 @@ export class TerminalStatusBarItem implements vscode.Disposable {
 	 */
 	constructor() {
 		// Secondary/contextual action: keep it on the right per VS Code status bar conventions.
-		this.statusBarItem = vscode.window.createStatusBarItem(
-			vscode.StatusBarAlignment.Right,
-			1000
-		);
+		this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1000);
 
 		// Icon-only, no text
 		this.statusBarItem.text = '$(terminal)';

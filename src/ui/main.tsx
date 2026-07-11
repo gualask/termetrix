@@ -7,5 +7,5 @@ render(
 	<ErrorBoundary>
 		<App />
 	</ErrorBoundary>,
-	document.body
+	document.body,
 );

@@ -1,6 +1,6 @@
-import * as vscode from 'vscode';
-import { createCancellableSession } from './scanSession';
+import type * as vscode from 'vscode';
 import { logger } from '../../../support/logger';
+import { createCancellableSession } from './scanSession';
 
 /**
  * Runs cancellable scan tasks and manages scan lifecycle state.

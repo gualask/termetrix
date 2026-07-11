@@ -12,7 +12,7 @@ export interface CancellableProgressSession<T> {
  * @returns Session handle with run/dispose.
  */
 export function createCancellableSession<T>(
-	task: (cancellationToken: vscode.CancellationToken) => Promise<T>
+	task: (cancellationToken: vscode.CancellationToken) => Promise<T>,
 ): CancellableProgressSession<T> {
 	const cancellationSource = new vscode.CancellationTokenSource();
 	return {

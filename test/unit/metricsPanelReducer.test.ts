@@ -1,5 +1,5 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import test from 'node:test';
 
 import { initialMetricsPanelState, metricsPanelReducer } from '../../src/ui/hooks/useMetricsPanelState';
 
@@ -88,8 +88,8 @@ test('metricsPanelReducer: cancel with no prior breakdown keeps breakdown null',
 		type: 'message',
 		message: { type: 'update', data: { isScanning: false, scanResult: scanA } },
 	});
-	assert.ok(state.viewData.scanResult);  // workspace still shown
-	assert.equal(state.breakdown, null);   // no breakdown (none was loaded before cancel)
+	assert.ok(state.viewData.scanResult); // workspace still shown
+	assert.equal(state.breakdown, null); // no breakdown (none was loaded before cancel)
 });
 
 test('metricsPanelReducer: cancel with existing breakdown keeps chart visible', () => {
@@ -114,7 +114,7 @@ test('metricsPanelReducer: cancel with existing breakdown keeps chart visible', 
 		type: 'message',
 		message: { type: 'update', data: { isScanning: false, scanResult: scanA } },
 	});
-	assert.ok(state.breakdown);  // chart stays visible
+	assert.ok(state.breakdown); // chart stays visible
 });
 
 test('metricsPanelReducer: scanStart keeps existing breakdown visible', () => {

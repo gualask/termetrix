@@ -1,9 +1,9 @@
-import * as path from 'path';
-import { CanonicalPath } from '../../../shared/pathing/canonicalPath';
+import * as path from 'node:path';
 import { SIZE_BREAKDOWN_ROOT_SEGMENT } from '../../../../shared/contracts/sizeBreakdown';
+import type { CanonicalPath } from '../../../shared/pathing/canonicalPath';
 import type { DirectoryMetricsSnapshot } from '../../types';
-import type { CandidateDirectory } from './types';
 import { DirectoryAggregate, type DirectoryAggregateSnapshot } from './directoryAggregate';
+import type { CandidateDirectory } from './types';
 
 /**
  * Returns the first path segment under `root` for an absolute path (or `undefined` if invalid).
@@ -37,25 +37,18 @@ function getTopLevelSegment(root: CanonicalPath, absolutePath: string): string |
 	const slashIndex = relative.indexOf('/');
 	const backslashIndex = relative.indexOf('\\');
 	const sepIndex =
-		slashIndex === -1
-			? backslashIndex
-			: backslashIndex === -1
-				? slashIndex
-				: Math.min(slashIndex, backslashIndex);
+		slashIndex === -1 ? backslashIndex : backslashIndex === -1 ? slashIndex : Math.min(slashIndex, backslashIndex);
 	return sepIndex === -1 ? relative : relative.slice(0, sepIndex);
 }
 
-function getAggregate(
-	map: Map<string, DirectoryAggregate>,
-	seg: string
-): DirectoryAggregate {
+function getAggregate(map: Map<string, DirectoryAggregate>, seg: string): DirectoryAggregate {
 	return map.get(seg) ?? DirectoryAggregate.empty();
 }
 
 function bumpTotals(
 	totalsBySeg: Map<string, DirectoryAggregate>,
 	seg: string,
-	metrics: DirectoryAggregateSnapshot
+	metrics: DirectoryAggregateSnapshot,
 ): void {
 	totalsBySeg.set(seg, getAggregate(totalsBySeg, seg).merge(DirectoryAggregate.fromTotals(metrics)));
 }
@@ -69,7 +62,7 @@ function bumpTotals(
  */
 export function computeTopLevelTotals(
 	root: CanonicalPath,
-	directoryMetrics: DirectoryMetricsSnapshot
+	directoryMetrics: DirectoryMetricsSnapshot,
 ): Map<string, DirectoryAggregate> {
 	const aggregateBySeg = new Map<string, DirectoryAggregate>();
 
@@ -93,7 +86,7 @@ export function computeTopLevelTotals(
  */
 export function computeCandidatesByTopLevel(
 	root: CanonicalPath,
-	directoryMetrics: DirectoryMetricsSnapshot
+	directoryMetrics: DirectoryMetricsSnapshot,
 ): Map<string, CandidateDirectory[]> {
 	const candidatesBySeg = new Map<string, CandidateDirectory[]>();
 

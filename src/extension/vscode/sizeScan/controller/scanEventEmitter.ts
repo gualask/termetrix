@@ -1,5 +1,5 @@
-import type { ProgressData } from '../../../types';
 import { PROGRESS_THROTTLE_MS } from '../../../support/constants';
+import type { ProgressData } from '../../../types';
 
 type FireStartFn = (rootPath: string) => void;
 type FireProgressFn = (progress: ProgressData) => void;
@@ -17,7 +17,7 @@ export class ScanEventEmitter {
 		private readonly fireStart: FireStartFn,
 		private readonly fireProgress: FireProgressFn,
 		private readonly fireEnd: FireEndFn,
-		private readonly progressThrottleMs: number = PROGRESS_THROTTLE_MS
+		private readonly progressThrottleMs: number = PROGRESS_THROTTLE_MS,
 	) {}
 
 	onScanState(rootPath: string, isScanning: boolean): void {

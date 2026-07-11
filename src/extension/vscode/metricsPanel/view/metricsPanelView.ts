@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import type { MessageFromExtension } from '../../../types';
 import { METRICS_PANEL_TITLE, METRICS_PANEL_VIEW_TYPE } from '../../../support/constants';
+import type { MessageFromExtension } from '../../../types';
 import { getMetricsPanelHtml } from './metricsPanelHtml';
 
 /**
@@ -40,7 +40,7 @@ export class MetricsPanelView {
 				// Keep UI state when the panel is hidden; data is explicitly refreshed on scan end / user actions.
 				retainContextWhenHidden: true,
 				localResourceRoots: [webviewUri],
-			}
+			},
 		);
 
 		panel.webview.html = getMetricsPanelHtml(panel.webview, webviewUri);

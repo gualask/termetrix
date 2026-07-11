@@ -1,6 +1,6 @@
 import type * as vscode from 'vscode';
-import type { ScanKind } from '../../../types';
 import { ScanRoot } from '../../../../core/shared/pathing/scanRoot';
+import type { ScanKind } from '../../../types';
 
 export type ScanRunState = 'never' | 'running' | 'success' | 'error';
 const INITIAL_SCAN_STATE: Record<ScanKind, ScanRunState> = { size: 'never', loc: 'never' };

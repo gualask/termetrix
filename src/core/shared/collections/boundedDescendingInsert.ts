@@ -11,7 +11,7 @@ export function insertBoundedDescending<T>(
 	sorted: T[],
 	candidate: T,
 	limit: number,
-	getKey: (item: T) => number
+	getKey: (item: T) => number,
 ): void {
 	if (limit <= 0) return;
 

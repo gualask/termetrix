@@ -1,4 +1,4 @@
-import * as path from 'path';
+import * as path from 'node:path';
 
 function ensureTrailingSeparator(value: string): string {
 	return value.endsWith(path.sep) ? value : value + path.sep;
@@ -14,7 +14,7 @@ function normalizeKey(resolvedPath: string): string {
 export class CanonicalPath {
 	private constructor(
 		readonly raw: string,
-		readonly key: string
+		readonly key: string,
 	) {}
 
 	/**

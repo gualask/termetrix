@@ -1,17 +1,17 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as path from 'node:path';
+import test from 'node:test';
 
 import { computeSizeBreakdown } from '../../src/core/sizeScan/model/sizeBreakdown/computeSizeBreakdown';
+import { DirectoryAggregate } from '../../src/core/sizeScan/model/sizeBreakdown/directoryAggregate';
 import {
 	BoundedRatio,
 	BreakdownPolicy,
 	NonNegativeInt,
 	PositiveInt,
 } from '../../src/core/sizeScan/model/sizeBreakdown/options';
-import { DirectoryAggregate } from '../../src/core/sizeScan/model/sizeBreakdown/directoryAggregate';
-import { formatBreakdownParentPath } from '../../src/ui/views/size/sizeFormatters';
 import { SIZE_BREAKDOWN_ROOT_SEGMENT } from '../../src/shared/contracts/sizeBreakdown';
+import { formatBreakdownParentPath } from '../../src/ui/views/size/sizeFormatters';
 
 test('sizeBreakdown: groups by top-level segment and sorts parents by bytes', () => {
 	const rootPath = path.resolve('repo-root');
@@ -62,7 +62,10 @@ test('sizeBreakdown: groups by top-level segment and sorts parents by bytes', ()
 	const docsParent = result.parents.find((p) => p.path === 'docs');
 	assert.ok(docsParent);
 	assert.equal(docsParent.entries.length, 0);
-	assert.equal(result.parents.some((p) => p.path === '.'), false);
+	assert.equal(
+		result.parents.some((p) => p.path === '.'),
+		false,
+	);
 });
 
 test('sizeBreakdown: filters out top-level segments below minItemPercent, always keeps the largest', () => {
@@ -115,7 +118,10 @@ test('sizeBreakdown: omits root segment even when root has direct files', () => 
 		},
 	});
 
-	assert.equal(result.parents.some((p) => p.path === '.'), false);
+	assert.equal(
+		result.parents.some((p) => p.path === '.'),
+		false,
+	);
 
 	assert.equal(result.parents.length, 1);
 	assert.equal(result.parents[0]?.path, 'src');
@@ -139,14 +145,14 @@ test('sizeBreakdown policy: clamps invalid ratios and keeps positive thresholds'
 			candidateBytes: 1,
 			parentBytes: 1000,
 		}),
-		true
+		true,
 	);
 });
 
 test('directoryAggregate: merges totals with domain-safe invariants', () => {
 	const aggregate = DirectoryAggregate.fromTotals({ bytes: 120, fileCount: 3, maxFileBytes: 80 });
 	const remainder = aggregate.subtractSaturating(
-		DirectoryAggregate.fromTotals({ bytes: 200, fileCount: 20, maxFileBytes: 0 })
+		DirectoryAggregate.fromTotals({ bytes: 200, fileCount: 20, maxFileBytes: 0 }),
 	);
 
 	assert.equal(aggregate.bytes, 120);

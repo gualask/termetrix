@@ -19,7 +19,7 @@ async function buildExtension() {
 		external: ['vscode'],
 		sourcemap: !production,
 		minify: production,
-		metafile: true
+		metafile: true,
 	});
 }
 
@@ -37,17 +37,14 @@ async function buildWebview() {
 		metafile: true,
 		jsx: 'automatic',
 		jsxImportSource: 'preact',
-		loader: { '.css': 'css' }
+		loader: { '.css': 'css' },
 	});
 }
 
 async function run() {
 	console.log(`\n⚡ Building Termetrix (${production ? 'production' : 'development'})...\n`);
 
-	const [extensionCtx, webviewCtx] = await Promise.all([
-		buildExtension(),
-		buildWebview()
-	]);
+	const [extensionCtx, webviewCtx] = await Promise.all([buildExtension(), buildWebview()]);
 
 	if (watch) {
 		await Promise.all([extensionCtx.watch(), webviewCtx.watch()]);
@@ -56,10 +53,7 @@ async function run() {
 	}
 
 	try {
-		const [extResult, webResult] = await Promise.all([
-			extensionCtx.rebuild(),
-			webviewCtx.rebuild()
-		]);
+		const [extResult, webResult] = await Promise.all([extensionCtx.rebuild(), webviewCtx.rebuild()]);
 
 		console.log(await esbuild.analyzeMetafile(extResult.metafile, { color: true }));
 		console.log(await esbuild.analyzeMetafile(webResult.metafile, { color: true }));

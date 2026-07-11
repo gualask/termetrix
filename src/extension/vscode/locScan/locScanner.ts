@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
-import type { LOCResult } from '../../types';
-import { NodeFsPort } from '../../platform/nodeFsPort';
 import { scanLOC } from '../../../core/locScan/engine/locEngine';
-import type { LocScanRequest } from '../../../core/locScan/locScanRequest';
 import { LocPathFilter } from '../../../core/locScan/filtering/locPathFilter';
+import type { LocScanRequest } from '../../../core/locScan/locScanRequest';
+import { NodeFsPort } from '../../platform/nodeFsPort';
+import type { LOCResult } from '../../types';
 
 /**
  * Scanner for counting lines of code in source files.

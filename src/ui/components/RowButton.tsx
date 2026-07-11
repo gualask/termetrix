@@ -13,14 +13,7 @@ export function RowButton({ class: className, onClick, disabled, title, ariaLabe
 	const classes = className ? `tmx-row ${className}` : 'tmx-row';
 
 	return (
-		<button
-			type="button"
-			class={classes}
-			onClick={onClick}
-			disabled={disabled}
-			title={title}
-			aria-label={ariaLabel}
-		>
+		<button type="button" class={classes} onClick={onClick} disabled={disabled} title={title} aria-label={ariaLabel}>
 			{children}
 		</button>
 	);

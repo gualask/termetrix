@@ -1,8 +1,8 @@
+import type { ProgressData } from '../../../shared/contracts/progress';
 import type { FsPort } from '../../ports/fsPort';
 import type { LoggerPort } from '../../ports/loggerPort';
-import type { CancellationToken } from '../../shared/runtime/cancellationToken';
 import type { DurationMs, PositiveInt } from '../../shared/numericValueObjects';
-import type { ProgressData } from '../../../shared/contracts/progress';
+import type { CancellationToken } from '../../shared/runtime/cancellationToken';
 import type { ScanCompletion } from '../model/scanCompletion';
 
 /**

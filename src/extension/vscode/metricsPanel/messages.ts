@@ -1,13 +1,13 @@
+import { computeSizeBreakdown } from '../../../core/sizeScan/model/sizeBreakdown/computeSizeBreakdown';
+import type { DirectoryMetricsSnapshot } from '../../../core/sizeScan/types';
 import type {
-	LOCResult,
 	ErrorData,
+	LOCResult,
 	MessageFromExtension,
 	ProgressData,
 	ScanResult,
 	SizeBreakdownResult,
 } from '../../types';
-import { computeSizeBreakdown } from '../../../core/sizeScan/model/sizeBreakdown/computeSizeBreakdown';
-import type { DirectoryMetricsSnapshot } from '../../../core/sizeScan/types';
 
 /** Creates a `scanStart` message signalling that a size scan has begun. */
 export function createScanStartMessage(): MessageFromExtension {
@@ -62,7 +62,10 @@ function createDeepScanResultMessage(breakdown: SizeBreakdownResult): MessageFro
  * @param rootPath - Workspace root path (used as the breakdown root).
  * @param directoryMetrics - Per-directory metrics snapshot from the completed scan.
  */
-export function createBreakdownMessage(rootPath: string, directoryMetrics: DirectoryMetricsSnapshot): MessageFromExtension {
+export function createBreakdownMessage(
+	rootPath: string,
+	directoryMetrics: DirectoryMetricsSnapshot,
+): MessageFromExtension {
 	return createDeepScanResultMessage(computeSizeBreakdown({ rootPath, directoryMetrics }));
 }
 

@@ -1,6 +1,6 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as path from 'node:path';
+import test from 'node:test';
 
 import { CanonicalPath } from '../../src/core/shared/pathing/canonicalPath';
 import { ScanRoot } from '../../src/core/shared/pathing/scanRoot';
@@ -40,28 +40,21 @@ test('scanRoot: resolvePathIfWithinRoot normalizes absolute paths inside root', 
 	assert.equal(scanRoot.resolvePathIfWithinRoot(path.resolve(root, '..', 'outside')), undefined);
 });
 
+test('canonicalPath: isWithin is case-insensitive on Windows', { skip: process.platform !== 'win32' }, () => {
+	const root = CanonicalPath.from('C:\\Tmp\\Root');
+	assert.equal(CanonicalPath.from('c:\\tmp\\root').isWithin(root), true);
+	assert.equal(CanonicalPath.from('c:\\tmp\\root\\a\\b').isWithin(root), true);
+	assert.equal(CanonicalPath.from('c:\\tmp\\rootness\\x').isWithin(root), false);
+});
 
-test(
-	'canonicalPath: isWithin is case-insensitive on Windows',
-	{ skip: process.platform !== 'win32' },
-	() => {
-		const root = CanonicalPath.from('C:\\Tmp\\Root');
-		assert.equal(CanonicalPath.from('c:\\tmp\\root').isWithin(root), true);
-		assert.equal(CanonicalPath.from('c:\\tmp\\root\\a\\b').isWithin(root), true);
-		assert.equal(CanonicalPath.from('c:\\tmp\\rootness\\x').isWithin(root), false);
-	}
-);
-
-test(
-	'scanRoot: resolvePathIfWithinRoot accepts casing differences on Windows',
-	{ skip: process.platform !== 'win32' },
-	() => {
-		const root = ScanRoot.fromPath('C:\\Tmp\\Root');
-		assert.ok(root);
-		assert.equal(root.resolvePathIfWithinRoot('c:\\tmp\\root\\a\\c')?.toLowerCase(), 'c:\\tmp\\root\\a\\c');
-		assert.equal(root.resolvePathIfWithinRoot('c:\\tmp\\outside'), undefined);
-	}
-);
+test('scanRoot: resolvePathIfWithinRoot accepts casing differences on Windows', {
+	skip: process.platform !== 'win32',
+}, () => {
+	const root = ScanRoot.fromPath('C:\\Tmp\\Root');
+	assert.ok(root);
+	assert.equal(root.resolvePathIfWithinRoot('c:\\tmp\\root\\a\\c')?.toLowerCase(), 'c:\\tmp\\root\\a\\c');
+	assert.equal(root.resolvePathIfWithinRoot('c:\\tmp\\outside'), undefined);
+});
 
 test('panelTargetPath: parses valid input and blocks empty payloads', () => {
 	assert.equal(parsePanelTargetPath(undefined), undefined);
@@ -102,15 +95,11 @@ test('canonicalPath: keeps root boundaries and computes stable relatives', () =>
 	assert.equal(sibling.relativeTo(root), undefined);
 });
 
-test(
-	'scanRoot: key comparison is case-insensitive on Windows',
-	{ skip: process.platform !== 'win32' },
-	() => {
-		const upper = ScanRoot.fromPath('C:\\Tmp\\Root');
-		const lower = ScanRoot.fromPath('c:\\tmp\\root');
-		assert.ok(upper);
-		assert.ok(lower);
-		assert.equal(upper.key, lower.key);
-		assert.equal(upper.equals(lower), true);
-	}
-);
+test('scanRoot: key comparison is case-insensitive on Windows', { skip: process.platform !== 'win32' }, () => {
+	const upper = ScanRoot.fromPath('C:\\Tmp\\Root');
+	const lower = ScanRoot.fromPath('c:\\tmp\\root');
+	assert.ok(upper);
+	assert.ok(lower);
+	assert.equal(upper.key, lower.key);
+	assert.equal(upper.equals(lower), true);
+});

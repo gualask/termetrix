@@ -1,11 +1,11 @@
 import type * as vscode from 'vscode';
-import type { ExtendedScanResult } from '../../../types';
-import { configManager } from '../../../support/configManager';
-import { logger } from '../../../support/logger';
 import { scanProjectSize } from '../../../../core/sizeScan/engine/scanEngine';
 import type { SizeScanMode } from '../../../../core/sizeScan/engine/scanEngineTypes';
 import type { ProgressData } from '../../../../shared/contracts/progress';
 import { NodeFsPort } from '../../../platform/nodeFsPort';
+import { configManager } from '../../../support/configManager';
+import { logger } from '../../../support/logger';
+import type { ExtendedScanResult } from '../../../types';
 
 type ScanExecutionProgressHandler = (progress: ProgressData) => void;
 
@@ -44,7 +44,7 @@ export class ScanExecutionService {
 		const externalDeltaMB = (memAfter.external - memBefore.external) / 1024 / 1024;
 		logger.info(
 			`Scan memory: heap ${heapDeltaMB >= 0 ? '+' : ''}${heapDeltaMB.toFixed(1)} MB, ` +
-				`external ${externalDeltaMB >= 0 ? '+' : ''}${externalDeltaMB.toFixed(1)} MB`
+				`external ${externalDeltaMB >= 0 ? '+' : ''}${externalDeltaMB.toFixed(1)} MB`,
 		);
 
 		return result;

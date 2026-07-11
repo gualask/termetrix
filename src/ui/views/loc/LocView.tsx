@@ -1,13 +1,13 @@
+import { ChevronDown, ChevronRight, Files, FileText, FileX, RefreshCw, Square } from 'lucide-preact';
 import { useMemo } from 'preact/hooks';
-import { ChevronDown, ChevronRight, FileText, FileX, Files, RefreshCw, Square } from 'lucide-preact';
-import type { LOCResult } from '../../types';
+import { EmptyState } from '../../components/EmptyState';
 import { IconButton } from '../../components/IconButton';
 import { InfoTooltip } from '../../components/InfoTooltip';
-import { PanelOverlay } from '../../components/PanelOverlay';
-import { EmptyState } from '../../components/EmptyState';
-import { RowButton } from '../../components/RowButton';
 import { MetricsHeader } from '../../components/MetricsHeader';
+import { PanelOverlay } from '../../components/PanelOverlay';
+import { RowButton } from '../../components/RowButton';
 import { ViewLayout } from '../../components/ViewLayout';
+import type { LOCResult } from '../../types';
 
 const LOC_VISIBLE_LANGUAGES = 3;
 const LOC_VISIBLE_FILES = 3;
@@ -78,7 +78,7 @@ function LocTopFilesSection({ topFiles, onOpenFile, showAll, onToggleShowAll }: 
 	return (
 		<section class="section">
 			<h4>Top Files</h4>
-			{visible.map(file => (
+			{visible.map((file) => (
 				<RowButton
 					key={file.path}
 					class="file-row"
@@ -135,7 +135,7 @@ export function LocView({
 
 	const sortedLanguages = useMemo(
 		() => Object.entries(locResult?.byLanguage ?? {}).sort((a, b) => b[1] - a[1]),
-		[locResult]
+		[locResult],
 	);
 
 	const CollapseIcon = isCollapsed ? ChevronRight : ChevronDown;
@@ -148,19 +148,19 @@ export function LocView({
 				title: 'Total lines of code',
 				icon: <FileText size={22} class="tmx-metric-primaryIcon" aria-hidden="true" />,
 				value: totalLines,
-				trailing: <span class="loc-primary-suffix">lines</span>
+				trailing: <span class="loc-primary-suffix">lines</span>,
 			}}
 			secondary={[
 				{
 					title: 'Scanned files',
 					icon: <Files size={14} aria-hidden="true" />,
-					content: `${scannedFiles} files`
+					content: `${scannedFiles} files`,
 				},
 				{
 					title: 'Skipped files',
 					icon: <FileX size={14} aria-hidden="true" />,
-					content: `${skippedFiles} skipped`
-				}
+					content: `${skippedFiles} skipped`,
+				},
 			]}
 			actions={
 				<>
@@ -204,14 +204,14 @@ export function LocView({
 						onToggleShowAll={onToggleShowAllFiles}
 					/>
 				</>
-			) : !isCalculating && (
-				<EmptyState
-					variant="panel"
-					message={hasRoot ? 'No LOC data available.' : 'No workspace folder open.'}
-					hint={hasRoot
-						? 'Use the recalculate button to scan.'
-						: 'Open a folder or workspace to get started.'}
-				/>
+			) : (
+				!isCalculating && (
+					<EmptyState
+						variant="panel"
+						message={hasRoot ? 'No LOC data available.' : 'No workspace folder open.'}
+						hint={hasRoot ? 'Use the recalculate button to scan.' : 'Open a folder or workspace to get started.'}
+					/>
+				)
 			)}
 		</ViewLayout>
 	);

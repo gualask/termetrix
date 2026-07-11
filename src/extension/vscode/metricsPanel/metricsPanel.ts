@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { ProjectSizeScanner } from '../sizeScan/projectSizeScanner';
 import { LOCScanner } from '../locScan/locScanner';
+import type { ProjectSizeScanner } from '../sizeScan/projectSizeScanner';
 import { createMetricsPanelCommandHandlers, type MetricsPanelCommandDeps } from './commands/metricsPanelCommands';
 import { MetricsPanelController } from './controller/metricsPanelController';
 import { MetricsPanelSessionState } from './state/metricsPanelSessionState';
@@ -24,7 +24,7 @@ export class MetricsPanel implements vscode.Disposable {
 	 */
 	constructor(
 		private readonly scanner: ProjectSizeScanner,
-		extensionUri: vscode.Uri
+		extensionUri: vscode.Uri,
 	) {
 		this.view = new MetricsPanelView(extensionUri);
 		this.commandHandlers = createMetricsPanelCommandHandlers(this.createCommandDeps());

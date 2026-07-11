@@ -80,17 +80,12 @@ export class ConcurrencyLimit {
 	 * @param min - Minimum allowed concurrency (normalised to ≥ 1).
 	 * @param max - Maximum allowed concurrency.
 	 */
-	static bounded(
-		value: number | undefined,
-		fallback: number,
-		min: number,
-		max: number
-	): ConcurrencyLimit {
+	static bounded(value: number | undefined, fallback: number, min: number, max: number): ConcurrencyLimit {
 		const normalizedMin = Math.max(1, Math.floor(Number.isFinite(min) ? min : 1));
 		const normalizedMax = Math.max(normalizedMin, Math.floor(Number.isFinite(max) ? max : normalizedMin));
 		const normalizedFallback = Math.max(
 			normalizedMin,
-			Math.min(normalizedMax, Math.floor(Number.isFinite(fallback) ? fallback : normalizedMin))
+			Math.min(normalizedMax, Math.floor(Number.isFinite(fallback) ? fallback : normalizedMin)),
 		);
 		const raw = toFloorIntOrFallback(value, normalizedFallback);
 		return new ConcurrencyLimit(Math.max(normalizedMin, Math.min(normalizedMax, raw)));

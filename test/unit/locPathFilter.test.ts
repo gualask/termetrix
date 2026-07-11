@@ -1,13 +1,15 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-
+import test from 'node:test';
+import { type GitIgnoreRule, loadGitIgnoreRules } from '../../src/core/locScan/filtering/gitignore';
 import { LocPathFilter } from '../../src/core/locScan/filtering/locPathFilter';
-import { loadGitIgnoreRules } from '../../src/core/locScan/filtering/gitignore';
 import { NodeFsPort } from '../../src/extension/platform/nodeFsPort';
 
-async function createTempRoot(t: test.TestContext, gitignore: string): Promise<{ root: string; rules: Awaited<ReturnType<typeof loadGitIgnoreRules>> }> {
+async function createTempRoot(
+	t: test.TestContext,
+	gitignore: string,
+): Promise<{ root: string; rules: Awaited<ReturnType<typeof loadGitIgnoreRules>> }> {
 	const base = path.resolve('out-test', 'tmp');
 	await fs.mkdir(base, { recursive: true });
 	const root = await fs.mkdtemp(path.join(base, 'locfilter-'));
@@ -21,7 +23,7 @@ async function createTempRoot(t: test.TestContext, gitignore: string): Promise<{
 
 test('LocPathFilter: skips default excluded directories', async () => {
 	const filter = new LocPathFilter();
-	const noRules: any[] = [];
+	const noRules: GitIgnoreRule[] = [];
 
 	assert.equal(filter.shouldSkip('node_modules/pkg/index.js', noRules), true);
 	assert.equal(filter.shouldSkip('.git/config', noRules), true);

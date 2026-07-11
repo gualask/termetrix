@@ -1,11 +1,11 @@
 import type * as vscode from 'vscode';
-import type { ExtendedScanResult } from '../../../types';
-import { logger } from '../../../support/logger';
 import type { SizeScanMode } from '../../../../core/sizeScan/engine/scanEngineTypes';
-import { ScanEventEmitter } from '../controller/scanEventEmitter';
+import type { DirectoryMetricsSnapshot } from '../../../../core/sizeScan/types';
+import { logger } from '../../../support/logger';
+import type { ExtendedScanResult } from '../../../types';
+import type { ScanEventEmitter } from '../controller/scanEventEmitter';
 import { ScanRunner } from '../controller/scanRunner';
 import type { ScanCache } from '../state/scanCache';
-import type { DirectoryMetricsSnapshot } from '../../../../core/sizeScan/types';
 export interface ScanLifecycleServiceOptions {
 	cache: ScanCache;
 	scanEvents: ScanEventEmitter;

@@ -1,13 +1,10 @@
-import type { ScanIncompleteReason } from '../../../shared/contracts/scan';
 import type { ProgressData } from '../../../shared/contracts/progress';
+import type { ScanIncompleteReason } from '../../../shared/contracts/scan';
 import type { FsPort } from '../../ports/fsPort';
 import type { ConcurrencyLimiter } from '../../shared/runtime/concurrencyLimiter';
-import { markIncomplete, shouldStop } from './scanEngineCore';
 import type { DirectoryMetricsStore } from '../model/directoryMetrics';
-import type {
-	ScanRuntimeState,
-	SizeScanBudget,
-} from './scanEngineTypes';
+import { markIncomplete, shouldStop } from './scanEngineCore';
+import type { ScanRuntimeState, SizeScanBudget } from './scanEngineTypes';
 
 export interface TraversalRuntimeContext {
 	rootPath: string;
@@ -44,10 +41,7 @@ export class ScanTraversalContext {
 	readonly isSummaryOnly: boolean;
 	readonly directoryMetricsStore: DirectoryMetricsStore | undefined;
 
-	constructor(
-		runtime: TraversalRuntimeContext,
-		collection: TraversalCollectionPolicy
-	) {
+	constructor(runtime: TraversalRuntimeContext, collection: TraversalCollectionPolicy) {
 		this.rootPath = runtime.rootPath;
 		this.queue = runtime.queue;
 		this.state = runtime.state;

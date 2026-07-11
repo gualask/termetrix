@@ -1,15 +1,18 @@
 import type { MessageToExtension } from '../../../../types';
-import type { MetricsPanelCommandDeps, MetricsPanelCommandHandler } from '../types';
+import { createLocResultMessage, createLocScanCancelledMessage, createLocScanStartMessage } from '../../messages';
 import { PANEL_COMMAND_ERRORS } from '../errors';
 import { runPanelScanCommand } from '../metricsPanelCommandUtils';
-import { createLocScanStartMessage, createLocResultMessage, createLocScanCancelledMessage } from '../../messages';
+import type { MetricsPanelCommandDeps, MetricsPanelCommandHandler } from '../types';
 
 /**
  * Starts a LOC scan for the metrics panel, honouring session lifecycle gating.
  * @param deps - Panel command dependencies.
  * @param options.force - When `true`, restarts even after a prior successful scan.
  */
-export async function startLocScanForPanel(deps: MetricsPanelCommandDeps, options?: { force?: boolean }): Promise<void> {
+export async function startLocScanForPanel(
+	deps: MetricsPanelCommandDeps,
+	options?: { force?: boolean },
+): Promise<void> {
 	await runPanelScanCommand({
 		deps,
 		scanKind: 'loc',
@@ -37,10 +40,9 @@ export async function startLocScanForPanel(deps: MetricsPanelCommandDeps, option
  * Creates the handler map for the LOC command (`calculateLOC`).
  * @param deps - Panel command dependencies.
  */
-export function createLocHandlers(deps: MetricsPanelCommandDeps): Pick<
-	Record<MessageToExtension['command'], MetricsPanelCommandHandler>,
-	'calculateLOC'
-> {
+export function createLocHandlers(
+	deps: MetricsPanelCommandDeps,
+): Pick<Record<MessageToExtension['command'], MetricsPanelCommandHandler>, 'calculateLOC'> {
 	return {
 		calculateLOC: () => startLocScanForPanel(deps, { force: true }),
 	};

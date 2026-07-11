@@ -1,7 +1,7 @@
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
 import type { MessageFromExtension, MessageToExtension } from '../../../types';
-import type { ProjectSizeScanner } from '../../sizeScan/projectSizeScanner';
 import type { LOCScanner } from '../../locScan/locScanner';
+import type { ProjectSizeScanner } from '../../sizeScan/projectSizeScanner';
 import type { MetricsPanelSessionState } from '../state/metricsPanelSessionState';
 
 /**

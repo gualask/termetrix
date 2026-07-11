@@ -1,9 +1,9 @@
 import type { MessageToExtension } from '../../../../types';
 import { toPublicScanResult } from '../../../sizeScan/state/scanResultSanitizer';
-import type { MetricsPanelCommandDeps, MetricsPanelCommandHandler } from '../types';
-import { runPanelScanCommand } from '../metricsPanelCommandUtils';
-import { PANEL_COMMAND_ERRORS } from '../errors';
 import { createBreakdownMessage, createUpdateMessage } from '../../messages';
+import { PANEL_COMMAND_ERRORS } from '../errors';
+import { runPanelScanCommand } from '../metricsPanelCommandUtils';
+import type { MetricsPanelCommandDeps, MetricsPanelCommandHandler } from '../types';
 
 /**
  * Starts a size scan for the metrics panel, honouring session lifecycle gating.
@@ -12,7 +12,7 @@ import { createBreakdownMessage, createUpdateMessage } from '../../messages';
  */
 export async function startSizeScanForPanel(
 	deps: MetricsPanelCommandDeps,
-	options?: { force?: boolean }
+	options?: { force?: boolean },
 ): Promise<void> {
 	await runPanelScanCommand({
 		deps,
@@ -59,10 +59,9 @@ export async function startSizeScanForPanel(
  * Creates the handler map for size-scan commands (`refresh` and `cancelScan`).
  * @param deps - Panel command dependencies.
  */
-export function createSizeHandlers(deps: MetricsPanelCommandDeps): Pick<
-	Record<MessageToExtension['command'], MetricsPanelCommandHandler>,
-	'refresh' | 'cancelScan'
-> {
+export function createSizeHandlers(
+	deps: MetricsPanelCommandDeps,
+): Pick<Record<MessageToExtension['command'], MetricsPanelCommandHandler>, 'refresh' | 'cancelScan'> {
 	return {
 		refresh: () => startSizeScanForPanel(deps, { force: true }),
 		cancelScan: (message) => {

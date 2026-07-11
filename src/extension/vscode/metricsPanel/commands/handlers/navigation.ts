@@ -1,16 +1,16 @@
 import * as vscode from 'vscode';
+import { VSCODE_COMMAND_IDS } from '../../../../support/constants';
 import type { MessageToExtension } from '../../../../types';
+import { PANEL_COMMAND_ERRORS, type PanelCommandErrorSpec } from '../errors';
+import { resolvePanelPath, runPanelCommand } from '../metricsPanelCommandUtils';
 import type { MetricsPanelCommandDeps, MetricsPanelCommandHandler } from '../types';
 import { getMessagePath } from './common';
-import { resolvePanelPath, runPanelCommand } from '../metricsPanelCommandUtils';
-import { PANEL_COMMAND_ERRORS, type PanelCommandErrorSpec } from '../errors';
-import { VSCODE_COMMAND_IDS } from '../../../../support/constants';
 
 async function runWithResolvedPanelPath(
 	deps: MetricsPanelCommandDeps,
 	targetPath: string | undefined,
 	error: PanelCommandErrorSpec,
-	runWithPath: (absolutePath: string) => Promise<void>
+	runWithPath: (absolutePath: string) => Promise<void>,
 ): Promise<void> {
 	const absolutePath = resolvePanelPath(deps, targetPath);
 	if (!absolutePath) return;
@@ -39,10 +39,9 @@ async function onOpenFile(deps: MetricsPanelCommandDeps, filePath: string | unde
 	});
 }
 
-export function createNavigationHandlers(deps: MetricsPanelCommandDeps): Pick<
-	Record<MessageToExtension['command'], MetricsPanelCommandHandler>,
-	'revealInExplorer' | 'openFile'
-> {
+export function createNavigationHandlers(
+	deps: MetricsPanelCommandDeps,
+): Pick<Record<MessageToExtension['command'], MetricsPanelCommandHandler>, 'revealInExplorer' | 'openFile'> {
 	return {
 		revealInExplorer: (message) => onRevealInExplorer(deps, getMessagePath(message)),
 		openFile: (message) => onOpenFile(deps, getMessagePath(message)),

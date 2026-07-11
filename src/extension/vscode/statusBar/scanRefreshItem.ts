@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import { ProjectSizeScanner } from '../sizeScan/projectSizeScanner';
-import { ScannerEventSubscription } from '../../support/scannerEvents';
-import { DisposableStore } from '../../support/disposableStore';
 import { COMMAND_IDS } from '../../support/constants';
+import { DisposableStore } from '../../support/disposableStore';
+import { ScannerEventSubscription } from '../../support/scannerEvents';
+import type { ProjectSizeScanner } from '../sizeScan/projectSizeScanner';
 
 /**
  * Status bar item for triggering or cancelling a scan without opening the metrics panel.

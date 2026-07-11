@@ -1,8 +1,8 @@
-import type { ScanRuntimeState, SizeScanBudget } from './scanEngineTypes';
 import type { ProgressData } from '../../../shared/contracts/progress';
 import type { ScanIncompleteReason } from '../../../shared/contracts/scan';
 import { createLifoArrayQueueDriver, runConcurrentQueue } from '../../shared/runtime/workQueue';
 import { incompleteScan, isIncompleteScan } from '../model/scanCompletion';
+import type { ScanRuntimeState, SizeScanBudget } from './scanEngineTypes';
 
 /**
  * Returns true if an error is a permission-denied filesystem error.
@@ -32,10 +32,7 @@ export function markIncomplete(state: ScanRuntimeState, reason: ScanIncompleteRe
  * @param budget - Scan budget and cancellation context.
  * @returns True when the scan should stop.
  */
-export function shouldStop(
-	state: ScanRuntimeState,
-	budget: SizeScanBudget
-): boolean {
+export function shouldStop(state: ScanRuntimeState, budget: SizeScanBudget): boolean {
 	const { startTimeMs, maxDurationMs, maxDirectories, cancellationToken } = budget;
 
 	if (state.stopScheduling) return true;

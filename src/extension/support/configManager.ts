@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
-import { TERMETRIX_SETTINGS_DEFAULTS } from '../../shared/contracts/settingsDefaults';
-import type { AutoScanMode as SettingsAutoScanMode } from '../../shared/contracts/settingsDefaults';
 import type { SizeScanConfig } from '../../core/sizeScan/engine/scanEngineTypes';
-import { CONFIG_KEYS, CONFIG_SECTION_IDS } from './constants';
+import type { AutoScanMode as SettingsAutoScanMode } from '../../shared/contracts/settingsDefaults';
+import { TERMETRIX_SETTINGS_DEFAULTS } from '../../shared/contracts/settingsDefaults';
 import { SIZE_SCAN_DEFAULTS } from '../../shared/contracts/sizeScanDefaults';
+import { CONFIG_KEYS, CONFIG_SECTION_IDS } from './constants';
 
 export type AutoScanMode = SettingsAutoScanMode;
 
@@ -53,7 +53,7 @@ export class ConfigManager {
 		config: vscode.WorkspaceConfiguration,
 		key: string,
 		guard: (value: unknown) => value is T,
-		fallback: T
+		fallback: T,
 	): T {
 		const value = config.get<unknown>(key);
 		if (guard(value)) return value;
@@ -65,7 +65,12 @@ export class ConfigManager {
 	}
 
 	private readNumber(config: vscode.WorkspaceConfiguration, key: string, fallback: number): number {
-		return this.readSetting(config, key, (value): value is number => typeof value === 'number' && Number.isFinite(value), fallback);
+		return this.readSetting(
+			config,
+			key,
+			(value): value is number => typeof value === 'number' && Number.isFinite(value),
+			fallback,
+		);
 	}
 
 	private readBoolean(config: vscode.WorkspaceConfiguration, key: string, fallback: boolean): boolean {
@@ -93,19 +98,19 @@ export class ConfigManager {
 		const config = vscode.workspace.getConfiguration(CONFIG_SECTION_IDS.scan);
 		const defaultAutoScanMode = toAutoScanMode(
 			config.inspect<unknown>(CONFIG_KEYS.scan.autoScanMode)?.defaultValue,
-			TERMETRIX_SETTINGS_DEFAULTS.scan.autoScanMode
+			TERMETRIX_SETTINGS_DEFAULTS.scan.autoScanMode,
 		);
 		return {
 			autoScanMode: toAutoScanMode(config.get<unknown>(CONFIG_KEYS.scan.autoScanMode), defaultAutoScanMode),
 			maxDurationSeconds: this.readNumber(
 				config,
 				CONFIG_KEYS.scan.maxDurationSeconds,
-				TERMETRIX_SETTINGS_DEFAULTS.scan.maxDurationSeconds
+				TERMETRIX_SETTINGS_DEFAULTS.scan.maxDurationSeconds,
 			),
 			maxDirectories: this.readNumber(
 				config,
 				CONFIG_KEYS.scan.maxDirectories,
-				TERMETRIX_SETTINGS_DEFAULTS.scan.maxDirectories
+				TERMETRIX_SETTINGS_DEFAULTS.scan.maxDirectories,
 			),
 		};
 	}
@@ -130,8 +135,16 @@ export class ConfigManager {
 	getAutoRefreshConfig(): AutoRefreshConfig {
 		const config = vscode.workspace.getConfiguration(CONFIG_SECTION_IDS.autoRefresh);
 		return {
-			enabled: this.readBoolean(config, CONFIG_KEYS.autoRefresh.enabled, TERMETRIX_SETTINGS_DEFAULTS.autoRefresh.enabled),
-			minutes: this.readNumber(config, CONFIG_KEYS.autoRefresh.minutes, TERMETRIX_SETTINGS_DEFAULTS.autoRefresh.minutes),
+			enabled: this.readBoolean(
+				config,
+				CONFIG_KEYS.autoRefresh.enabled,
+				TERMETRIX_SETTINGS_DEFAULTS.autoRefresh.enabled,
+			),
+			minutes: this.readNumber(
+				config,
+				CONFIG_KEYS.autoRefresh.minutes,
+				TERMETRIX_SETTINGS_DEFAULTS.autoRefresh.minutes,
+			),
 		};
 	}
 
@@ -145,12 +158,12 @@ export class ConfigManager {
 			showTerminalButton: this.readBoolean(
 				config,
 				CONFIG_KEYS.statusBar.showTerminalButton,
-				TERMETRIX_SETTINGS_DEFAULTS.statusBar.showTerminalButton
+				TERMETRIX_SETTINGS_DEFAULTS.statusBar.showTerminalButton,
 			),
 			showSelectionLineCount: this.readBoolean(
 				config,
 				CONFIG_KEYS.statusBar.showSelectionLineCount,
-				TERMETRIX_SETTINGS_DEFAULTS.statusBar.showSelectionLineCount
+				TERMETRIX_SETTINGS_DEFAULTS.statusBar.showSelectionLineCount,
 			),
 		};
 	}
@@ -162,7 +175,11 @@ export class ConfigManager {
 	getPanelConfig(): PanelConfig {
 		const config = vscode.workspace.getConfiguration(CONFIG_SECTION_IDS.panel);
 		return {
-			autoScanLoc: this.readBoolean(config, CONFIG_KEYS.panel.autoScanLoc, TERMETRIX_SETTINGS_DEFAULTS.panel.autoScanLoc),
+			autoScanLoc: this.readBoolean(
+				config,
+				CONFIG_KEYS.panel.autoScanLoc,
+				TERMETRIX_SETTINGS_DEFAULTS.panel.autoScanLoc,
+			),
 		};
 	}
 

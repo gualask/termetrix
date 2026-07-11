@@ -11,4 +11,3 @@ export const noopLogger: LoggerPort = {
 	info: () => {},
 	debug: () => {},
 };
-

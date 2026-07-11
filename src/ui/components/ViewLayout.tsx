@@ -14,7 +14,11 @@ export function ViewLayout({ viewClass, header, bodyAriaLabel, isCollapsed, scro
 		<div class={`tmx-section ${viewClass}`}>
 			{header}
 			{!isCollapsed && (
-				<div class={`tmx-section-body${scrollable ? ' tmx-section-body--scroll' : ''}`} aria-label={bodyAriaLabel}>
+				<div
+					class={`tmx-section-body${scrollable ? ' tmx-section-body--scroll' : ''}`}
+					role="group"
+					aria-label={bodyAriaLabel}
+				>
 					{children}
 				</div>
 			)}
