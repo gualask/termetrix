@@ -1,7 +1,7 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import test from 'node:test';
 
 import { isGitIgnored, loadGitIgnoreRules, loadNestedGitIgnoreRules } from '../../src/core/locScan/filtering/gitignore';
 import { NodeFsPort } from '../../src/extension/platform/nodeFsPort';
@@ -24,6 +24,19 @@ test('gitignore: directory-only rules match at any depth', async (t) => {
 	assert.equal(isGitIgnored('dist/app.js', rules), true);
 	assert.equal(isGitIgnored('packages/pkg/dist/app.js', rules), true);
 	assert.equal(isGitIgnored('src/distinct/app.js', rules), false);
+});
+
+test('gitignore: directory-only rule does not match a file with the same name', async (t) => {
+	const root = await createTempRoot(t);
+	await fs.writeFile(path.join(root, '.gitignore'), ['build/', ''].join('\n'));
+
+	const rules = await loadGitIgnoreRules(root, new NodeFsPort());
+	// A *file* named `build` is not ignored by `build/` (git semantics).
+	assert.equal(isGitIgnored('build', rules, false), false);
+	assert.equal(isGitIgnored('src/build', rules, false), false);
+	// The *directory* and anything inside it are ignored.
+	assert.equal(isGitIgnored('build', rules, true), true);
+	assert.equal(isGitIgnored('build/app.js', rules, false), true);
 });
 
 test('gitignore: negation overrides previous matches', async (t) => {

@@ -43,9 +43,21 @@ const C_STYLE_NESTABLE: CommentDef = {
 	strings: true,
 };
 
-/** Hash-only single-line comments. Used by Python, Ruby, Shell, Sass. */
+/** Hash-only single-line comments. Used by Python, Ruby, Shell. */
 const HASH_ONLY: CommentDef = {
 	single: [[HASH]],
+	multi: null,
+	strings: false,
+};
+
+/**
+ * Sass indented syntax: `//` single-line comments only. `#` introduces id
+ * selectors/interpolation, never comments. `/*` comments are terminated by
+ * indentation (no explicit closer required), so block tracking is disabled to
+ * avoid swallowing the rest of the file when the closer never appears.
+ */
+const SASS_STYLE: CommentDef = {
+	single: [[SLASH, SLASH]],
 	multi: null,
 	strings: false,
 };
@@ -108,7 +120,7 @@ export const LANGUAGE_MAP: Record<string, LanguageDef> = {
 	'.svelte': { name: 'Svelte' },
 	'.css': { name: 'CSS', comments: CSS_ONLY },
 	'.scss': { name: 'SCSS', comments: C_STYLE },
-	'.sass': { name: 'Sass', comments: HASH_ONLY },
+	'.sass': { name: 'Sass', comments: SASS_STYLE },
 	'.less': { name: 'Less', comments: C_STYLE },
 	'.html': { name: 'HTML', comments: HTML_STYLE },
 	'.htm': { name: 'HTML', comments: HTML_STYLE },
@@ -129,6 +141,13 @@ export const TOP_FILES_LIMIT = 10;
 
 export const DEFAULT_LOC_CONCURRENCY = 4;
 export const MAX_LOC_CONCURRENCY = 16;
+
+/**
+ * Number of files per directory read/counted in parallel.
+ * Bounds peak memory: up to `LOC_FILE_BATCH_SIZE * MAX_FILE_SIZE_BYTES` bytes of
+ * file content in flight per concurrent directory worker.
+ */
+export const LOC_FILE_BATCH_SIZE = 8;
 
 // Notes:
 // - `DEFAULT_EXCLUDES` is applied before `.gitignore` rules for a fast common-case skip.

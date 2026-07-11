@@ -1,8 +1,7 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
-
+import test from 'node:test';
+import { type CommentDef, LANGUAGE_MAP } from '../../src/core/locScan/locConfig';
 import { countCodeLines } from '../../src/core/locScan/metrics/lineCounter';
-import type { CommentDef } from '../../src/core/locScan/locConfig';
 
 // ── Shared CommentDef fixtures ────────────────────────────────────────────────
 
@@ -77,6 +76,23 @@ test('countCodeLines C_STYLE: escaped quote does not close string', () => {
 	assert.equal(countCodeLines('const s = "he said \\"hi\\""; // comment', C_STYLE), 1);
 });
 
+test('countCodeLines C_STYLE: escaped newline inside a string keeps both physical lines', () => {
+	// Template literal with a line continuation: both physical lines contain code.
+	const input = 'const s = `a\\\nb`;';
+	assert.equal(countCodeLines(input, C_STYLE), 2);
+});
+
+test('countCodeLines C_STYLE: backslash as last character does not drop the final line', () => {
+	// Unterminated string ending with a backslash at EOF.
+	assert.equal(countCodeLines('const s = "abc\\', C_STYLE), 1);
+});
+
+test('countCodeLines C_STYLE: escaped backslash before newline is not a continuation', () => {
+	// `\\` is a complete escape; the newline after it is a normal line boundary.
+	const input = 'const s = `x\\\\\ny`;';
+	assert.equal(countCodeLines(input, C_STYLE), 2);
+});
+
 test('countCodeLines C_STYLE: unterminated block comment at EOF → subsequent code lines = 0', () => {
 	const input = 'code\n/* unterminated\nstill in comment';
 	// "code" → 1, the rest is inside the block comment → 0
@@ -134,6 +150,21 @@ test('countCodeLines HASH_ONLY: code + inline # comment → 1', () => {
 test('countCodeLines HASH_ONLY: multiple lines', () => {
 	const input = '# header\nx = 1\ny = 2\n# footer';
 	assert.equal(countCodeLines(input, HASH_ONLY), 2);
+});
+
+// ── Sass (indented syntax, real LANGUAGE_MAP config) ─────────────────────────
+
+test('countCodeLines Sass: id selectors and interpolation are code, not comments', () => {
+	const sass = LANGUAGE_MAP['.sass'].comments!;
+	// `#` in Sass introduces id selectors / interpolation — never a comment.
+	assert.equal(countCodeLines('#header\n  color: red', sass), 2);
+	assert.equal(countCodeLines('.btn\n  background: #{$color}', sass), 2);
+});
+
+test('countCodeLines Sass: // silent comment lines are not code', () => {
+	const sass = LANGUAGE_MAP['.sass'].comments!;
+	assert.equal(countCodeLines('// silent comment', sass), 0);
+	assert.equal(countCodeLines('#header // trailing comment\n  color: red', sass), 2);
 });
 
 // ── HTML_STYLE tests ──────────────────────────────────────────────────────────

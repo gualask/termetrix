@@ -1,5 +1,5 @@
-import { isGitIgnored, type GitIgnoreRule } from './gitignore';
 import { DEFAULT_EXCLUDES } from '../locConfig';
+import { type GitIgnoreRule, isGitIgnored } from './gitignore';
 
 /**
  * Evaluates whether a relative path should be excluded from LOC scanning.
@@ -25,10 +25,11 @@ export class LocPathFilter {
 	 * Default directory exclusions are checked first for a fast common-case skip, then gitignore rules.
 	 * @param relativePath - Path relative to the scan root.
 	 * @param gitignoreRules - Effective gitignore rules for the current directory depth.
+	 * @param isDirectory - Whether `relativePath` refers to a directory (affects `dir/` rules).
 	 */
-	shouldSkip(relativePath: string, gitignoreRules: GitIgnoreRule[]): boolean {
+	shouldSkip(relativePath: string, gitignoreRules: GitIgnoreRule[], isDirectory = true): boolean {
 		// Default excludes are applied before `.gitignore` for a fast common-case skip.
-		return this.isExcluded(relativePath) || isGitIgnored(relativePath, gitignoreRules);
+		return this.isExcluded(relativePath) || isGitIgnored(relativePath, gitignoreRules, isDirectory);
 	}
 }
 

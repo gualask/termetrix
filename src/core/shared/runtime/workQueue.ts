@@ -24,9 +24,7 @@ export interface LifoArrayQueueDriverParams<T> {
  * Creates a queue driver backed by a mutable array using LIFO semantics.
  * Useful to avoid repeating boilerplate adapter code at call sites.
  */
-export function createLifoArrayQueueDriver<T>(
-	params: LifoArrayQueueDriverParams<T>
-): ConcurrentQueueDriver<T> {
+export function createLifoArrayQueueDriver<T>(params: LifoArrayQueueDriverParams<T>): ConcurrentQueueDriver<T> {
 	const { queue, shouldStop, isStopScheduled } = params;
 	return {
 		shouldStop,
@@ -56,7 +54,9 @@ export async function runConcurrentQueue<T>(params: RunConcurrentQueueParams<T>)
 	const maybeFinish = (): void => {
 		if (!resolveDone) return;
 		if (inFlight !== 0) return;
-		if (driver.isStopScheduled() || !driver.hasQueuedItems()) {
+		// `shouldStop()` must terminate the run even when the driver never flips
+		// `isStopScheduled()`: with no work in flight the queue would never drain.
+		if (driver.isStopScheduled() || !driver.hasQueuedItems() || driver.shouldStop()) {
 			resolveDone();
 			resolveDone = undefined;
 		}
@@ -72,11 +72,13 @@ export async function runConcurrentQueue<T>(params: RunConcurrentQueueParams<T>)
 			onItemStart?.(item);
 
 			inFlight++;
-			void runOne(item).catch(onItemError).finally(() => {
-				inFlight--;
-				schedule();
-				maybeFinish();
-			});
+			void runOne(item)
+				.catch(onItemError)
+				.finally(() => {
+					inFlight--;
+					schedule();
+					maybeFinish();
+				});
 		}
 
 		maybeFinish();

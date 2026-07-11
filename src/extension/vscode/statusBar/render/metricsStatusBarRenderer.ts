@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import type { ProgressData, ScanResult } from '../../../types';
-import { SCANNING_PROJECT_LABEL } from '../../../support/constants';
 import { formatIncompleteReason } from '../../../../shared/formatters';
+import { SCANNING_PROJECT_LABEL } from '../../../support/constants';
+import type { ProgressData, ScanResult } from '../../../types';
 
 export type MetricsStatusBarRenderInput = {
 	rootPath: string | undefined;
@@ -84,7 +84,7 @@ export class MetricsStatusBarRenderer {
 
 		// Skipped directories info
 		if (scanResult.skippedCount > 0) {
-			tooltip.appendMarkdown(`$(info) Skipped ${scanResult.skippedCount} entries (permissions)\n\n`);
+			tooltip.appendMarkdown(`$(info) Skipped ${scanResult.skippedCount} unreadable entries\n\n`);
 		}
 
 		// Call to action

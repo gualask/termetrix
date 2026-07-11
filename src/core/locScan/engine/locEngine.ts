@@ -1,21 +1,23 @@
-import * as path from 'path';
-import type { LOCResult } from '../../../shared/contracts/loc';
+import * as path from 'node:path';
+import type { LOCResult, LocTopFile } from '../../../shared/contracts/loc';
+import type { DirEntry } from '../../ports/fsPort';
+import { ConcurrencyLimit } from '../../shared/numericValueObjects';
 import { createLifoArrayQueueDriver, runConcurrentQueue } from '../../shared/runtime/workQueue';
-import type { LocScanRequest } from '../locScanRequest';
-import { createLocTopFile } from '../metrics/locTopFile';
 import { type GitIgnoreRule, loadGitIgnoreRules, loadNestedGitIgnoreRules } from '../filtering/gitignore';
+import { LocPathFilter } from '../filtering/locPathFilter';
 import {
 	DEFAULT_LOC_CONCURRENCY,
 	LANGUAGE_MAP,
+	LOC_FILE_BATCH_SIZE,
 	MAX_FILE_SIZE_BYTES,
 	MAX_LOC_CONCURRENCY,
 	SOURCE_EXTENSIONS,
 } from '../locConfig';
+import type { LocScanRequest } from '../locScanRequest';
 import { countCodeLines, countNonEmptyLines } from '../metrics/lineCounter';
 import { LocAccumulator } from '../metrics/locAccumulator';
-import { LocPathFilter } from '../filtering/locPathFilter';
+import { createLocTopFile } from '../metrics/locTopFile';
 import { LocTraversalContext } from './locTraversalContext';
-import { ConcurrencyLimit } from '../../shared/numericValueObjects';
 
 /**
  * File-system LOC scan engine (no VS Code dependencies).
@@ -49,7 +51,11 @@ type DirItem = { dirPath: string; rules: GitIgnoreRule[] };
  * @param maxConcurrency - Maximum number of concurrent directory scans.
  * @param rootRules - Compiled rules from the root `.gitignore`.
  */
-async function scanDirectoryTree(context: LocTraversalContext, maxConcurrency: number, rootRules: GitIgnoreRule[]): Promise<void> {
+async function scanDirectoryTree(
+	context: LocTraversalContext,
+	maxConcurrency: number,
+	rootRules: GitIgnoreRule[],
+): Promise<void> {
 	if (context.isCancelled()) return;
 	const queue: DirItem[] = [{ dirPath: context.rootPath, rules: rootRules }];
 	await runConcurrentQueue<DirItem>({
@@ -75,28 +81,33 @@ async function scanDirectoryTree(context: LocTraversalContext, maxConcurrency: n
  * @param parentRules - Gitignore rules inherited from the parent directory.
  * @returns Subdirectory items to enqueue, each carrying the effective rules for that subtree.
  */
-async function scanDirectory(context: LocTraversalContext, dirPath: string, parentRules: GitIgnoreRule[]): Promise<DirItem[]> {
+async function scanDirectory(
+	context: LocTraversalContext,
+	dirPath: string,
+	parentRules: GitIgnoreRule[],
+): Promise<DirItem[]> {
 	// HOT PATH: walks many directories/files; keep changes minimal and avoid extra allocations.
 	if (context.isCancelled()) return [];
 
-	let entries;
+	let entries: ReadonlyArray<DirEntry>;
 	try {
 		entries = await context.fs.readDir(dirPath);
 	} catch {
 		return [];
 	}
 
-	const relativeDir =
-		dirPath === context.rootPath ? '' : path.relative(context.rootPath, dirPath);
+	const relativeDir = dirPath === context.rootPath ? '' : path.relative(context.rootPath, dirPath);
 	if (relativeDir.startsWith('..') || path.isAbsolute(relativeDir)) {
 		context.incrementSkipped();
 		return [];
 	}
 
 	// Load nested .gitignore for this directory and merge with parent rules.
-	// The root .gitignore is already in parentRules; only probe subdirectories.
+	// The root .gitignore is already in parentRules; only probe subdirectories,
+	// and only when the entry listing shows a .gitignore actually exists
+	// (avoids one failed readFile syscall for every directory without one).
 	let effectiveRules = parentRules;
-	if (relativeDir !== '') {
+	if (relativeDir !== '' && hasOwnGitIgnore(entries)) {
 		const nestedRules = await loadNestedGitIgnoreRules(dirPath, relativeDir, context.fs);
 		if (nestedRules.length > 0) {
 			effectiveRules = [...parentRules, ...nestedRules];
@@ -105,20 +116,22 @@ async function scanDirectory(context: LocTraversalContext, dirPath: string, pare
 
 	const basePath = dirPath.endsWith('/') || dirPath.endsWith('\\') ? dirPath : dirPath + path.sep;
 	const subdirectories: DirItem[] = [];
+	let fileBatch: PendingLocFile[] = [];
 
 	for (const entry of entries) {
 		if (context.isCancelled()) break;
 
 		const fullPath = basePath + entry.name;
 		const relativePath = relativeDir ? relativeDir + path.sep + entry.name : entry.name;
+		const isDirectory = entry.isDirectory();
 
 		// Exclude early to avoid unnecessary stat/read work.
-		if (context.shouldSkip(relativePath, effectiveRules)) {
+		if (context.shouldSkip(relativePath, effectiveRules, isDirectory)) {
 			context.incrementSkipped();
 			continue;
 		}
 
-		if (entry.isDirectory()) {
+		if (isDirectory) {
 			subdirectories.push({ dirPath: fullPath, rules: effectiveRules });
 			continue;
 		}
@@ -131,10 +144,46 @@ async function scanDirectory(context: LocTraversalContext, dirPath: string, pare
 			continue;
 		}
 
-		await processFile(context, fullPath, relativePath, ext);
+		// Batch files so stat/read run in parallel; large flat directories would
+		// otherwise degrade to one sequential stat+read per file.
+		fileBatch.push({ fullPath, relativePath, ext });
+		if (fileBatch.length >= LOC_FILE_BATCH_SIZE) {
+			const batch = fileBatch;
+			fileBatch = [];
+			await processFileBatch(context, batch);
+		}
 	}
 
+	await processFileBatch(context, fileBatch);
 	return subdirectories;
+}
+
+/**
+ * Returns true when the directory listing contains a `.gitignore` entry.
+ * Symlinked `.gitignore` files count too (`isFile()` is false for symlinks).
+ */
+function hasOwnGitIgnore(entries: ReadonlyArray<DirEntry>): boolean {
+	for (const entry of entries) {
+		if (entry.name === '.gitignore' && !entry.isDirectory()) return true;
+	}
+	return false;
+}
+
+/** A source file queued for counting within the current directory. */
+type PendingLocFile = { fullPath: string; relativePath: string; ext: string };
+
+/**
+ * Reads and counts a batch of files in parallel, then accumulates the results
+ * in entry order so aggregation stays deterministic regardless of IO timing.
+ * @param context - Shared traversal state.
+ * @param files - Files to count (at most `LOC_FILE_BATCH_SIZE`).
+ */
+async function processFileBatch(context: LocTraversalContext, files: PendingLocFile[]): Promise<void> {
+	if (files.length === 0 || context.isCancelled()) return;
+	const counted = await Promise.all(files.map((file) => countFile(context, file)));
+	for (const file of counted) {
+		if (file) context.accumulator.addCountedFile(file);
+	}
 }
 
 /**
@@ -151,44 +200,40 @@ function fastExtname(fileName: string): string {
 }
 
 /**
- * Reads, counts, and accumulates LOC for a single source file.
- * Skips files that are empty, oversized, unreadable, or produce zero non-empty lines.
+ * Reads and counts LOC for a single source file, returning the counted file.
+ * Returns `undefined` (and tracks skips) for files that are empty, oversized,
+ * unreadable, or produce zero non-empty lines. The caller accumulates results.
  * @param context - Shared traversal state.
- * @param fullPath - Absolute path to the file.
- * @param relativePath - Path relative to the scan root, used in results.
- * @param ext - File extension (e.g. `.ts`), used for language mapping.
+ * @param file - File to count (paths and extension).
  */
-async function processFile(context: LocTraversalContext, fullPath: string, relativePath: string, ext: string): Promise<void> {
+async function countFile(context: LocTraversalContext, file: PendingLocFile): Promise<LocTopFile | undefined> {
 	// HOT PATH: called for many files; keep changes minimal and avoid expensive work for skipped files.
-	if (context.isCancelled()) return;
+	if (context.isCancelled()) return undefined;
+	const { fullPath, relativePath, ext } = file;
 
 	// Check file size (skip large files to avoid memory issues)
 	const stat = await tryStat(context, fullPath);
-	if (!stat) return;
+	if (!stat) return undefined;
 
 	if (stat.size === 0 || stat.size > MAX_FILE_SIZE_BYTES) {
 		context.incrementSkipped();
-		return;
+		return undefined;
 	}
 
-	if (context.isCancelled()) return;
+	if (context.isCancelled()) return undefined;
 	const content = await tryReadTextFile(context, fullPath);
 	if (content === undefined) {
 		context.incrementSkipped();
-		return;
+		return undefined;
 	}
 
 	const langDef = LANGUAGE_MAP[ext];
-	const lines = langDef?.comments
-		? countCodeLines(content, langDef.comments)
-		: countNonEmptyLines(content);
-	if (lines <= 0) return;
+	const lines = langDef?.comments ? countCodeLines(content, langDef.comments) : countNonEmptyLines(content);
+	if (lines <= 0) return undefined;
 
 	// Stable language key for aggregation.
 	const language = langDef?.name ?? ext.slice(1).toUpperCase();
-	const countedFile = createLocTopFile({ relativePath, lines, language });
-	if (!countedFile) return;
-	context.accumulator.addCountedFile(countedFile);
+	return createLocTopFile({ relativePath, lines, language });
 }
 
 /**

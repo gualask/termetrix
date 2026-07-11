@@ -1,15 +1,27 @@
-import { AlertTriangle, ChevronDown, ChevronRight, Clock, Folder, FolderX, HardDrive, Loader2, RefreshCw, Square, Timer } from 'lucide-preact';
-import type { SizeBreakdownResult, ViewData, ProgressData } from '../../types';
-import { formatBytes, formatIncompleteReason } from '../../utils';
-import { formatLoadingLabel, formatScanSummaryValue } from './sizeFormatters';
-import { useRelativeTime } from '../../hooks/useRelativeTime';
-import { SizeChart } from './SizeChart';
+import {
+	AlertTriangle,
+	ChevronDown,
+	ChevronRight,
+	Clock,
+	Folder,
+	FolderX,
+	HardDrive,
+	Loader2,
+	RefreshCw,
+	Square,
+	Timer,
+} from 'lucide-preact';
+import { EmptyState } from '../../components/EmptyState';
 import { IconButton } from '../../components/IconButton';
 import { InfoTooltip } from '../../components/InfoTooltip';
-import { PanelOverlay } from '../../components/PanelOverlay';
-import { EmptyState } from '../../components/EmptyState';
 import { MetricsHeader } from '../../components/MetricsHeader';
+import { PanelOverlay } from '../../components/PanelOverlay';
 import { ViewLayout } from '../../components/ViewLayout';
+import { useRelativeTime } from '../../hooks/useRelativeTime';
+import type { ProgressData, SizeBreakdownResult, ViewData } from '../../types';
+import { formatBytes, formatIncompleteReason } from '../../utils';
+import { SizeChart } from './SizeChart';
+import { formatLoadingLabel, formatScanSummaryValue } from './sizeFormatters';
 
 const SIZE_TOOLTIP_LINES = ['Top directories by disk usage', 'Only the heaviest are listed'];
 
@@ -48,31 +60,31 @@ export function SizeView({
 			primary={{
 				title: 'Total size',
 				icon: <HardDrive size={22} class="tmx-metric-primaryIcon" aria-hidden="true" />,
-				value: scanResult ? formatBytes(scanResult.totalBytes) : '—'
+				value: scanResult ? formatBytes(scanResult.totalBytes) : '—',
 			}}
 			secondary={[
 				{
 					title: 'Directories scanned',
 					icon: <Folder size={14} aria-hidden="true" />,
-					content: formatScanSummaryValue(scanResult?.metadata, 'directoriesScanned')
+					content: formatScanSummaryValue(scanResult?.metadata, 'directoriesScanned'),
 				},
 				{
 					title: 'Scan duration',
 					icon: <Timer size={14} aria-hidden="true" />,
-					content: formatScanSummaryValue(scanResult?.metadata, 'duration')
+					content: formatScanSummaryValue(scanResult?.metadata, 'duration'),
 				},
 				...(scanResult?.skippedCount && scanResult.skippedCount > 0
 					? [
 							{
 								title: 'Skipped entries',
 								icon: <FolderX size={14} aria-hidden="true" />,
-								content: `${scanResult.skippedCount} skipped (permissions)`
-							}
-					  ]
+								content: `${scanResult.skippedCount} skipped (unreadable)`,
+							},
+						]
 					: []),
 				...(scannedLabel && !viewData.isScanning
 					? [{ title: 'Last scanned', icon: <Clock size={14} aria-hidden="true" />, content: scannedLabel }]
-					: [])
+					: []),
 			]}
 			actions={
 				<>

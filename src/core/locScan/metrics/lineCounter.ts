@@ -54,7 +54,6 @@ const STATE_IN_STRING = 3;
  * @returns Number of lines with real code.
  */
 export function countCodeLines(content: string, def: CommentDef): number {
-
 	// Flat scalars for single-line openers (-1 = absent).
 	// s_c1 === -1 means a 1-char opener (e.g. '#'); otherwise it's the second char of a 2-char opener.
 	const s0c0 = def.single[0]?.[0] ?? -1;
@@ -131,11 +130,11 @@ export function countCodeLines(content: string, def: CommentDef): number {
 				i++;
 			}
 
-		// ── STATE_IN_SINGLE: skip everything until the next newline ──────────────
+			// ── STATE_IN_SINGLE: skip everything until the next newline ──────────────
 		} else if (state === STATE_IN_SINGLE) {
 			i++;
 
-		// ── STATE_IN_MULTI: skip until closer; track depth if nestable ───────────
+			// ── STATE_IN_MULTI: skip until closer; track depth if nestable ───────────
 		} else if (state === STATE_IN_MULTI) {
 			if (nestable && c === mOpener[0] && matchesAt(mOpener, i)) {
 				depth++;
@@ -147,10 +146,13 @@ export function countCodeLines(content: string, def: CommentDef): number {
 				i++;
 			}
 
-		// ── STATE_IN_STRING: skip until matching closing quote, respecting escapes ─
+			// ── STATE_IN_STRING: skip until matching closing quote, respecting escapes ─
 		} else {
 			if (c === BACKSLASH) {
-				i += 2; // skip the escaped character
+				// Skip the escaped character, but never jump over a newline (it must
+				// still commit the line) or past EOF (the sentinel must still fire).
+				const next = i + 1 < len ? content.charCodeAt(i + 1) : NEWLINE;
+				i += next === NEWLINE ? 1 : 2;
 			} else if (c === stringQuote) {
 				state = STATE_CODE;
 				lineHasCode = true;

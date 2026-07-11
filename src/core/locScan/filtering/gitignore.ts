@@ -1,9 +1,15 @@
-import * as path from 'path';
+import * as path from 'node:path';
 import type { FsPort } from '../../ports/fsPort';
 
 export interface GitIgnoreRule {
 	negated: boolean;
 	regex: RegExp;
+	/**
+	 * For directory-only rules (`dir/`): matcher applied to file paths.
+	 * It only matches descendants of the directory, never a file whose own
+	 * name matches the pattern (git semantics). Absent for regular rules.
+	 */
+	fileRegex?: RegExp;
 }
 
 const BACKSLASH_REGEX = /\\/g;
@@ -64,7 +70,7 @@ function globToRegex(pattern: string): string {
 
 		// 3) Literal character (escape only if it would be special in regex).
 		if (c !== '*') {
-			out += REGEX_SPECIAL_CHARS.test(c) ? '\\' + c : c;
+			out += REGEX_SPECIAL_CHARS.test(c) ? `\\${c}` : c;
 			continue;
 		}
 
@@ -135,25 +141,36 @@ function parseGitIgnoreLine(rawLine: string): ParsedGitIgnoreLine | null {
  * @param dirPrefix - POSIX-relative path of the directory owning this rule (omit for root).
  * @returns Compiled RegExp.
  */
-function compileRuleRegex(parsed: Omit<ParsedGitIgnoreLine, 'negated'>, dirPrefix?: string): RegExp {
+function compileRuleRegexes(
+	parsed: Omit<ParsedGitIgnoreLine, 'negated'>,
+	dirPrefix?: string,
+): Pick<GitIgnoreRule, 'regex' | 'fileRegex'> {
 	const patternRegex = globToRegex(parsed.pattern);
-	const suffix = parsed.directoryOnly ? '(/.*)?$' : '$';
 
+	let core: string;
 	if (dirPrefix) {
 		// Escape regex special chars in the prefix (e.g. dots in ".github").
 		const escapedPrefix = dirPrefix.replace(REGEX_SPECIAL_CHARS_GLOBAL, '\\$&');
 		if (parsed.anchored) {
 			// /build in foo/.gitignore → matches foo/build only (top-level of that dir).
-			return new RegExp('^' + escapedPrefix + '/' + patternRegex + suffix);
+			core = `^${escapedPrefix}/${patternRegex}`;
 		} else {
 			// build in foo/.gitignore → matches foo/build and foo/any/depth/build.
-			return new RegExp('^' + escapedPrefix + '/(|.*/)' + patternRegex + suffix);
+			core = `^${escapedPrefix}/(|.*/)${patternRegex}`;
 		}
+	} else {
+		// Root rules: non-anchored patterns can match at any depth.
+		core = (parsed.anchored ? '^' : '(^|.*/)') + patternRegex;
 	}
 
-	// Root rules: non-anchored patterns can match at any depth.
-	const prefix = parsed.anchored ? '^' : '(^|.*/)';
-	return new RegExp(prefix + patternRegex + suffix);
+	if (!parsed.directoryOnly) return { regex: new RegExp(`${core}$`) };
+
+	return {
+		// Directory paths: match the directory itself or any descendant.
+		regex: new RegExp(`${core}(/.*)?$`),
+		// File paths: only descendants (a file named like the pattern is not ignored).
+		fileRegex: new RegExp(`${core}/.*$`),
+	};
 }
 
 /**
@@ -167,7 +184,7 @@ function parseGitIgnoreContent(content: string, dirPrefix?: string): GitIgnoreRu
 	for (const rawLine of content.split(LINE_SPLIT_REGEX)) {
 		const parsed = parseGitIgnoreLine(rawLine);
 		if (!parsed) continue;
-		rules.push({ negated: parsed.negated, regex: compileRuleRegex(parsed, dirPrefix) });
+		rules.push({ negated: parsed.negated, ...compileRuleRegexes(parsed, dirPrefix) });
 	}
 	return rules;
 }
@@ -196,7 +213,11 @@ export async function loadGitIgnoreRules(rootPath: string, fs: FsPort): Promise<
  * @param relativeDir - Path of that directory relative to the scan root (OS separators).
  * @returns List of compiled rules, in file order. Empty when no `.gitignore` exists.
  */
-export async function loadNestedGitIgnoreRules(dirPath: string, relativeDir: string, fs: FsPort): Promise<GitIgnoreRule[]> {
+export async function loadNestedGitIgnoreRules(
+	dirPath: string,
+	relativeDir: string,
+	fs: FsPort,
+): Promise<GitIgnoreRule[]> {
 	const gitignorePath = path.join(dirPath, '.gitignore');
 	try {
 		const content = await fs.readFile(gitignorePath, 'utf8');
@@ -212,17 +233,20 @@ export async function loadNestedGitIgnoreRules(dirPath: string, relativeDir: str
  * Rules are applied in order; later matches override earlier ones (including negation).
  * @param relativePath - Path relative to the scan root.
  * @param rules - Compiled rules from `.gitignore`.
+ * @param isDirectory - Whether `relativePath` refers to a directory. Directory-only
+ * rules (`dir/`) never match a file whose own name matches the pattern.
  * @returns True when the path should be ignored.
  */
-export function isGitIgnored(relativePath: string, rules: GitIgnoreRule[]): boolean {
+export function isGitIgnored(relativePath: string, rules: GitIgnoreRule[], isDirectory = true): boolean {
 	if (rules.length === 0) return false;
 	const posix = toPosixPath(relativePath);
 
-	let ignored = false;
-	for (const rule of rules) {
-		if (rule.regex.test(posix)) {
-			ignored = !rule.negated;
-		}
+	// Later rules override earlier ones, so the last matching rule decides:
+	// iterate backwards and stop at the first match.
+	for (let i = rules.length - 1; i >= 0; i--) {
+		const rule = rules[i];
+		const regex = isDirectory ? rule.regex : (rule.fileRegex ?? rule.regex);
+		if (regex.test(posix)) return !rule.negated;
 	}
-	return ignored;
+	return false;
 }

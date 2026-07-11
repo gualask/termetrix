@@ -1,7 +1,7 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import test from 'node:test';
 
 import { scanLOC } from '../../src/core/locScan/engine/locEngine';
 import { NodeFsPort } from '../../src/extension/platform/nodeFsPort';
@@ -41,6 +41,48 @@ test('scanLOC: nested .gitignore excludes files within subdirectory', async (t) 
 	// Only packages/foo/generated/types.ts should be excluded.
 	// Scanned: foo/src/index.ts, bar/src/index.ts, bar/generated/types.ts → 3 files.
 	assert.equal(result.scannedFiles, 3);
+});
+
+test('scanLOC: does not probe .gitignore in directories that lack one', async (t) => {
+	const root = await createTempRoot(t);
+	await writeFile(root, 'a/b/c/deep.ts', 'export const d = 1;\n');
+	await writeFile(root, 'src/x.ts', 'export const x = 1;\n');
+	await writeFile(root, 'src/sub/.gitignore', 'skip/\n');
+	await writeFile(root, 'src/sub/y.ts', 'export const y = 1;\n');
+
+	const inner = new NodeFsPort();
+	const gitignoreReads: string[] = [];
+	const countingFs = {
+		readDir: (p: string) => inner.readDir(p),
+		stat: (p: string) => inner.stat(p),
+		readFile: (p: string, enc: 'utf8') => {
+			if (p.endsWith('.gitignore')) gitignoreReads.push(p);
+			return inner.readFile(p, enc);
+		},
+	};
+
+	const result = await scanLOC({ rootPath: root, fs: countingFs, maxConcurrency: 2 });
+	assert.equal(result.scannedFiles, 3);
+
+	// Root probe (unconditional) + the single nested .gitignore that actually exists.
+	assert.equal(gitignoreReads.length, 2);
+});
+
+test('scanLOC: directory-only gitignore rule does not exclude files matching the pattern', async (t) => {
+	const root = await createTempRoot(t);
+	const fsPort = new NodeFsPort();
+
+	await writeFile(root, '.gitignore', 'local*/\n');
+	// File whose name matches `local*` must NOT be excluded (rule is directory-only).
+	await writeFile(root, 'locale.ts', 'export const l = 1;\n');
+	// Directory matching `local*` must be excluded.
+	await writeFile(root, 'localstuff/gen.ts', 'export const g = 1;\n');
+	await writeFile(root, 'src/index.ts', 'export const x = 1;\n');
+
+	const result = await scanLOC({ rootPath: root, fs: fsPort, maxConcurrency: 4 });
+
+	// Scanned: locale.ts + src/index.ts → 2 (localstuff/gen.ts excluded).
+	assert.equal(result.scannedFiles, 2);
 });
 
 test('scanLOC: concurrent traversal keeps same aggregated result as serial traversal', async (t) => {

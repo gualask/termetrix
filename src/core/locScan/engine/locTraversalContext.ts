@@ -1,9 +1,9 @@
+import * as path from 'node:path';
 import type { FsPort } from '../../ports/fsPort';
 import type { CancellationToken } from '../../shared/runtime/cancellationToken';
 import type { GitIgnoreRule } from '../filtering/gitignore';
-import { LocAccumulator } from '../metrics/locAccumulator';
-import { LocPathFilter } from '../filtering/locPathFilter';
-import * as path from 'path';
+import type { LocPathFilter } from '../filtering/locPathFilter';
+import type { LocAccumulator } from '../metrics/locAccumulator';
 
 export interface LocTraversalContextParams {
 	rootPath: string;
@@ -46,9 +46,10 @@ export class LocTraversalContext {
 	 * Applies default directory exclusions first, then the provided gitignore rules.
 	 * @param relativePath - Path relative to the scan root.
 	 * @param rules - Effective gitignore rules for the current directory depth.
+	 * @param isDirectory - Whether `relativePath` refers to a directory (affects `dir/` rules).
 	 */
-	shouldSkip(relativePath: string, rules: GitIgnoreRule[]): boolean {
-		return this.pathFilter.shouldSkip(relativePath, rules);
+	shouldSkip(relativePath: string, rules: GitIgnoreRule[], isDirectory = true): boolean {
+		return this.pathFilter.shouldSkip(relativePath, rules, isDirectory);
 	}
 
 	/** Increments the count of skipped (excluded or unreadable) entries. */
