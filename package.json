@@ -3,6 +3,7 @@
   "displayName": "Termetrix",
   "description": "VS Code project metrics in the status bar: project size, size breakdown, LOC by language, selection line count, and terminal shortcut",
   "version": "1.1.0",
+  "packageManager": "pnpm@11.9.0",
   "type": "commonjs",
   "publisher": "gualask",
   "author": {
@@ -89,7 +90,7 @@
           "default": 50000,
           "description": "Maximum number of directories to scan (partial results are shown if the limit is reached)"
         },
-"termetrix.statusBar.showTerminalButton": {
+        "termetrix.statusBar.showTerminalButton": {
           "type": "boolean",
           "default": true,
           "description": "Show the one-click terminal button in the status bar"
@@ -118,26 +119,20 @@
     "build:prod": "node -e \"require('fs').rmSync('out', { recursive: true, force: true })\" && node esbuild.mjs --production",
     "build:tests": "node esbuild.tests.mjs",
     "typecheck": "tsc -p tsconfig.extension.json --noEmit && tsc -p src/ui/tsconfig.json --noEmit",
-    "lint": "eslint src --ext .ts,.tsx",
+    "lint": "biome check .",
     "test:unit": "pnpm run build:tests && node --test out-test/tests/*.test.js",
-    "test": "pnpm run build && pnpm run lint && pnpm run typecheck && pnpm run test:unit"
+    "test": "pnpm run build && pnpm run lint && pnpm run typecheck && pnpm run test:unit",
+    "format": "biome format --write ."
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
+    "@biomejs/biome": "^2.5.3",
     "@types/node": "22.19.11",
     "@types/vscode": "^1.109.0",
-    "esbuild": "^0.27.3",
-    "eslint": "^10.0.2",
+    "esbuild": "^0.28.1",
     "preact": "^10.28.4",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.56.1"
+    "typescript": "^7.0.2"
   },
   "dependencies": {
     "lucide-preact": "^0.575.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ]
   }
 }
