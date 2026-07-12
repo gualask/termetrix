@@ -17,11 +17,7 @@ export interface TraversalRuntimeContext {
 	runLimited: ConcurrencyLimiter;
 	fs: FsPort;
 	statBatchSize: number;
-}
-
-export interface TraversalCollectionPolicy {
-	isSummaryOnly: boolean;
-	directoryMetricsStore: DirectoryMetricsStore | undefined;
+	directoryMetricsStore: DirectoryMetricsStore;
 }
 
 /**
@@ -38,10 +34,9 @@ export class ScanTraversalContext {
 	readonly runLimited: ConcurrencyLimiter;
 	readonly fs: FsPort;
 	readonly statBatchSize: number;
-	readonly isSummaryOnly: boolean;
-	readonly directoryMetricsStore: DirectoryMetricsStore | undefined;
+	readonly directoryMetricsStore: DirectoryMetricsStore;
 
-	constructor(runtime: TraversalRuntimeContext, collection: TraversalCollectionPolicy) {
+	constructor(runtime: TraversalRuntimeContext) {
 		this.rootPath = runtime.rootPath;
 		this.queue = runtime.queue;
 		this.state = runtime.state;
@@ -51,8 +46,7 @@ export class ScanTraversalContext {
 		this.runLimited = runtime.runLimited;
 		this.fs = runtime.fs;
 		this.statBatchSize = runtime.statBatchSize;
-		this.isSummaryOnly = collection.isSummaryOnly;
-		this.directoryMetricsStore = collection.directoryMetricsStore;
+		this.directoryMetricsStore = runtime.directoryMetricsStore;
 	}
 
 	/** Returns `true` when the scan should stop due to cancellation, timeout, or directory limits. */

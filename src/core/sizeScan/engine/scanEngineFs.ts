@@ -49,49 +49,14 @@ async function tryReadDirEntries(
 	}
 }
 
-// HOT PATH: runs for every stat batch in summary mode; keep it tight.
+// HOT PATH: runs for every stat batch; keep it tight and allocation-light.
 /**
- * Computes bytes for a batch of file paths in summary mode.
- * @param runLimited - Concurrency limiter for filesystem operations.
- * @param paths - File paths to stat.
- * @returns Batch delta for total bytes.
- */
-async function sumFileBatchSummary(
-	runLimited: ConcurrencyLimiter,
-	fs: FsPort,
-	paths: ReadonlyArray<string>,
-	incrementSkipped: (count?: number) => void,
-	chunkSize: number,
-	shouldStop: () => boolean,
-): Promise<number> {
-	// Summary-only: only total bytes (no per-directory metadata).
-	let totalBytesDelta = 0;
-	const limit = Math.max(1, chunkSize);
-	for (let start = 0; start < paths.length; start += limit) {
-		// Important: allow cancellation/time limits to interrupt large batches (otherwise we could
-		// schedule a lot of work after a stop condition has already been reached).
-		if (shouldStop()) break;
-		const end = Math.min(paths.length, start + limit);
-		const chunkPromises: Array<Promise<number>> = new Array(end - start);
-		for (let i = start; i < end; i++) {
-			chunkPromises[i - start] = statFileSize(runLimited, fs, paths[i], incrementSkipped);
-		}
-		const sizes = await Promise.all(chunkPromises);
-		for (const size of sizes) {
-			if (size > 0) totalBytesDelta += size;
-		}
-	}
-	return totalBytesDelta;
-}
-
-// HOT PATH: runs for every stat batch in UI mode; keep it tight and allocation-light.
-/**
- * Computes bytes and metadata for a batch of file paths in full (UI) mode.
+ * Computes bytes and metadata for a batch of file paths.
  * @param runLimited - Concurrency limiter for filesystem operations.
  * @param paths - File paths to stat.
  * @returns Batch deltas for total bytes and direct per-directory metadata.
  */
-async function sumFileBatchFullInto(
+async function sumFileBatchIntoDirectoryMetrics(
 	runLimited: ConcurrencyLimiter,
 	fs: FsPort,
 	paths: ReadonlyArray<string>,
@@ -100,11 +65,10 @@ async function sumFileBatchFullInto(
 	chunkSize: number,
 	shouldStop: () => boolean,
 ): Promise<number> {
-	// Full: also compute metadata (counts/max/top files) for the UI.
 	let totalBytesDelta = 0;
 	const limit = Math.max(1, chunkSize);
 	for (let start = 0; start < paths.length; start += limit) {
-		// Same reasoning as summary mode: check stop between chunks to keep cancel latency bounded.
+		// Check stop between chunks to keep cancel latency bounded.
 		if (shouldStop()) break;
 		const end = Math.min(paths.length, start + limit);
 		const chunkPromises: Array<Promise<number>> = new Array(end - start);
@@ -134,7 +98,7 @@ async function scanDirectoryEntries(params: {
 	context: ScanTraversalContext;
 }): Promise<DirectoryDirectMetricsDelta> {
 	const { entries, currentPath, context } = params;
-	const { runLimited, fs, statBatchSize, isSummaryOnly, maxFsConcurrency } = context;
+	const { runLimited, fs, statBatchSize, maxFsConcurrency } = context;
 	const incrementSkipped = (count?: number) => context.incrementSkipped(count);
 	const directoryDelta = new DirectoryDirectMetricsDelta();
 	let fileBatch: string[] = [];
@@ -155,17 +119,7 @@ async function scanDirectoryEntries(params: {
 		// If we already hit a stop condition, drop the batch rather than doing more IO.
 		if (context.shouldStop()) return;
 
-		if (isSummaryOnly) {
-			// Status bar / summary mode: update only the total
-			const totalBytesDelta = await sumFileBatchSummary(runLimited, fs, paths, incrementSkipped, statChunkSize, () =>
-				context.shouldStop(),
-			);
-			context.addTotalBytes(totalBytesDelta);
-			return;
-		}
-
-		// UI mode: update total + direct bytes/count/max/top files
-		const totalBytesDelta = await sumFileBatchFullInto(
+		const totalBytesDelta = await sumFileBatchIntoDirectoryMetrics(
 			runLimited,
 			fs,
 			paths,
@@ -221,7 +175,7 @@ async function scanDirectoryEntries(params: {
  * @returns Promise resolving once the directory is processed.
  */
 export async function processDirectory(currentPath: string, context: ScanTraversalContext): Promise<void> {
-	const { runLimited, fs, isSummaryOnly, directoryMetricsStore } = context;
+	const { runLimited, fs, directoryMetricsStore } = context;
 
 	if (context.shouldStop()) return;
 
@@ -235,7 +189,7 @@ export async function processDirectory(currentPath: string, context: ScanTravers
 		context,
 	});
 
-	if (isSummaryOnly || !directoryDelta.hasDirectMetrics()) return;
+	if (!directoryDelta.hasDirectMetrics()) return;
 
-	directoryMetricsStore?.record(currentPath, directoryDelta);
+	directoryMetricsStore.record(currentPath, directoryDelta);
 }

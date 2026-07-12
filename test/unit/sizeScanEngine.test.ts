@@ -24,7 +24,7 @@ async function writeBytes(root: string, relativePath: string, sizeBytes: number)
 	return absolutePath;
 }
 
-test('size scan: computes total bytes and directory metrics (full mode)', async (t) => {
+test('size scan: computes total bytes and directory metrics', async (t) => {
 	const { root } = await createTempRoot(t);
 
 	await writeBytes(root, 'root.bin', 10);
@@ -60,28 +60,25 @@ test('size scan: computes total bytes and directory metrics (full mode)', async 
 	assert.equal(result.directoryMetrics[dirA].maxFileName, 'file2.bin');
 });
 
-test('size scan: summary mode omits directory metrics', async (t) => {
+test('size scan: incomplete results still include a directory metrics snapshot', async (t) => {
 	const { root } = await createTempRoot(t);
 
 	await writeBytes(root, 'root.bin', 10);
-	await writeBytes(root, 'dirA/file1.bin', 100);
-	await writeBytes(root, 'dirA/file2.bin', 200);
 
 	const result = await scanProjectSize({
 		rootPath: root,
 		config: {
 			maxDurationSeconds: SIZE_SCAN_DEFAULTS.maxDurationSeconds,
-			maxDirectories: SIZE_SCAN_DEFAULTS.maxDirectories,
+			maxDirectories: 1,
 			fsConcurrency: 16,
 		},
 		fs: new NodeFsPort(),
 		cancellationToken: { isCancellationRequested: false },
-		mode: 'summary',
 	});
 
-	assert.equal(result.incomplete, false);
-	assert.equal(result.totalBytes, 310);
-	assert.equal(result.directoryMetrics, undefined);
+	assert.equal(result.incomplete, true);
+	assert.equal(result.incompleteReason, 'dir_limit');
+	assert.equal(typeof result.directoryMetrics, 'object');
 });
 
 test('size scan: does not follow symlinks (best-effort)', async (t) => {

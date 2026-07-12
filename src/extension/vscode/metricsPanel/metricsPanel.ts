@@ -75,7 +75,7 @@ export class MetricsPanel implements vscode.Disposable {
 		}
 
 		this.controller.reset();
-		const { panel } = this.view.ensureOpen();
+		const panel = this.view.ensureOpen();
 		this.controller.attach(panel);
 	}
 

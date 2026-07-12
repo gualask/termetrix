@@ -24,10 +24,10 @@ export class MetricsPanelView {
 
 	/**
 	 * Opens the panel if not already open, or returns the existing instance.
-	 * @returns The panel and a flag indicating whether it was newly created.
+	 * @returns The open panel.
 	 */
-	ensureOpen(): { panel: vscode.WebviewPanel; created: boolean } {
-		if (this.panel) return { panel: this.panel, created: false };
+	ensureOpen(): vscode.WebviewPanel {
+		if (this.panel) return this.panel;
 
 		const webviewUri = vscode.Uri.joinPath(this.extensionUri, 'out', 'webview');
 
@@ -50,7 +50,7 @@ export class MetricsPanelView {
 			this.panel = undefined;
 		});
 
-		return { panel, created: true };
+		return panel;
 	}
 
 	/**

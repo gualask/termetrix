@@ -18,5 +18,5 @@ export type DirectoryMetricsSnapshot = Record<string, DirectoryMetrics>;
  * Not sent to the webview.
  */
 export type ExtendedScanResult = ScanResult & {
-	directoryMetrics?: DirectoryMetricsSnapshot;
+	directoryMetrics: DirectoryMetricsSnapshot;
 };

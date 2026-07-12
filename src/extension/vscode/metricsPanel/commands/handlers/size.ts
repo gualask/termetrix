@@ -35,16 +35,9 @@ export async function startSizeScanForPanel(
 				return;
 			}
 
-			const breakdownSource = result.directoryMetrics;
-			if (!breakdownSource) {
-				// Intentional: throwing here re-uses the runPanelCommand catch to log,
-				// send a recoverable panel error, and call onError (which sets scan state to 'error').
-				throw new Error('size scan outcome is invalid');
-			}
-
 			deps.sessionState.completeRunSuccess('size');
 			deps.sendMessage(createUpdateMessage({ scanResult: toPublicScanResult(result), isScanning: false }));
-			deps.sendMessage(createBreakdownMessage(rootPath, breakdownSource));
+			deps.sendMessage(createBreakdownMessage(rootPath, result.directoryMetrics));
 		},
 		onError: (rootPath, _error) => {
 			// Same root-change guard as onSuccess: skip state updates if the root changed.

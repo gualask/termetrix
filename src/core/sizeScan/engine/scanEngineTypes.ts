@@ -34,8 +34,6 @@ export interface SizeScanBudget {
 	cancellationToken: CancellationToken;
 }
 
-export type SizeScanMode = 'full' | 'summary';
-
 export interface SizeScanParams {
 	rootPath: string;
 	config: SizeScanConfig;
@@ -43,5 +41,4 @@ export interface SizeScanParams {
 	cancellationToken: CancellationToken;
 	onProgress?: (progress: ProgressData) => void;
 	logger?: LoggerPort;
-	mode?: SizeScanMode;
 }

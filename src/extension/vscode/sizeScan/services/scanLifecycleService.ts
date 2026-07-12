@@ -1,22 +1,17 @@
 import type * as vscode from 'vscode';
-import type { SizeScanMode } from '../../../../core/sizeScan/engine/scanEngineTypes';
-import type { DirectoryMetricsSnapshot } from '../../../../core/sizeScan/types';
 import { logger } from '../../../support/logger';
 import type { ExtendedScanResult } from '../../../types';
 import type { ScanEventEmitter } from '../controller/scanEventEmitter';
 import { ScanRunner } from '../controller/scanRunner';
 import type { ScanCache } from '../state/scanCache';
+
 export interface ScanLifecycleServiceOptions {
 	cache: ScanCache;
 	scanEvents: ScanEventEmitter;
 	executeScan: (params: {
 		rootPath: string;
 		cancellationToken: vscode.CancellationToken;
-		mode: SizeScanMode;
-		emitProgressEvents: boolean;
 	}) => Promise<ExtendedScanResult>;
-	/** Called with directory metrics before "scanEnd" fires, so consumers see fresh data on that event. */
-	onDirectoryMetrics?: (rootPath: string, metrics: DirectoryMetricsSnapshot) => void;
 }
 
 /**
@@ -43,35 +38,18 @@ export class ScanLifecycleService {
 		if (result.incompleteReason === 'cancelled') return;
 		// Cache results before emitting "scanEnd" so downstream consumers see fresh data on that event.
 		this.options.cache.set(rootPath, result);
-		if (result.directoryMetrics) {
-			this.options.onDirectoryMetrics?.(rootPath, result.directoryMetrics);
-		}
 	}
 
 	/**
 	 * Runs a scan for the given root path, emitting lifecycle events and caching the result.
-	 * @param params.rootPath - Directory to scan.
-	 * @param params.mode - Scan mode (`'full'` or `'summary'`).
-	 * @param params.emitProgressEvents - Whether to fire progress events during the scan.
+	 * @param rootPath - Directory to scan.
 	 * @returns The scan result, or `undefined` on cancellation or error.
 	 */
-	async runScan(params: {
-		rootPath: string;
-		mode: SizeScanMode;
-		emitProgressEvents: boolean;
-	}): Promise<ExtendedScanResult | undefined> {
-		const { rootPath, mode, emitProgressEvents } = params;
-
+	async runScan(rootPath: string): Promise<ExtendedScanResult | undefined> {
 		try {
 			return await this.runner.run({
 				onScanState: (isRunning) => this.options.scanEvents.onScanState(rootPath, isRunning),
-				task: (cancellationToken) =>
-					this.options.executeScan({
-						rootPath,
-						cancellationToken,
-						mode,
-						emitProgressEvents,
-					}),
+				task: (cancellationToken) => this.options.executeScan({ rootPath, cancellationToken }),
 				onResult: (result) => this.handleResult(rootPath, result),
 			});
 		} catch (error) {

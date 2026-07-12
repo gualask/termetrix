@@ -42,11 +42,11 @@ Record only decisions that are easy to forget and expensive to rediscover during
 - **Revisit if**: we want resumable scans or partial caching.
 - **Code**: `src/extension/vscode/sizeScan/controller/scanRunner.ts`, `src/extension/vscode/sizeScan/services/scanLifecycleService.ts`
 
-### Cache stores “public” scan results; heavy internals stay panel-local
-- **Date**: 2026-02-14
-- **Why**: keep memory bounded in long-lived VS Code sessions; webview-only internals are intentionally not persisted.
-- **Revisit if**: users need deep breakdown instantly without re-scan.
-- **Code**: `src/extension/vscode/sizeScan/state/scanCache.ts`, `src/extension/vscode/sizeScan/state/scanResultSanitizer.ts`, `src/extension/vscode/metricsPanel/state/metricsPanelSessionState.ts`
+### Cache keeps public scan results and bounded directory metrics together
+- **Date**: 2026-07-12
+- **Why**: totals and their directory metrics must share the same root key and eviction lifetime so the panel never combines data from different scans. The cache is capped at 10 roots; only the slim public result crosses the webview boundary.
+- **Revisit if**: directory metrics become too large to retain for 10 roots or results are persisted outside the extension host.
+- **Code**: `src/extension/vscode/sizeScan/state/scanCache.ts`, `src/extension/vscode/sizeScan/state/scanResultSanitizer.ts`, `src/extension/vscode/sizeScan/projectSizeScanner.ts`
 
 ### Webview paths are treated as untrusted input (root containment enforced)
 - **Date**: 2026-02-14

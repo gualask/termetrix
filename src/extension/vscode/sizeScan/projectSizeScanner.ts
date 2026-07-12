@@ -1,23 +1,15 @@
 import * as vscode from 'vscode';
 import { ScanRoot } from '../../../core/shared/pathing/scanRoot';
-import type { SizeScanMode } from '../../../core/sizeScan/engine/scanEngineTypes';
 import type { DirectoryMetricsSnapshot } from '../../../core/sizeScan/types';
 import { PROGRESS_THROTTLE_MS } from '../../support/constants';
 import { logger } from '../../support/logger';
 import type { ExtendedScanResult, ProgressData, ScanResult } from '../../types';
 import { AutoRefreshController } from './controller/autoRefreshController';
 import { ScanEventEmitter } from './controller/scanEventEmitter';
+import { executeSizeScan } from './services/executeSizeScan';
 import { RootLifecycleService } from './services/rootLifecycleService';
-import { ScanExecutionService } from './services/scanExecutionService';
 import { ScanLifecycleService } from './services/scanLifecycleService';
 import { ScanCache } from './state/scanCache';
-
-type RunScanOptions = {
-	mode: SizeScanMode;
-	emitProgressEvents?: boolean;
-};
-
-const MAX_DIRECTORY_METRICS_CACHE_ENTRIES = 10;
 
 /**
  * High-level project size scanner (VS Code-facing orchestrator).
@@ -27,7 +19,6 @@ export class ProjectSizeScanner {
 	private readonly rootLifecycle: RootLifecycleService;
 	private readonly autoRefreshController: AutoRefreshController;
 	private readonly scanEvents: ScanEventEmitter;
-	private readonly scanExecution: ScanExecutionService;
 	private readonly scanLifecycle: ScanLifecycleService;
 
 	// Private event emitters (used internally to fire events)
@@ -43,7 +34,6 @@ export class ProjectSizeScanner {
 	readonly onRootChanged: vscode.Event<string | undefined> = this._onRootChanged.event;
 
 	private readonly cache = new ScanCache();
-	private readonly directoryMetricsCache = new Map<string, DirectoryMetricsSnapshot>();
 
 	constructor() {
 		this.scanEvents = new ScanEventEmitter(
@@ -53,13 +43,14 @@ export class ProjectSizeScanner {
 			PROGRESS_THROTTLE_MS,
 		);
 
-		this.scanExecution = new ScanExecutionService((progress) => this.scanEvents.onProgress(progress));
-
 		this.scanLifecycle = new ScanLifecycleService({
 			cache: this.cache,
 			scanEvents: this.scanEvents,
-			executeScan: (params) => this.scanExecution.execute(params),
-			onDirectoryMetrics: (rootPath, metrics) => this.setDirectoryMetrics(rootPath, metrics),
+			executeScan: (params) =>
+				executeSizeScan({
+					...params,
+					onProgress: (progress) => this.scanEvents.onProgress(progress),
+				}),
 		});
 
 		this.rootLifecycle = new RootLifecycleService({
@@ -116,23 +107,7 @@ export class ProjectSizeScanner {
 	 * @returns Cached directory metrics or undefined.
 	 */
 	getCachedDirectoryMetrics(rootPath: string): DirectoryMetricsSnapshot | undefined {
-		const root = ScanRoot.fromPath(rootPath);
-		if (!root) return undefined;
-		return this.directoryMetricsCache.get(root.key);
-	}
-
-	private setDirectoryMetrics(rootPath: string, metrics: DirectoryMetricsSnapshot): void {
-		const root = ScanRoot.fromPath(rootPath);
-		if (!root) return;
-		// Simple LRU-ish behavior: refresh insertion order on updates.
-		if (this.directoryMetricsCache.has(root.key)) this.directoryMetricsCache.delete(root.key);
-		this.directoryMetricsCache.set(root.key, metrics);
-		// Bound memory usage for long-lived VS Code sessions (e.g. frequent root switches).
-		while (this.directoryMetricsCache.size > MAX_DIRECTORY_METRICS_CACHE_ENTRIES) {
-			const oldestKey = this.directoryMetricsCache.keys().next().value as string | undefined;
-			if (!oldestKey) break;
-			this.directoryMetricsCache.delete(oldestKey);
-		}
+		return this.cache.getDirectoryMetrics(rootPath);
 	}
 
 	/**
@@ -161,32 +136,14 @@ export class ProjectSizeScanner {
 	}
 
 	/**
-	 * Runs a full scan intended for the metrics panel.
+	 * Runs a full project scan.
 	 * @param rootOverride - Optional root override.
-	 * @returns Scan result (or undefined when there is no root or on failure).
+	 * @returns Scan result, or undefined when there is no root.
 	 */
 	async scan(rootOverride?: string): Promise<ExtendedScanResult | undefined> {
-		return this.runScan(rootOverride, { mode: 'full', emitProgressEvents: true });
-	}
-
-	/**
-	 * Runs a scan for the current root with the given options.
-	 * @param rootOverride - Optional root override.
-	 * @param options - Scan options.
-	 * @returns Scan result (or undefined when there is no root or on failure).
-	 */
-	private async runScan(
-		rootOverride: string | undefined,
-		options: RunScanOptions,
-	): Promise<ExtendedScanResult | undefined> {
 		const root = ScanRoot.fromPath(rootOverride ?? this.getCurrentRoot());
 		if (!root) return undefined;
-
-		return this.scanLifecycle.runScan({
-			rootPath: root.path,
-			mode: options.mode,
-			emitProgressEvents: options.emitProgressEvents ?? true,
-		});
+		return this.scanLifecycle.runScan(root.path);
 	}
 
 	/**

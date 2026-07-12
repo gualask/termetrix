@@ -1,6 +1,5 @@
-import type * as vscode from 'vscode';
+import * as vscode from 'vscode';
 import { logger } from '../../../support/logger';
-import { createCancellableSession } from './scanSession';
 
 /**
  * Runs cancellable scan tasks and manages scan lifecycle state.
@@ -45,11 +44,11 @@ export class ScanRunner<T> {
 		this.isRunning = true;
 		onScanState?.(true);
 
-		const session = createCancellableSession(task);
-		this.currentCancellation = session.cancellationSource;
+		const cancellationSource = new vscode.CancellationTokenSource();
+		this.currentCancellation = cancellationSource;
 
 		try {
-			const result = await session.run();
+			const result = await task(cancellationSource.token);
 			if (onResult) {
 				try {
 					await onResult(result);
@@ -60,9 +59,9 @@ export class ScanRunner<T> {
 			}
 			return result;
 		} finally {
-			const isActiveSession = this.currentCancellation === session.cancellationSource;
+			const isActiveSession = this.currentCancellation === cancellationSource;
 			if (isActiveSession) this.currentCancellation = undefined;
-			session.dispose();
+			cancellationSource.dispose();
 			// Only the active (latest) run is allowed to transition the runner to "not running".
 			// Prevents stale runs from flipping state/events when a newer run has already started.
 			if (isActiveSession) {

@@ -20,8 +20,7 @@ export type { SizeScanConfig, SizeScanParams } from './scanEngineTypes';
  * @param params.config - Scan configuration (limits and concurrency).
  * @param params.cancellationToken - Cancellation token.
  * @param params.onProgress - Optional progress callback.
- * @param params.mode - Optional scan mode (defaults to "full").
- * @returns Scan result with totals and optional metadata.
+ * @returns Scan result with totals and per-directory metrics.
  */
 export async function scanProjectSize({
 	rootPath,
@@ -30,14 +29,9 @@ export async function scanProjectSize({
 	cancellationToken,
 	onProgress,
 	logger = noopLogger,
-	mode,
 }: SizeScanParams): Promise<ExtendedScanResult> {
 	const startTime = Date.now();
-
-	const isSummaryOnly = (mode ?? 'full') === 'summary';
-	const collectDirectorySizes = !isSummaryOnly;
-
-	const directoryMetricsStore = collectDirectorySizes ? new DirectoryMetricsStore() : undefined;
+	const directoryMetricsStore = new DirectoryMetricsStore();
 	const state: ScanRuntimeState = {
 		totalBytes: 0,
 		directoriesScanned: 0,
@@ -56,23 +50,18 @@ export async function scanProjectSize({
 		cancellationToken,
 	};
 	const runLimited = createConcurrencyLimiter(maxFsConcurrency.value);
-	const traversal = new ScanTraversalContext(
-		{
-			rootPath,
-			queue,
-			state,
-			budget,
-			maxFsConcurrency: maxFsConcurrency.value,
-			maxDirectoryConcurrency: maxDirectoryConcurrency.value,
-			runLimited,
-			fs,
-			statBatchSize: statBatchSize.value,
-		},
-		{
-			isSummaryOnly,
-			directoryMetricsStore,
-		},
-	);
+	const traversal = new ScanTraversalContext({
+		rootPath,
+		queue,
+		state,
+		budget,
+		maxFsConcurrency: maxFsConcurrency.value,
+		maxDirectoryConcurrency: maxDirectoryConcurrency.value,
+		runLimited,
+		fs,
+		statBatchSize: statBatchSize.value,
+		directoryMetricsStore,
+	});
 
 	await runDirectoryQueue({
 		context: traversal,
@@ -98,16 +87,15 @@ export async function scanProjectSize({
 		incomplete,
 		incompleteReason,
 		skippedCount: state.skippedCount,
+		directoryMetrics: directoryMetricsStore.toSnapshot(),
 	};
-
-	if (directoryMetricsStore) result.directoryMetrics = directoryMetricsStore.toSnapshot();
 
 	logger.info(
 		`Scan completed: ${state.directoriesScanned.toLocaleString()} dirs, ` +
 			`${(result.totalBytes / 1024 / 1024).toFixed(1)} MB, ` +
 			`${result.metadata.duration}ms, ` +
 			`skipped: ${state.skippedCount.toLocaleString()} entries` +
-			(directoryMetricsStore ? `, ${directoryMetricsStore.size()} dir entries` : ''),
+			`, ${directoryMetricsStore.size()} dir entries`,
 	);
 
 	return result;
