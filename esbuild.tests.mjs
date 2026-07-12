@@ -5,6 +5,7 @@
 
 import console from 'node:console';
 import fs from 'node:fs';
+import path from 'node:path';
 import process from 'node:process';
 import * as esbuild from 'esbuild';
 
@@ -33,7 +34,9 @@ async function run() {
 		entryNames: '[name]',
 		sourcemap: false,
 		logLevel: 'info',
-		external: ['vscode'],
+		alias: {
+			vscode: path.resolve('test/support/vscode.ts'),
+		},
 	});
 
 	if (watch) {

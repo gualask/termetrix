@@ -22,6 +22,6 @@ export interface ScanResult {
 	incomplete: boolean;
 	/** Reason for incompleteness */
 	incompleteReason?: ScanIncompleteReason;
-	/** Number of filesystem entries skipped due to permission errors */
+	/** Number of unreadable entries omitted (file stat failures and permission-denied directories). */
 	skippedCount: number;
 }

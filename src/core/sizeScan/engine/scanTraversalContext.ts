@@ -88,7 +88,7 @@ export class ScanTraversalContext {
 	}
 
 	/**
-	 * Increments the count of skipped entries (permission errors, unsupported types).
+	 * Increments the count of unreadable entries omitted from size totals.
 	 * @param count - Number of entries to add (default 1).
 	 */
 	incrementSkipped(count = 1): void {

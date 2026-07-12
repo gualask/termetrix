@@ -30,6 +30,12 @@ Record only decisions that are easy to forget and expensive to rediscover during
 - **Revisit if**: we add adaptive concurrency or different IO strategy.
 - **Code**: `src/extension/vscode/locScan/locScanner.ts`, `src/core/locScan/locConfig.ts`
 
+### LOC comment filtering is intentionally best-effort
+- **Date**: 2026-07-12
+- **Why**: LOC is a fast project-level estimate, not language parsing. The shared counter recognizes common comment delimiters and accepts edge-case drift; for indented Sass it treats `#` as code and `//` opener lines as comments without modeling indentation-scoped comment bodies.
+- **Revisit if**: users need source-accurate counts, Sass skew becomes material, or language-specific parsers are introduced.
+- **Code**: `src/core/locScan/locConfig.ts`, `src/core/locScan/metrics/lineCounter.ts`
+
 ### Cancellation is best-effort; cancelled scans are not cached
 - **Date**: 2026-02-14
 - **Why**: avoid replacing last good values with partial/cancelled data; keep lifecycle stable.

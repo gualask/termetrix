@@ -44,8 +44,10 @@ const STATE_IN_MULTI = 2;
 const STATE_IN_STRING = 3;
 
 /**
- * Count lines that contain actual code (non-empty, non-comment-only).
- * Lines consisting solely of comments or whitespace are excluded.
+ * Estimate code lines using the configured lexical comment and string delimiters.
+ * Lines recognized as comment-only or whitespace are excluded. This is not a
+ * language parser, so indentation-scoped or otherwise unconfigured constructs
+ * may still count as code.
  * Inline comments (code followed by a comment) count as code lines.
  *
  * HOT PATH: single-pass O(n), zero allocations, no intermediate strings.

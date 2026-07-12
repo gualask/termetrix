@@ -9,9 +9,9 @@ export interface LocTopFile {
 }
 
 export interface LOCResult {
-	/** Total lines of code (non-empty lines) */
+	/** Approximate lines of code after configured best-effort comment filtering. */
 	totalLines: number;
-	/** Lines of code by language */
+	/** Approximate lines of code by language. */
 	byLanguage: Record<string, number>;
 	/**
 	 * Top files by line count.

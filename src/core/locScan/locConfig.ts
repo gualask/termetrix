@@ -51,10 +51,10 @@ const HASH_ONLY: CommentDef = {
 };
 
 /**
- * Sass indented syntax: `//` single-line comments only. `#` introduces id
- * selectors/interpolation, never comments. `/*` comments are terminated by
- * indentation (no explicit closer required), so block tracking is disabled to
- * avoid swallowing the rest of the file when the closer never appears.
+ * Best-effort Sass indented-syntax policy for approximate LOC. `#` introduces
+ * id selectors/interpolation, never comments, and `//` opener lines are filtered.
+ * Indentation-scoped continuation lines and `/*` loud comments are intentionally
+ * not modeled and may count as code.
  */
 const SASS_STYLE: CommentDef = {
 	single: [[SLASH, SLASH]],

@@ -28,7 +28,7 @@ Minimal VS Code extension for project awareness: **project size**, **guided size
 ## Metrics Panel
 
 
-- **LOC** — lines of code per language (comments excluded), with top files; auto-scans on panel open
+- **LOC** — approximate lines of code per language with best-effort comment filtering and top files; auto-scans on panel open
 - **Size** — total project size with a breakdown of the folders that contribute most to disk usage
 
 ## Configuration
