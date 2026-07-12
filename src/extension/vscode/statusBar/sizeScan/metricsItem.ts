@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
-import { formatBytes } from '../../../shared/formatters';
-import { COMMAND_IDS } from '../../support/constants';
-import { DisposableStore } from '../../support/disposableStore';
-import { ScannerEventSubscription } from '../../support/scannerEvents';
-import type { ProgressData } from '../../types';
-import type { ProjectSizeScanner } from '../sizeScan/projectSizeScanner';
-import { MetricsStatusBarRenderer } from './render/metricsStatusBarRenderer';
+import { formatBytes } from '../../../../shared/formatters';
+import { COMMAND_IDS } from '../../../support/constants';
+import { DisposableStore } from '../../../support/disposableStore';
+import { ScannerEventSubscription } from '../../../support/scannerEvents';
+import type { ProgressData } from '../../../types';
+import type { ProjectSizeScanner } from '../../sizeScan/projectSizeScanner';
+import { MetricsStatusBarRenderer } from './metricsStatusBarRenderer';
 
 /**
  * Status bar item showing project size.

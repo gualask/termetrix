@@ -3,6 +3,21 @@
 All notable changes to the Termetrix extension will be documented in this file.
 This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- Improved LOC scan throughput with bounded parallel file processing and fewer unnecessary nested `.gitignore` reads
+- Simplified size-scan lifecycle and caching so public results and directory metrics share one bounded cache entry
+- Reorganized the LOC engine, status bar, metrics-panel state, and webview styles into cohesive behavior-preserving modules
+- Migrated linting and formatting to Biome and upgraded project tooling dependencies
+
+### Fixed
+- Corrected Sass LOC handling so `#` selectors and interpolation count as code while `//` lines count as comments
+- Prevented escaped newlines and trailing backslashes from dropping physical lines during LOC counting
+- Applied directory-only `.gitignore` patterns only to directories and their descendants, not same-named files
+- Prevented a latent concurrent-queue deadlock when stopping with queued work and no items in flight
+- Described failed filesystem entries as unreadable instead of permissions-only
+
 ## [1.1.0] - 2026-03-04
 
 ### Added

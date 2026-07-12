@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { initialMetricsPanelState, metricsPanelReducer } from '../../src/ui/hooks/useMetricsPanelState';
+import { initialMetricsPanelState, metricsPanelReducer } from '../../src/ui/metricsPanelReducer';
 
 function makeScanResult(params: { rootPath: string; endTime: number }) {
 	const { rootPath, endTime } = params;

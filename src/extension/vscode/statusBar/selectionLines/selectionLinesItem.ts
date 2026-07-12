@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { DisposableStore } from '../../support/disposableStore';
-import { SelectionLineTracker } from './state/selectionLineTracker';
+import { DisposableStore } from '../../../support/disposableStore';
+import { SelectionLineTracker } from './selectionLineTracker';
 
 /**
  * Status bar item showing selected line count for the active editor.

@@ -64,13 +64,13 @@ Record only decisions that are easy to forget and expensive to rediscover during
 - **Date**: 2026-02-14
 - **Why**: size aims to reflect disk usage; LOC aims to reflect code and skip ignored folders/files. Nested `.gitignore` files are loaded and merged with parent rules at each directory level.
 - **Revisit if**: we unify traversal policy.
-- **Code**: `src/core/locScan/filtering/gitignore.ts`, `src/core/locScan/engine/locEngine.ts`, `src/core/sizeScan/engine/scanEngine.ts`
+- **Code**: `src/core/locScan/filtering/gitignore.ts`, `src/core/locScan/engine/locEngine.ts`, `src/core/locScan/engine/locDirectoryScanner.ts`, `src/core/sizeScan/engine/scanEngine.ts`
 
 ### Status bar favors low noise; panel owns “deep” interactions
 - **Date**: 2026-02-14
 - **Why**: status bar should be cheap to update and easy to read; details live in tooltip and metrics panel. A dedicated `$(sync)`/`$(sync~spin)` item provides refresh/cancel without opening the panel.
 - **Revisit if**: we add more metrics (risk: clutter).
-- **Code**: `src/extension/vscode/statusBar/metricsItem.ts`, `src/extension/vscode/statusBar/render/metricsStatusBarRenderer.ts`, `src/extension/vscode/statusBar/scanRefreshItem.ts`
+- **Code**: `src/extension/vscode/statusBar/sizeScan/metricsItem.ts`, `src/extension/vscode/statusBar/sizeScan/metricsStatusBarRenderer.ts`, `src/extension/vscode/statusBar/sizeScan/scanRefreshItem.ts`
 
 ### Refresh always runs a full scan
 - **Date**: 2026-03-02

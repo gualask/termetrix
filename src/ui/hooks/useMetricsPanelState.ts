@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from 'preact/hooks';
+import { initialMetricsPanelState, metricsPanelReducer } from '../metricsPanelReducer';
 import type { ErrorData, LOCResult, MessageFromExtension, ProgressData, SizeBreakdownResult, ViewData } from '../types';
 import {
 	postCalculateLOC,
@@ -9,110 +10,7 @@ import {
 	postRevealInExplorer,
 } from '../vscode';
 
-type MetricsPanelInternalState = {
-	isReady: boolean;
-	viewData: ViewData;
-	locResult: LOCResult | null;
-	isCalculatingLOC: boolean;
-	breakdown: SizeBreakdownResult | null;
-	progressData: ProgressData | null;
-	error: ErrorData | null;
-};
-
-type MetricsPanelAction = { type: 'message'; message: MessageFromExtension } | { type: 'dismissError' };
-
-export const initialMetricsPanelState: MetricsPanelInternalState = {
-	isReady: false,
-	viewData: { isScanning: false, scanResult: undefined },
-	locResult: null,
-	isCalculatingLOC: false,
-	breakdown: null,
-	progressData: null,
-	error: null,
-};
-
-function getScanKey(scanResult: ViewData['scanResult']): string | undefined {
-	if (!scanResult) return undefined;
-	return `${scanResult.rootPath}:${scanResult.metadata.endTime}`;
-}
-
-function clearProgressData(state: MetricsPanelInternalState): MetricsPanelInternalState {
-	return { ...state, progressData: null };
-}
-
-export function metricsPanelReducer(
-	state: MetricsPanelInternalState,
-	action: MetricsPanelAction,
-): MetricsPanelInternalState {
-	if (action.type === 'dismissError') return { ...state, error: null };
-	if (action.type !== 'message') return state;
-
-	const message = action.message;
-
-	switch (message.type) {
-		case 'scanStart': {
-			const scanResult = state.viewData.scanResult;
-			return clearProgressData({
-				...state,
-				viewData: {
-					...state.viewData,
-					isScanning: true,
-					// Clear incomplete flag when starting a new scan.
-					scanResult: scanResult ? { ...scanResult, incomplete: false, incompleteReason: undefined } : undefined,
-				},
-			});
-		}
-		case 'progress':
-			return { ...state, progressData: message.data };
-		case 'update': {
-			const previousScanKey = getScanKey(state.viewData.scanResult);
-			const nextViewData = message.data;
-			const nextScanKey = getScanKey(nextViewData.scanResult);
-
-			const nextStateBase = clearProgressData({
-				...state,
-				isReady: true,
-				viewData: nextViewData,
-			});
-
-			if (!nextViewData.scanResult) {
-				return { ...nextStateBase, breakdown: null };
-			}
-
-			const isSameScan = previousScanKey !== undefined && previousScanKey === nextScanKey;
-
-			if (isSameScan) {
-				// Same scan key: scan was cancelled; keep existing breakdown if present.
-				return nextStateBase;
-			}
-
-			// New scan: drop stale breakdown (backend re-sends it immediately after update).
-			return { ...nextStateBase, breakdown: null };
-		}
-		case 'noRoot':
-			return {
-				...state,
-				isReady: true,
-				viewData: { isScanning: false, scanResult: undefined },
-				breakdown: null,
-				progressData: null,
-				isCalculatingLOC: false,
-				locResult: null,
-			};
-		case 'locScanStart':
-			return { ...state, isCalculatingLOC: true };
-		case 'locResult':
-			return { ...state, locResult: message.data, isCalculatingLOC: false };
-		case 'locScanCancelled':
-			return { ...state, isCalculatingLOC: false };
-		case 'deepScanResult':
-			return { ...state, breakdown: message.data };
-		case 'error':
-			return { ...state, error: message.data, isCalculatingLOC: false };
-		default:
-			return state;
-	}
-}
+export { initialMetricsPanelState, metricsPanelReducer };
 
 interface SizeSlice {
 	viewData: ViewData;

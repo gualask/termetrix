@@ -1,0 +1,112 @@
+/* Show more button */
+.tmx-show-more {
+	display: block;
+	width: 100%;
+	padding: 6px 8px;
+	margin-top: 4px;
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: var(--tmx-radius-sm);
+	color: var(--vscode-textLink-foreground, var(--vscode-focusBorder));
+	cursor: pointer;
+	font-size: var(--tmx-font-small);
+	text-align: center;
+	transition:
+		background 0.12s,
+		color 0.12s;
+}
+
+.tmx-show-more:hover {
+	background: var(--tmx-row-hover);
+	color: var(--vscode-textLink-activeForeground, var(--vscode-focusBorder));
+}
+
+.tmx-show-more:focus-visible {
+	outline: 2px solid var(--vscode-focusBorder);
+	outline-offset: 1px;
+}
+
+/* LOC View */
+.loc-primary-suffix {
+	opacity: 0.75;
+	font-size: var(--tmx-font-caption);
+}
+
+.section {
+	margin-bottom: 24px;
+}
+.section:last-child {
+	margin-bottom: 0;
+}
+.section h4 {
+	margin: 0 0 12px;
+	font-size: var(--tmx-font-sectionTitle);
+	opacity: 0.9;
+}
+
+.language-row {
+	display: grid;
+	grid-template-columns: auto 1fr auto auto;
+	gap: 12px;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+.bar-container {
+	height: 20px;
+	background: var(--tmx-surface-1);
+	border: 1px solid var(--tmx-border);
+	border-radius: var(--tmx-radius-sm);
+	overflow: hidden;
+}
+
+.bar {
+	height: 100%;
+	background: var(--vscode-charts-blue, var(--vscode-progressBar-background));
+	transition: width 0.3s ease;
+}
+
+.lang-name {
+	min-width: 100px;
+	font-weight: 500;
+}
+.lang-count {
+	min-width: 80px;
+}
+.lang-percent {
+	min-width: 50px;
+	opacity: 0.7;
+	font-size: var(--tmx-font-small);
+}
+
+.file-row {
+	appearance: none;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 8px;
+	padding: 8px;
+	border-radius: var(--tmx-radius-sm);
+	width: 100%;
+}
+
+.file-row:not(:disabled):hover {
+	background: var(--tmx-row-hover, var(--vscode-list-hoverBackground));
+	border-color: var(--tmx-row-hover-border, var(--tmx-border));
+}
+
+.file-path {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-family: var(--vscode-editor-font-family);
+	min-width: 0;
+	font-size: var(--tmx-font-small);
+}
+
+.file-lines {
+	margin-left: 16px;
+	opacity: 0.7;
+	font-variant-numeric: tabular-nums;
+}

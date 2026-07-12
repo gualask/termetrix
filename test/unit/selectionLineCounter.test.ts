@@ -7,7 +7,7 @@ import {
 	getSelectedLineCountFromSelections,
 	type SelectionLike,
 	type TextEditorLike,
-} from '../../src/extension/vscode/statusBar/selectionLineCounter';
+} from '../../src/extension/vscode/statusBar/selectionLines/selectionLineCounter';
 
 test('selectionLineCounter: countSelectedLines handles empty and non-empty selections', () => {
 	const emptySelection: SelectionLike = { isEmpty: true, start: { line: 3 }, end: { line: 3 } };

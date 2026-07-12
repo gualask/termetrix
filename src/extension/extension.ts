@@ -4,9 +4,9 @@ import { COMMAND_IDS } from './support/constants';
 import { logger } from './support/logger';
 import { MetricsPanel } from './vscode/metricsPanel/metricsPanel';
 import { ProjectSizeScanner } from './vscode/sizeScan/projectSizeScanner';
-import { MetricsStatusBarItem } from './vscode/statusBar/metricsItem';
-import { ScanRefreshStatusBarItem } from './vscode/statusBar/scanRefreshItem';
-import { SelectionLinesStatusBarItem } from './vscode/statusBar/selectionLinesItem';
+import { SelectionLinesStatusBarItem } from './vscode/statusBar/selectionLines/selectionLinesItem';
+import { MetricsStatusBarItem } from './vscode/statusBar/sizeScan/metricsItem';
+import { ScanRefreshStatusBarItem } from './vscode/statusBar/sizeScan/scanRefreshItem';
 import { TerminalStatusBarItem } from './vscode/statusBar/terminalItem';
 
 /**

@@ -1,0 +1,79 @@
+/* Reset & Base */
+* {
+	box-sizing: border-box;
+}
+
+html {
+	font-size: var(--vscode-font-size);
+}
+
+body {
+	margin: 0;
+	padding: 0;
+	font-family: var(--vscode-font-family);
+	font-size: 1rem;
+	color: var(--vscode-foreground);
+	background-color: var(--tmx-canvas, var(--vscode-editor-background));
+}
+
+/* Theme-derived surfaces */
+:root {
+	--tmx-canvas: var(--vscode-editor-background);
+	--tmx-surface-1: var(--vscode-editorWidget-background, var(--vscode-sideBar-background));
+	--tmx-surface-2: var(--vscode-editorWidget-background, var(--vscode-sideBar-background));
+	--tmx-border: var(--vscode-panel-border);
+	--tmx-row-hover: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.12));
+	--tmx-row-hover-border: var(--vscode-focusBorder, var(--tmx-border));
+	--tmx-overlay: rgba(0, 0, 0, 0.02);
+	--tmx-hover-bg: var(--vscode-toolbar-hoverBackground, var(--tmx-row-hover));
+	--tmx-radius-sm: 4px;
+	--tmx-radius-md: 6px;
+	--tmx-radius-lg: 8px;
+	--tmx-radius-xl: 10px;
+	--tmx-font-caption: 0.9rem;
+	--tmx-font-small: 0.92rem;
+	--tmx-font-ui: 1rem;
+	--tmx-font-title: 1.4rem;
+	--tmx-font-sectionTitle: 1.1rem;
+	--tmx-font-errorTitle: 1.5rem;
+	--tmx-font-metric: 1.65rem;
+	--tmx-font-metric-sm: 1.5rem;
+	--tmx-sizeMetric-col-width: 112px;
+	--tmx-sizeMetric-total-fill: var(--vscode-progressBar-background);
+	--tmx-sizeMetric-total-track: var(--tmx-surface-1);
+	--tmx-sizeMetric-parent-fill: var(--vscode-foreground);
+	--tmx-sizeMetric-parent-track: var(--tmx-surface-1);
+}
+
+@supports (color: color-mix(in srgb, white 50%, black)) {
+	:root {
+		--tmx-surface-1: color-mix(in srgb, var(--vscode-editor-background) 96%, var(--vscode-foreground) 4%);
+		--tmx-surface-2: color-mix(in srgb, var(--vscode-editor-background) 92%, var(--vscode-foreground) 8%);
+		--tmx-border: color-mix(in srgb, var(--vscode-panel-border) 85%, var(--vscode-foreground) 15%);
+		--tmx-row-hover: var(--vscode-list-hoverBackground);
+		--tmx-row-hover-border: var(--vscode-panel-border);
+		--tmx-overlay: color-mix(in srgb, var(--tmx-canvas) 94%, var(--vscode-foreground) 6%);
+		--tmx-sizeMetric-total-track: color-mix(in srgb, var(--tmx-sizeMetric-total-fill) 14%, var(--tmx-surface-1) 86%);
+		--tmx-sizeMetric-parent-fill: color-mix(
+			in srgb,
+			var(--vscode-foreground) 88%,
+			var(--vscode-charts-blue, var(--vscode-progressBar-background)) 12%
+		);
+		--tmx-sizeMetric-parent-track: color-mix(in srgb, var(--tmx-sizeMetric-parent-fill) 12%, var(--tmx-surface-1) 88%);
+	}
+}
+
+/* App Layout */
+.app {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+}
+
+.content {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 16px;
+}

@@ -1,5 +1,5 @@
 import type * as vscode from 'vscode';
-import { getSelectedLineCount, getSelectedLineCountFromSelections } from '../selectionLineCounter';
+import { getSelectedLineCount, getSelectedLineCountFromSelections } from './selectionLineCounter';
 
 /**
  * Tracks selected line count across editor/selection changes.
