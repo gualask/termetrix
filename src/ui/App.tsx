@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-preact';
+import { LoaderCircle } from 'lucide-preact';
 import { EmptyState } from './components/EmptyState';
 import { ErrorBanner } from './components/ErrorBanner';
 import { useMetricsPanelState } from './hooks/useMetricsPanelState';
@@ -12,7 +12,7 @@ export function App() {
 		return (
 			<div class="app">
 				<div class="content">
-					<EmptyState variant="page" message="Loading…" leading={<Loader2 size={32} class="spinner" />} />
+					<EmptyState variant="page" message="Loading…" leading={<LoaderCircle size={32} class="spinner" />} />
 				</div>
 			</div>
 		);

@@ -3,7 +3,7 @@
 All notable changes to the Termetrix extension will be documented in this file.
 This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.1] - 2026-07-17
 
 ### Changed
 - Improved LOC scan throughput with bounded parallel file processing and fewer unnecessary nested `.gitignore` reads
@@ -13,6 +13,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) an
 - Replaced numeric value-object classes with branded types and added a knip dead-code gate to the test chain
 - Polished the webview toward a more native VS Code look: full-border warning/error banners, flatter size cards without drop shadows, and secondary text using the theme's `descriptionForeground` instead of opacity muting
 - Progress bars now animate via `transform` instead of layout properties
+- Upgraded lucide-preact to 1.x (smaller bundle, icons expose `aria-hidden` by default) and updated Biome and Preact
 
 ### Fixed
 - Tooltips are now reachable by keyboard and exposed to screen readers (focusable info trigger, `aria-describedby`, Esc to dismiss)

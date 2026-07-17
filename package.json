@@ -2,7 +2,7 @@
   "name": "termetrix",
   "displayName": "Termetrix",
   "description": "VS Code project metrics in the status bar: project size, size breakdown, LOC by language, selection line count, and terminal shortcut",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "packageManager": "pnpm@11.9.0",
   "type": "commonjs",
   "publisher": "gualask",
@@ -126,15 +126,15 @@
     "format": "biome format --write ."
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.3",
+    "@biomejs/biome": "^2.5.4",
     "@types/node": "22.19.11",
     "@types/vscode": "^1.109.0",
     "esbuild": "^0.28.1",
     "knip": "^6.27.0",
-    "preact": "^10.28.4",
+    "preact": "^10.29.7",
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "lucide-preact": "^0.575.0"
+    "lucide-preact": "^1.24.0"
   }
 }

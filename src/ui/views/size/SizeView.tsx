@@ -1,15 +1,15 @@
 import {
-	AlertTriangle,
 	ChevronDown,
 	ChevronRight,
 	Clock,
 	Folder,
 	FolderX,
 	HardDrive,
-	Loader2,
+	LoaderCircle,
 	RefreshCw,
 	Square,
 	Timer,
+	TriangleAlert,
 } from 'lucide-preact';
 import { EmptyState } from '../../components/EmptyState';
 import { IconButton } from '../../components/IconButton';
@@ -124,7 +124,7 @@ export function SizeView({
 				<div class="tmx-panel-card tmx-panel-fixed">
 					{showIncompleteWarning && (
 						<div class="warning-banner">
-							<AlertTriangle size={14} aria-hidden="true" />
+							<TriangleAlert size={14} aria-hidden="true" />
 							<span>Scan incomplete: {formatIncompleteReason(scanResult?.incompleteReason)}</span>
 						</div>
 					)}
@@ -141,7 +141,7 @@ export function SizeView({
 			) : (
 				// No breakdown yet: inline loading with its own height
 				<div class="tmx-breakdown-loading" aria-live="polite">
-					<Loader2 size={28} class="spinner" />
+					<LoaderCircle size={28} class="spinner" />
 					<span>{loadingLabel}</span>
 				</div>
 			)}

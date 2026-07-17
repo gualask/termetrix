@@ -1,4 +1,4 @@
-import { Folder, MoreHorizontal } from 'lucide-preact';
+import { Ellipsis, Folder } from 'lucide-preact';
 import { EmptyState } from '../../components/EmptyState';
 import type {
 	SizeBreakdownLeafDirectory,
@@ -40,7 +40,7 @@ function OthersRow({ others, parentBytes }: { others: SizeBreakdownOthers; paren
 		<div class="size-table-footer">
 			<SizeTableRow
 				kind="others"
-				icon={<MoreHorizontal size={16} />}
+				icon={<Ellipsis size={16} />}
 				name={`others (leaf dirs: ${others.leafDirs.toLocaleString()})`}
 				size={others.bytes}
 				fileCount={others.fileCount}

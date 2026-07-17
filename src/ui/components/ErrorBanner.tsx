@@ -1,4 +1,4 @@
-import { AlertTriangle, X } from 'lucide-preact';
+import { TriangleAlert, X } from 'lucide-preact';
 import type { ErrorData } from '../types';
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
 export function ErrorBanner({ error, onDismiss }: Props) {
 	return (
 		<div class="error-banner" role="alert" aria-live="assertive">
-			<AlertTriangle size={18} class="error-banner-icon" aria-hidden="true" />
+			<TriangleAlert size={18} class="error-banner-icon" aria-hidden="true" />
 			<div class="error-banner-content">
 				<div class="error-banner-message">{error.message}</div>
 				{error.code && <div class="error-banner-details">Error code: {error.code}</div>}

@@ -1,4 +1,4 @@
-import { AlertTriangle, RefreshCw } from 'lucide-preact';
+import { RefreshCw, TriangleAlert } from 'lucide-preact';
 import { Component, type ComponentChildren } from 'preact';
 import { postReset } from '../vscode';
 
@@ -47,7 +47,7 @@ export class ErrorBoundary extends Component<Props, State> {
 			return (
 				<div class="error-boundary">
 					<div class="error-boundary-content">
-						<AlertTriangle size={48} class="error-icon" />
+						<TriangleAlert size={48} class="error-icon" />
 						<h2>Something went wrong</h2>
 						<p class="error-message">{this.state.error?.message || 'An unexpected error occurred'}</p>
 						<button type="button" onClick={this.handleReset} class="error-reset-button">
