@@ -1,4 +1,4 @@
-export interface ScanMetadata {
+interface ScanMetadata {
 	/** Timestamp when scan started */
 	startTime: number;
 	/** Timestamp when scan completed */

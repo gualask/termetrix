@@ -1,7 +1,7 @@
 import { formatBytes } from '../../utils';
 import { validateShare } from './sizeFormatters';
 
-export type SizeMetricVariant = 'total' | 'parent';
+type SizeMetricVariant = 'total' | 'parent';
 
 interface SizeMetricInfo {
 	sizeBytes: number;

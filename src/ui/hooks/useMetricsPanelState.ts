@@ -10,8 +10,6 @@ import {
 	postRevealInExplorer,
 } from '../vscode';
 
-export { initialMetricsPanelState, metricsPanelReducer };
-
 interface SizeSlice {
 	viewData: ViewData;
 	breakdown: SizeBreakdownResult | null;

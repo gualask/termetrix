@@ -20,23 +20,23 @@ function toAutoScanMode(value: unknown, fallback: AutoScanMode): AutoScanMode {
 	return fallback;
 }
 
-export interface ScanSettings {
+interface ScanSettings {
 	autoScanMode: AutoScanMode;
 	maxDurationSeconds: number;
 	maxDirectories: number;
 }
 
-export interface AutoRefreshConfig {
+interface AutoRefreshConfig {
 	enabled: boolean;
 	minutes: number;
 }
 
-export interface StatusBarConfig {
+interface StatusBarConfig {
 	showTerminalButton: boolean;
 	showSelectionLineCount: boolean;
 }
 
-export interface PanelConfig {
+interface PanelConfig {
 	autoScanLoc: boolean;
 }
 
@@ -44,7 +44,7 @@ export interface PanelConfig {
  * Centralized configuration manager
  * Single responsibility: reading and caching extension settings
  */
-export class ConfigManager {
+class ConfigManager {
 	private static instance: ConfigManager;
 
 	private constructor() {}

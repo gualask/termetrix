@@ -20,7 +20,7 @@ function getVsCodeApi(): VsCodeApi {
 	return cachedApi;
 }
 
-export function postToExtension(message: MessageToExtension) {
+function postToExtension(message: MessageToExtension) {
 	getVsCodeApi().postMessage(message);
 }
 

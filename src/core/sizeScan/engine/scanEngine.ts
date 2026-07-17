@@ -9,7 +9,7 @@ import type { ScanRuntimeState, SizeScanBudget, SizeScanParams } from './scanEng
 import { resolveScanLimitsPolicy } from './scanLimits.policy';
 import { ScanTraversalContext } from './scanTraversalContext';
 
-export type { SizeScanConfig, SizeScanParams } from './scanEngineTypes';
+export type { SizeScanParams } from './scanEngineTypes';
 
 /**
  * File-system size scan engine (no VS Code dependencies).

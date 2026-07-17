@@ -14,8 +14,6 @@ import { BreakdownSelectionPolicy, type ComputeSizeBreakdownOptions } from './op
 import { computeCandidatesByTopLevel, computeTopLevelTotals } from './topLevel';
 import type { CandidateDirectory } from './types';
 
-export type { ComputeSizeBreakdownOptions } from './options';
-
 export interface ComputeSizeBreakdownInput {
 	rootPath: string;
 	directoryMetrics: DirectoryMetricsSnapshot;

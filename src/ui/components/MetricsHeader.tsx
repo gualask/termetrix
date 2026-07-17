@@ -1,14 +1,14 @@
 import { Dot } from 'lucide-preact';
 import { type ComponentChildren, Fragment } from 'preact';
 
-export interface PrimaryMetric {
+interface PrimaryMetric {
 	title: string;
 	icon: ComponentChildren;
 	value: ComponentChildren;
 	trailing?: ComponentChildren;
 }
 
-export interface SecondaryMetric {
+interface SecondaryMetric {
 	title: string;
 	icon: ComponentChildren;
 	content: ComponentChildren;

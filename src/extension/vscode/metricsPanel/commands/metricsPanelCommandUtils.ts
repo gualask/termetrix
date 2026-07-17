@@ -22,7 +22,7 @@ type PanelScanDeps = PanelStateDeps & {
  * @param deps - Minimal dependencies required to determine the current panel root.
  * @returns Root path when available.
  */
-export function getPanelRootPath(deps: PanelStateDeps): string | undefined {
+function getPanelRootPath(deps: PanelStateDeps): string | undefined {
 	// Defensive: commands can arrive while the panel is closing.
 	if (!deps.isPanelOpen()) return undefined;
 	return deps.scanner.getCurrentRoot();
@@ -63,7 +63,7 @@ export function getSyncedPanelRootOrSendNoRoot(deps: PanelScanDeps): string | un
  * @param code - Stable error code string.
  * @returns void
  */
-export function sendPanelError(
+function sendPanelError(
 	deps: { sendMessage: (message: MessageFromExtension) => void },
 	message: string,
 	code: string,

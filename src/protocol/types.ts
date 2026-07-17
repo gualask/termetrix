@@ -14,7 +14,7 @@ import type { SizeBreakdownResult } from '../shared/contracts/sizeBreakdown';
 
 export type { LOCResult } from '../shared/contracts/loc';
 export type { ProgressData } from '../shared/contracts/progress';
-export type { ScanIncompleteReason, ScanMetadata, ScanResult } from '../shared/contracts/scan';
+export type { ScanResult } from '../shared/contracts/scan';
 export type {
 	SizeBreakdownLeafDirectory,
 	SizeBreakdownOthers,

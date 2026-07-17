@@ -1,6 +1,6 @@
 import { SIZE_SCAN_DEFAULTS } from './sizeScanDefaults';
 
-export type AutoScanModeDefault = 'startup+rootChange' | 'rootChange' | 'off';
+type AutoScanModeDefault = 'startup+rootChange' | 'rootChange' | 'off';
 export type AutoScanMode = AutoScanModeDefault;
 
 /**
