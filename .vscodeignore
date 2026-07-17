@@ -1,8 +1,12 @@
 .vscode/**
 .vscode-test/**
 .claude/**
+.cflow/**
+.impeccable/**
+.github/**
 .pnpm-store/**
 .git/**
+.mcp.json
 src/**
 test/**
 out-test/**
@@ -12,9 +16,12 @@ docs/**
 **/*.ts
 tsconfig*.json
 esbuild*.mjs
-eslint.config.mjs
+biome.json
+knip.json
 pnpm-lock.yaml
+pnpm-workspace.yaml
 node_modules/**
 TODO.md
+PRODUCT.md
 media/README.md
 **/.DS_Store
