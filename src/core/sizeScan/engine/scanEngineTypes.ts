@@ -25,7 +25,7 @@ export interface SizeScanConfig {
 
 /**
  * Normalized scan limits used by stop conditions.
- * Value objects keep units and validation explicit (ms, positive counts).
+ * Branded numeric types keep units and validation explicit (ms, positive counts).
  */
 export interface SizeScanBudget {
 	startTimeMs: number;

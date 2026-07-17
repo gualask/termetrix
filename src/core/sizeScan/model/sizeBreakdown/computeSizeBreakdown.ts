@@ -8,14 +8,13 @@ import {
 } from '../../../../shared/contracts/sizeBreakdown';
 import { CanonicalPath } from '../../../shared/pathing/canonicalPath';
 import type { DirectoryMetricsSnapshot } from '../../types';
+import { DirectoryAggregate } from './directoryAggregate';
+import { selectLeafDirectories } from './leafSelection';
+import { BreakdownSelectionPolicy, type ComputeSizeBreakdownOptions } from './options';
+import { computeCandidatesByTopLevel, computeTopLevelTotals } from './topLevel';
 import type { CandidateDirectory } from './types';
 
 export type { ComputeSizeBreakdownOptions } from './options';
-
-import { DirectoryAggregate } from './directoryAggregate';
-import { selectLeafDirectories } from './leafSelection';
-import { BreakdownPolicy, type ComputeSizeBreakdownOptions } from './options';
-import { computeCandidatesByTopLevel, computeTopLevelTotals } from './topLevel';
 
 export interface ComputeSizeBreakdownInput {
 	rootPath: string;
@@ -70,7 +69,7 @@ function buildParentForSegment(params: {
 	totals: DirectoryAggregate;
 	leafEntries: CandidateDirectory[];
 	directoryMetrics: DirectoryMetricsSnapshot;
-	policy: BreakdownPolicy;
+	policy: BreakdownSelectionPolicy;
 }): SizeBreakdownParent | undefined {
 	const { rootPath, seg, totals, leafEntries, directoryMetrics, policy } = params;
 
@@ -97,7 +96,7 @@ function buildParentForSegment(params: {
 		parentAbsolutePath: absolutePath,
 		parentBytes: bytes,
 		leafEntries,
-		selectionPolicy: policy.selection,
+		selectionPolicy: policy,
 		directoryMetrics,
 	});
 
@@ -131,7 +130,7 @@ function buildParentForSegment(params: {
 export function computeSizeBreakdown(input: ComputeSizeBreakdownInput): SizeBreakdownResult {
 	const { rootPath, directoryMetrics, options } = input;
 
-	const policy = BreakdownPolicy.fromRaw(options);
+	const policy = BreakdownSelectionPolicy.fromRaw(options);
 	const root = CanonicalPath.from(rootPath);
 	const totalsBySeg = computeTopLevelTotals(root, directoryMetrics);
 	const candidatesBySeg = computeCandidatesByTopLevel(root, directoryMetrics);
@@ -167,7 +166,7 @@ export function computeSizeBreakdown(input: ComputeSizeBreakdownInput): SizeBrea
 	const shownParents: SizeBreakdownParent[] = [];
 	for (const [i, p] of parents.entries()) {
 		if (
-			policy.selection.shouldStopBeforeSelecting({
+			policy.shouldStopBeforeSelecting({
 				selectedCount: i,
 				candidateBytes: p.bytes,
 				parentBytes: totalParentBytes,

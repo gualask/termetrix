@@ -42,12 +42,12 @@ export function shouldStop(state: ScanRuntimeState, budget: SizeScanBudget): boo
 		return true;
 	}
 
-	if (Date.now() - startTimeMs > maxDurationMs.value) {
+	if (Date.now() - startTimeMs > maxDurationMs) {
 		markIncomplete(state, 'time_limit');
 		return true;
 	}
 
-	if (state.directoriesScanned >= maxDirectories.value) {
+	if (state.directoriesScanned >= maxDirectories) {
 		markIncomplete(state, 'dir_limit');
 		return true;
 	}

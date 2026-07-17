@@ -4,12 +4,7 @@ import test from 'node:test';
 
 import { computeSizeBreakdown } from '../../src/core/sizeScan/model/sizeBreakdown/computeSizeBreakdown';
 import { DirectoryAggregate } from '../../src/core/sizeScan/model/sizeBreakdown/directoryAggregate';
-import {
-	BoundedRatio,
-	BreakdownPolicy,
-	NonNegativeInt,
-	PositiveInt,
-} from '../../src/core/sizeScan/model/sizeBreakdown/options';
+import { BreakdownSelectionPolicy } from '../../src/core/sizeScan/model/sizeBreakdown/options';
 import { SIZE_BREAKDOWN_ROOT_SEGMENT } from '../../src/shared/contracts/sizeBreakdown';
 import { formatBreakdownParentPath } from '../../src/ui/views/size/sizeFormatters';
 
@@ -129,18 +124,18 @@ test('sizeBreakdown: omits root segment even when root has direct files', () => 
 });
 
 test('sizeBreakdown policy: clamps invalid ratios and keeps positive thresholds', () => {
-	const policy = BreakdownPolicy.fromRaw({
+	const policy = BreakdownSelectionPolicy.fromRaw({
 		coverageTarget: 2,
 		minItemPercent: -1,
 		maxItems: 0,
 	});
 
-	assert.equal(policy.selection.coverageTarget.value, 1);
-	assert.equal(policy.selection.minItemPercent.value, 0);
-	assert.equal(policy.selection.maxItems.value, 1);
+	assert.equal(policy.coverageTarget, 1);
+	assert.equal(policy.minItemPercent, 0);
+	assert.equal(policy.maxItems, 1);
 
 	assert.equal(
-		policy.selection.shouldStopBeforeSelecting({
+		policy.shouldStopBeforeSelecting({
 			selectedCount: 1,
 			candidateBytes: 1,
 			parentBytes: 1000,
@@ -163,20 +158,6 @@ test('directoryAggregate: merges totals with domain-safe invariants', () => {
 	assert.equal(remainder.fileCount, 0);
 	assert.equal(remainder.maxFileBytes, 80);
 	assert.equal(remainder.isEmpty(), true);
-});
-
-test('breakdown value objects: enforce invariants through factories', () => {
-	assert.equal(BoundedRatio.from(2, 0.5).value, 1);
-	assert.equal(BoundedRatio.from(-1, 0.5).value, 0);
-	assert.equal(BoundedRatio.from(undefined, 0.5).value, 0.5);
-
-	assert.equal(PositiveInt.from(0, 4).value, 1);
-	assert.equal(PositiveInt.from(3.8, 4).value, 3);
-	assert.equal(PositiveInt.from(Number.NaN, 4).value, 4);
-
-	assert.equal(NonNegativeInt.from(-99, 7).value, 0);
-	assert.equal(NonNegativeInt.from(4.8, 7).value, 4);
-	assert.equal(NonNegativeInt.from(Number.NaN, 7).value, 7);
 });
 
 test('formatBreakdownParentPath: maps root segment to user-friendly label', () => {

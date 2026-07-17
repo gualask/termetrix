@@ -10,9 +10,9 @@ test('scan limits policy: normalizes invalid size-scan limits with safe defaults
 		fsConcurrency: Number.NaN,
 	});
 
-	assert.equal(limits.maxDurationMs.value, 10000);
-	assert.equal(limits.maxDirectories.value, 1);
-	assert.equal(limits.maxFsConcurrency.value, 32);
-	assert.equal(limits.maxDirectoryConcurrency.value, 8);
-	assert.equal(limits.statBatchSize.value, 256);
+	assert.equal(limits.maxDurationMs, 10000);
+	assert.equal(limits.maxDirectories, 1);
+	assert.equal(limits.maxFsConcurrency, 32);
+	assert.equal(limits.maxDirectoryConcurrency, 8);
+	assert.equal(limits.statBatchSize, 256);
 });

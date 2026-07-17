@@ -49,23 +49,23 @@ export async function scanProjectSize({
 		maxDirectories,
 		cancellationToken,
 	};
-	const runLimited = createConcurrencyLimiter(maxFsConcurrency.value);
+	const runLimited = createConcurrencyLimiter(maxFsConcurrency);
 	const traversal = new ScanTraversalContext({
 		rootPath,
 		queue,
 		state,
 		budget,
-		maxFsConcurrency: maxFsConcurrency.value,
-		maxDirectoryConcurrency: maxDirectoryConcurrency.value,
+		maxFsConcurrency,
+		maxDirectoryConcurrency,
 		runLimited,
 		fs,
-		statBatchSize: statBatchSize.value,
+		statBatchSize,
 		directoryMetricsStore,
 	});
 
 	await runDirectoryQueue({
 		context: traversal,
-		maxDirectoryConcurrency: maxDirectoryConcurrency.value,
+		maxDirectoryConcurrency,
 		onProgress,
 		onDirectoryError: (err) =>
 			logger.error(`Directory worker error: ${err instanceof Error ? err.message : String(err)}`),

@@ -1,5 +1,5 @@
 import type { LOCResult } from '../../../shared/contracts/loc';
-import { ConcurrencyLimit } from '../../shared/numericValueObjects';
+import { toConcurrencyLimit } from '../../shared/numericValueObjects';
 import { createLifoArrayQueueDriver, runConcurrentQueue } from '../../shared/runtime/workQueue';
 import { type GitIgnoreRule, loadGitIgnoreRules } from '../filtering/gitignore';
 import { LocPathFilter } from '../filtering/locPathFilter';
@@ -17,7 +17,7 @@ export async function scanLOC(params: LocScanRequest): Promise<LOCResult> {
 	const { rootPath, fs, cancellationToken, maxConcurrency } = params;
 	const pathFilter = params.pathFilter ?? new LocPathFilter();
 	const accumulator = new LocAccumulator();
-	const concurrency = ConcurrencyLimit.bounded(maxConcurrency, DEFAULT_LOC_CONCURRENCY, 1, MAX_LOC_CONCURRENCY).value;
+	const concurrency = toConcurrencyLimit(maxConcurrency, DEFAULT_LOC_CONCURRENCY, 1, MAX_LOC_CONCURRENCY);
 
 	const rootRules = await loadGitIgnoreRules(rootPath, fs);
 	const context = new LocTraversalContext({

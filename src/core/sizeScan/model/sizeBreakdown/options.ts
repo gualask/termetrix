@@ -1,6 +1,9 @@
-import { BoundedRatio, NonNegativeInt, PositiveInt } from '../../../shared/numericValueObjects';
-
-export { BoundedRatio, NonNegativeInt, PositiveInt };
+import {
+	type BoundedRatio,
+	type PositiveInt,
+	toBoundedRatio,
+	toPositiveInt,
+} from '../../../shared/numericValueObjects';
 
 interface SelectionStopInput {
 	selectedCount: number;
@@ -21,11 +24,23 @@ export class BreakdownSelectionPolicy {
 	) {}
 
 	/**
+	 * Creates a `BreakdownSelectionPolicy` from raw option values, applying defaults where omitted.
+	 * @param options - Raw breakdown options (all fields optional).
+	 */
+	static fromRaw(options: ComputeSizeBreakdownOptions | undefined): BreakdownSelectionPolicy {
+		const coverageTarget = toBoundedRatio(options?.coverageTarget, 0.8);
+		const minItemPercent = toBoundedRatio(options?.minItemPercent, 0.03);
+		const maxItems = toPositiveInt(options?.maxItems, deriveDefaultMaxItems(minItemPercent));
+
+		return new BreakdownSelectionPolicy(coverageTarget, minItemPercent, maxItems);
+	}
+
+	/**
 	 * Returns the minimum byte threshold for an item to be included in the breakdown.
 	 * @param parentBytes - Total bytes of the parent segment.
 	 */
 	minItemBytes(parentBytes: number): number {
-		return parentBytes > 0 ? parentBytes * this.minItemPercent.value : 0;
+		return parentBytes > 0 ? parentBytes * this.minItemPercent : 0;
 	}
 
 	/**
@@ -35,7 +50,7 @@ export class BreakdownSelectionPolicy {
 	 */
 	shouldStopBeforeSelecting(input: SelectionStopInput): boolean {
 		const { selectedCount, candidateBytes, parentBytes } = input;
-		if (selectedCount >= this.maxItems.value) return true;
+		if (selectedCount >= this.maxItems) return true;
 		if (selectedCount === 0) return false;
 		return candidateBytes < this.minItemBytes(parentBytes);
 	}
@@ -47,23 +62,7 @@ export class BreakdownSelectionPolicy {
 	hasReachedCoverage(input: SelectionCoverageInput): boolean {
 		const { parentBytes, selectedBytes } = input;
 		if (parentBytes <= 0) return false;
-		return selectedBytes / parentBytes >= this.coverageTarget.value;
-	}
-}
-
-export class BreakdownPolicy {
-	constructor(readonly selection: BreakdownSelectionPolicy) {}
-
-	/**
-	 * Creates a `BreakdownPolicy` from raw option values, applying defaults where omitted.
-	 * @param options - Raw breakdown options (all fields optional).
-	 */
-	static fromRaw(options: ComputeSizeBreakdownOptions | undefined): BreakdownPolicy {
-		const coverageTarget = BoundedRatio.from(options?.coverageTarget, 0.8);
-		const minItemPercent = BoundedRatio.from(options?.minItemPercent, 0.03);
-		const maxItems = PositiveInt.from(options?.maxItems, deriveDefaultMaxItems(minItemPercent));
-
-		return new BreakdownPolicy(new BreakdownSelectionPolicy(coverageTarget, minItemPercent, maxItems));
+		return selectedBytes / parentBytes >= this.coverageTarget;
 	}
 }
 
@@ -74,6 +73,6 @@ export interface ComputeSizeBreakdownOptions {
 }
 
 function deriveDefaultMaxItems(minItemPercent: BoundedRatio): number {
-	if (minItemPercent.value <= 0) return 50;
-	return Math.max(1, Math.floor(1 / minItemPercent.value));
+	if (minItemPercent <= 0) return 50;
+	return Math.max(1, Math.floor(1 / minItemPercent));
 }
