@@ -2,18 +2,20 @@
 
 ## 🔄 Migration Roadmap
 
-### ESM Migration (When VS Code Supports It)
+### ESM Migration (Waiting for VS Code 1.129+ Adoption)
 
-**Context**: As of 2025, VS Code extensions MUST use CommonJS. VS Code itself migrated to ESM in v1.94 (Oct 2024), but extension support is not yet available.
+**Context**: VS Code extensions historically had to use CommonJS. VS Code itself migrated to ESM in v1.94 (Oct 2024). ESM support for extensions was completed in July 2026 and ships with VS Code **1.129**.
 
-**Tracking Issues**:
+**Tracking**:
 
-- [microsoft/vscode#130367](https://github.com/microsoft/vscode/issues/130367) - Enable consuming of ES modules in extensions
-- [microsoft/vscode#135450](https://github.com/microsoft/vscode/issues/135450) - Explore enabling ESM based extensions
+- [microsoft/vscode#130367](https://github.com/microsoft/vscode/issues/130367) - Enable consuming of ES modules in extensions — **closed as completed on 2026-07-06, milestone 1.129.0**
 
-**Migration Checklist** (when ESM support lands):
+**Decision (Jul 2026)**: too early to migrate. Adopting ESM requires raising `engines.vscode` to `^1.129.0`, cutting off users on older VS Code versions. Revisit once 1.129 is stable and a couple of releases old.
+
+**Migration Checklist** (when we raise the minimum VS Code version to 1.129+):
 
 - [ ] Update `package.json`: `"type": "commonjs"` → `"type": "module"`
+- [ ] Update `engines.vscode` and `@types/vscode` to `^1.129.0`
 - [ ] Update `tsconfig.json`: `"module": "NodeNext"` → `"module": "ESNext"` (or keep NodeNext)
 - [ ] Rename output files if needed: `.js` extensions should work with ESM
 - [ ] Update `main` field if VS Code requires `.mjs` extension
@@ -22,7 +24,7 @@
 
 ---
 
-## 🚀 Future Features (v1.0+)
+## 🚀 Future Features
 
 ### Potential Enhancements
 
