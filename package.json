@@ -118,10 +118,11 @@
     "build": "node -e \"require('fs').rmSync('out', { recursive: true, force: true })\" && node esbuild.mjs",
     "build:prod": "node -e \"require('fs').rmSync('out', { recursive: true, force: true })\" && node esbuild.mjs --production",
     "build:tests": "node esbuild.tests.mjs",
+    "knip": "knip",
     "typecheck": "tsc -p tsconfig.extension.json --noEmit && tsc -p src/ui/tsconfig.json --noEmit",
     "lint": "biome check .",
     "test:unit": "pnpm run build:tests && node --test out-test/tests/*.test.js",
-    "test": "pnpm run build && pnpm run lint && pnpm run typecheck && pnpm run test:unit",
+    "test": "pnpm run build && pnpm run lint && pnpm run typecheck && pnpm run knip && pnpm run test:unit",
     "format": "biome format --write ."
   },
   "devDependencies": {
@@ -129,6 +130,7 @@
     "@types/node": "22.19.11",
     "@types/vscode": "^1.109.0",
     "esbuild": "^0.28.1",
+    "knip": "^6.27.0",
     "preact": "^10.28.4",
     "typescript": "^7.0.2"
   },
