@@ -41,14 +41,14 @@ function LocByLanguageSection({ sortedLanguages, totalLines, showAll, onToggleSh
 
 	return (
 		<section class="section">
-			<h4>By Language</h4>
+			<h2>By Language</h2>
 			{visible.map(([lang, lines]) => {
 				const percent = (lines / totalLines) * 100;
 				return (
 					<div key={lang} class="language-row">
 						<span class="lang-name">{lang}</span>
 						<div class="bar-container">
-							<div class="bar" style={{ width: `${percent}%` }} />
+							<div class="bar" style={{ transform: `scaleX(${percent / 100})` }} />
 						</div>
 						<span class="lang-count">{lines.toLocaleString()}</span>
 						<span class="lang-percent">{percent.toFixed(1)}%</span>
@@ -77,7 +77,7 @@ function LocTopFilesSection({ topFiles, onOpenFile, showAll, onToggleShowAll }: 
 
 	return (
 		<section class="section">
-			<h4>Top Files</h4>
+			<h2>Top Files</h2>
 			{visible.map((file) => (
 				<RowButton
 					key={file.path}
@@ -87,7 +87,7 @@ function LocTopFilesSection({ topFiles, onOpenFile, showAll, onToggleShowAll }: 
 					ariaLabel={`Open ${file.path}`}
 				>
 					<span class="file-path">{file.path}</span>
-					<span class="file-lines">{file.lines} lines</span>
+					<span class="file-lines">{file.lines.toLocaleString()} lines</span>
 				</RowButton>
 			))}
 			<ShowMoreButton
@@ -178,6 +178,7 @@ export function LocView({
 						onClick={onToggleCollapse}
 						title={isCollapsed ? 'Expand LOC section' : 'Collapse LOC section'}
 						ariaLabel={isCollapsed ? 'Expand LOC section' : 'Collapse LOC section'}
+						ariaExpanded={!isCollapsed}
 					>
 						<CollapseIcon size={16} />
 					</IconButton>
@@ -190,7 +191,7 @@ export function LocView({
 		<ViewLayout viewClass="loc-view" header={header} bodyAriaLabel="LOC details" isCollapsed={isCollapsed} scrollable>
 			{isCalculating && <PanelOverlay label="Calculating…" />}
 			{hasData ? (
-				<>
+				<div inert={isCalculating}>
 					<LocByLanguageSection
 						sortedLanguages={sortedLanguages}
 						totalLines={locResult!.totalLines}
@@ -203,7 +204,7 @@ export function LocView({
 						showAll={showAllFiles}
 						onToggleShowAll={onToggleShowAllFiles}
 					/>
-				</>
+				</div>
 			) : (
 				!isCalculating && (
 					<EmptyState

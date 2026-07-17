@@ -1,4 +1,5 @@
 import type { ComponentChildren } from 'preact';
+import { useId } from 'preact/hooks';
 import { TooltipBubble } from '../../components/TooltipBubble';
 import { buildSizeMetricTooltipLines, SizeMetric } from './SizeMetric';
 
@@ -32,6 +33,7 @@ export function SizeTableRow({
 	onClick,
 	title,
 }: SizeTableRowProps) {
+	const tooltipId = useId();
 	const bubbleLines =
 		kind === 'leaf'
 			? []
@@ -79,8 +81,9 @@ export function SizeTableRow({
 			class={`tmx-row size-table-row size-table-row--${kind}`}
 			onClick={onClick}
 			aria-label={`Reveal ${name} in Explorer`}
+			aria-describedby={bubbleLines.length > 0 ? tooltipId : undefined}
 		>
-			<TooltipBubble lines={bubbleLines} />
+			<TooltipBubble id={tooltipId} lines={bubbleLines} />
 			{content}
 		</button>
 	);

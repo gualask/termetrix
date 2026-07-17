@@ -7,8 +7,7 @@
 	gap: 10px;
 	min-height: 160px;
 	padding: 24px 16px;
-	color: var(--vscode-foreground);
-	opacity: 0.75;
+	color: var(--vscode-descriptionForeground, var(--vscode-foreground));
 	font-size: var(--tmx-font-small);
 }
 
@@ -57,9 +56,11 @@
 
 .tmx-sizeMetricVFill {
 	width: 100%;
-	height: 0;
+	height: 100%;
 	background: var(--tmx-sizeMetric-fill);
-	transition: height 0.18s ease;
+	transform: scaleY(0);
+	transform-origin: bottom;
+	transition: transform 0.18s ease;
 }
 
 .tmx-sizeMetric--total {
@@ -86,7 +87,6 @@
 .size-chart-hidden-note {
 	font-size: var(--tmx-font-caption);
 	color: var(--vscode-descriptionForeground, var(--vscode-foreground));
-	opacity: 0.7;
 	padding: 6px 4px 2px;
 }
 
@@ -94,10 +94,8 @@
 .size-table-card {
 	margin-bottom: 14px;
 	padding: 10px;
-	border-radius: var(--tmx-radius-xl);
-	border: 1px solid var(--tmx-border);
+	border-radius: var(--tmx-radius-md);
 	background: var(--tmx-surface-2);
-	box-shadow: 0 2px 8px var(--vscode-widget-shadow, transparent);
 	--tmx-row-hover: rgba(127, 127, 127, 0.14);
 	--tmx-row-hover-border: var(--vscode-focusBorder, var(--tmx-border));
 }
@@ -115,7 +113,7 @@
 
 .size-groupHeader {
 	width: 100%;
-	border-radius: var(--tmx-radius-lg);
+	border-radius: var(--tmx-radius-md);
 	padding: 8px 10px;
 	background: transparent;
 	border: 1px solid transparent;
@@ -236,7 +234,6 @@
 .size-table-subtitle {
 	font-size: var(--tmx-font-caption);
 	color: var(--vscode-descriptionForeground, var(--vscode-foreground));
-	opacity: 0.8;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;

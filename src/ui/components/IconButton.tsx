@@ -5,10 +5,12 @@ interface Props {
 	disabled?: boolean;
 	title: string;
 	ariaLabel: string;
+	/** For toggle buttons controlling a collapsible region. */
+	ariaExpanded?: boolean;
 	children: ComponentChildren;
 }
 
-export function IconButton({ onClick, disabled, title, ariaLabel, children }: Props) {
+export function IconButton({ onClick, disabled, title, ariaLabel, ariaExpanded, children }: Props) {
 	return (
 		<button
 			type="button"
@@ -17,6 +19,7 @@ export function IconButton({ onClick, disabled, title, ariaLabel, children }: Pr
 			disabled={disabled}
 			title={title}
 			aria-label={ariaLabel}
+			aria-expanded={ariaExpanded}
 		>
 			{children}
 		</button>

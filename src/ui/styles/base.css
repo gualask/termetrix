@@ -28,8 +28,6 @@ body {
 	--tmx-hover-bg: var(--vscode-toolbar-hoverBackground, var(--tmx-row-hover));
 	--tmx-radius-sm: 4px;
 	--tmx-radius-md: 6px;
-	--tmx-radius-lg: 8px;
-	--tmx-radius-xl: 10px;
 	--tmx-font-caption: 0.9rem;
 	--tmx-font-small: 0.92rem;
 	--tmx-font-ui: 1rem;

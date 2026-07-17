@@ -2,7 +2,7 @@
 .warning-banner,
 .error-banner {
 	padding: 10px 14px;
-	border-left: 3px solid;
+	border: 1px solid;
 	font-size: var(--tmx-font-small);
 	border-radius: var(--tmx-radius-sm);
 }
@@ -30,7 +30,7 @@
 	display: flex;
 	align-items: flex-start;
 	gap: 10px;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+	box-shadow: 0 4px 12px var(--vscode-widget-shadow, transparent);
 }
 
 .error-banner-icon {
@@ -90,7 +90,6 @@
 }
 .empty-state.variant-inline {
 	padding: 18px 16px;
-	opacity: 0.8;
 }
 
 .empty-state h2 {
@@ -99,12 +98,11 @@
 }
 .empty-state p {
 	margin: 8px 0;
-	opacity: 0.8;
 }
 .empty-state .hint {
 	margin-top: 16px;
 	font-size: var(--tmx-font-small);
-	opacity: 0.7;
+	color: var(--vscode-descriptionForeground, var(--vscode-foreground));
 }
 
 /* Spinner */

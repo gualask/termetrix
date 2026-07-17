@@ -1,4 +1,5 @@
 import type { ComponentChildren } from 'preact';
+import { useId } from 'preact/hooks';
 import { RowButton } from '../../components/RowButton';
 import { TooltipBubble } from '../../components/TooltipBubble';
 import { buildSizeMetricTooltipLines, SizeMetric } from './SizeMetric';
@@ -22,6 +23,7 @@ export function SizeGroupHeader({
 	shareOfTotal,
 	onClick,
 }: SizeGroupHeaderProps) {
+	const tooltipId = useId();
 	const tooltipLines = buildSizeMetricTooltipLines({
 		sizeBytes: size,
 		share: shareOfTotal,
@@ -31,8 +33,13 @@ export function SizeGroupHeader({
 	});
 
 	return (
-		<RowButton class="size-groupHeader" onClick={onClick} ariaLabel={`Reveal ${name} in Explorer`}>
-			<TooltipBubble lines={tooltipLines} />
+		<RowButton
+			class="size-groupHeader"
+			onClick={onClick}
+			ariaLabel={`Reveal ${name} in Explorer`}
+			describedBy={tooltipId}
+		>
+			<TooltipBubble id={tooltipId} lines={tooltipLines} />
 			<div class="size-groupHeaderGrid">
 				<div class="size-groupHeaderName">
 					<span class="size-groupHeaderIcon" aria-hidden="true">

@@ -102,6 +102,7 @@ export function SizeView({
 						onClick={onToggleCollapse}
 						title={isCollapsed ? 'Expand Size section' : 'Collapse Size section'}
 						ariaLabel={isCollapsed ? 'Expand Size section' : 'Collapse Size section'}
+						ariaExpanded={!isCollapsed}
 					>
 						<CollapseIcon size={16} />
 					</IconButton>
@@ -127,12 +128,14 @@ export function SizeView({
 							<span>Scan incomplete: {formatIncompleteReason(scanResult?.incompleteReason)}</span>
 						</div>
 					)}
-					<SizeChart
-						breakdown={breakdown}
-						totalBytes={scanResult?.totalBytes ?? 0}
-						onReveal={onRevealInExplorer}
-						isLoading={isRefreshing}
-					/>
+					<div inert={isRefreshing}>
+						<SizeChart
+							breakdown={breakdown}
+							totalBytes={scanResult?.totalBytes ?? 0}
+							onReveal={onRevealInExplorer}
+							isLoading={isRefreshing}
+						/>
+					</div>
 					{isRefreshing && <PanelOverlay label={loadingLabel} />}
 				</div>
 			) : (

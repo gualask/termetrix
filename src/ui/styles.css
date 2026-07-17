@@ -17,6 +17,23 @@
 	.tmx-metric-primaryValue {
 		font-size: var(--tmx-font-metric-sm);
 	}
+	.language-row {
+		grid-template-columns: 1fr auto auto;
+		gap: 4px 12px;
+	}
+	.language-row .bar-container {
+		grid-column: 1 / -1;
+		grid-row: 2;
+	}
+	.lang-name {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.lang-count {
+		min-width: 0;
+	}
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -57,7 +57,7 @@ export function SizeMetric({ sizeBytes, share, variant }: SizeMetricProps) {
 			<div class="tmx-sizeMetricValue">{formatBytes(sizeBytes)}</div>
 			{showShare && (
 				<div class="tmx-sizeMetricVBar" aria-hidden="true">
-					<div class="tmx-sizeMetricVFill" style={{ height: `${clampedShare * 100}%` }} />
+					<div class="tmx-sizeMetricVFill" style={{ transform: `scaleY(${clampedShare})` }} />
 				</div>
 			)}
 		</div>

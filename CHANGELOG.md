@@ -10,8 +10,14 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) an
 - Simplified size-scan lifecycle and caching so public results and directory metrics share one bounded cache entry
 - Reorganized the LOC engine, status bar, metrics-panel state, and webview styles into cohesive behavior-preserving modules
 - Migrated linting and formatting to Biome and upgraded project tooling dependencies
+- Replaced numeric value-object classes with branded types and added a knip dead-code gate to the test chain
+- Polished the webview toward a more native VS Code look: full-border warning/error banners, flatter size cards without drop shadows, and secondary text using the theme's `descriptionForeground` instead of opacity muting
+- Progress bars now animate via `transform` instead of layout properties
 
 ### Fixed
+- Tooltips are now reachable by keyboard and exposed to screen readers (focusable info trigger, `aria-describedby`, Esc to dismiss)
+- Tooltips wrap instead of clipping in narrow panels, and language rows no longer overflow below ~330px width
+- Collapse buttons expose `aria-expanded`, section headings use proper levels, and loading overlays block keyboard access to covered controls
 - Corrected Sass LOC handling so `#` selectors and interpolation count as code while `//` lines count as comments
 - Prevented escaped newlines and trailing backslashes from dropping physical lines during LOC counting
 - Applied directory-only `.gitignore` patterns only to directories and their descendants, not same-named files

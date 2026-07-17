@@ -28,7 +28,7 @@
 
 /* LOC View */
 .loc-primary-suffix {
-	opacity: 0.75;
+	color: var(--vscode-descriptionForeground, var(--vscode-foreground));
 	font-size: var(--tmx-font-caption);
 }
 
@@ -38,10 +38,10 @@
 .section:last-child {
 	margin-bottom: 0;
 }
-.section h4 {
+.section h2 {
 	margin: 0 0 12px;
 	font-size: var(--tmx-font-sectionTitle);
-	opacity: 0.9;
+	font-weight: 600;
 }
 
 .language-row {
@@ -61,9 +61,12 @@
 }
 
 .bar {
+	width: 100%;
 	height: 100%;
 	background: var(--vscode-charts-blue, var(--vscode-progressBar-background));
-	transition: width 0.3s ease;
+	transform: scaleX(0);
+	transform-origin: left;
+	transition: transform 0.3s ease;
 }
 
 .lang-name {
@@ -75,7 +78,7 @@
 }
 .lang-percent {
 	min-width: 50px;
-	opacity: 0.7;
+	color: var(--vscode-descriptionForeground, var(--vscode-foreground));
 	font-size: var(--tmx-font-small);
 }
 
@@ -107,6 +110,6 @@
 
 .file-lines {
 	margin-left: 16px;
-	opacity: 0.7;
+	color: var(--vscode-descriptionForeground, var(--vscode-foreground));
 	font-variant-numeric: tabular-nums;
 }
